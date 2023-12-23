@@ -21,12 +21,28 @@ from accelerate import Accelerator
 from accelerate.logging import get_logger
 from datasets import load_dataset
 from fastchat.conversation import get_conv_template
+from tqdm import tqdm
 from transformers import pipeline
 
 from herm import prepare_dialogue
 
 # data repo to upload results
 EVAL_REPO = "ai2-rlhf-collab/rm-benchmark-results"
+EVAL_SUBSETS = [
+    "alpacaeval-easy",
+    "alpacaeval-hard",
+    "alpacaeval-length",
+    "llmbar-adver-GPTInst",
+    "llmbar-adver-GPTOut",
+    "llmbar-adver-manual",
+    "llmbar-adver-neighbor",
+    "llmbar-natural",
+    "mt-bench-easy",
+    "mt-bench-hard",
+    "mt-bench-med",
+    "refusals-dangerous",
+    "refusals-offensive",
+]
 
 
 def push_results_to_hub(hub_path, output_path):
@@ -45,8 +61,8 @@ def get_args():
     Parse arguments strings model and chat_template
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, default="natolambert/gpt2-dmummy-rm", help="path to model")
-    parser.add_argument("--chat_template", type=str, default="chatml", help="path to chat template")
+    parser.add_argument("--model", type=str, default="natolambert/gpt2-dummy-rm", help="path to model")
+    parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
     args = parser.parse_args()
     return args
 
@@ -57,6 +73,9 @@ def main():
     ###############
     # Setup logging
     ###############
+    accelerator = Accelerator()
+    current_device = accelerator.process_index
+
     logger = get_logger(__name__)
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -74,15 +93,16 @@ def main():
     # Load dataset from ai2-rlhf-collab/rm-benchmark-dev, "filtered" split
     ############################
     logger.info("*** Load dataset ***")
-    dataset = load_dataset("ai2-rlhf-collab/rm-benchmark-dev", split="filtered")
+    raw_dataset = load_dataset("ai2-rlhf-collab/rm-benchmark-dev", split="filtered")
+    dataset = raw_dataset.map(
+        prepare_dialogue,
+        fn_kwargs={"dialogue_template": conv},
+    )
     dataset = dataset.map(
         prepare_dialogue,
         fn_kwargs={"dialogue_template": conv},
     )
 
-    import ipdb
-
-    ipdb.set_trace()
     ############################
     # Load reward model pipeline
     ############################
@@ -96,14 +116,12 @@ def main():
         "return_token_type_ids": False,
     }
 
-    accelerator = Accelerator()
-    current_device = accelerator.process_index
     reward_pipe = pipeline(
         "text-classification",
         model=args.model,
         revision="main",
         model_kwargs={
-            "load_in_8bit": True,
+            # "load_in_8bit": True, # TODO reinstall conda env (not from root user, so things work properly)
             "device_map": {"": current_device},
             "torch_dtype": torch.float16,
         }
@@ -122,11 +140,37 @@ def main():
         drop_last=False,
     )
 
-    for step, batch in enumerate(tqdm(dataloader), desc="RM batch steps"):
+    if reward_pipe.tokenizer.pad_token_id is None:
+        reward_pipe.model.config.pad_token_id = reward_pipe.tokenizer.eos_token_id
+        reward_pipe.tokenizer.pad_token_id = reward_pipe.tokenizer.eos_token_id
+
+    results = []
+    for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
         logger.info(f"RM inference step {step}/{len(dataloader)}")
 
-        texts_chosen
-        rewards_chosen = reward_pipe()
+        rewards_chosen = reward_pipe(batch["text_chosen"], **reward_pipeline_kwargs)
+        rewards_rejected = reward_pipe(batch["text_rejected"], **reward_pipeline_kwargs)
+
+        # for each item in batch, record 1 if chosen > rejected
+        # extra score from dict within batched results (e.g. logits)
+        # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
+        score_chosen = [result["score"] for result in rewards_chosen]
+        score_rejected = [result["score"] for result in rewards_rejected]
+        [
+            results.append(1) if chosen > rejected else results.append(0)
+            for chosen, rejected in zip(score_chosen, score_rejected)
+        ]
+        import ipdb; ipdb.set_trace()
+
+    # add column for results for easy printing
+    dataset = dataset.add_column("results", results)
+
+    # print per subset
+    for subset in EVAL_SUBSETS:
+        subset_dataset = dataset.filter(lambda example: example["subset"] == subset)
+        num_correct = sum(subset_dataset["results"])
+        num_total = len(subset_dataset["results"])
+        print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
 
 
 if __name__ == "__main__":

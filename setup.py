@@ -13,7 +13,7 @@ setup(
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.10",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: Apache 2.0 License",
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.10",
@@ -25,5 +25,6 @@ setup(
         "black==23.1.0",
         "flake8>=6.0",
         "isort>=5.12.0",
+        "bitsandbytes",
     ],
 )

@@ -26,3 +26,12 @@ Install `fastchat` partially (for `conversation.py`):
 pip3 install "fschat[model_worker,webui]"
 pip install huggingface_hub datasets
 ```
+
+
+### Models with chat templates
+For reference on Chat Templates, many models follow the base / sft model terminology [here](https://github.com/lm-sys/FastChat/blob/main/fastchat/conversation.py):
+I was debugging with default gpt2, but the random head may be causing numerical stability issues.
+Next:
+```
+python scripts/run_rm.py --model=openbmb/UltraRM-13b --chat_template="billa"
+```
