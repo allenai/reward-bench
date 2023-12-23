@@ -8,8 +8,8 @@ setup(
     description="Tools for evaluating reward models",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/herm",
-    packages=find_packages(),
+    url="https://github.com/allenai/herm",
+    packages=find_packages("herm"),
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.10",

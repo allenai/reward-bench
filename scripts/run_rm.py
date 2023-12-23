@@ -22,9 +22,9 @@ from accelerate.logging import get_logger
 from datasets import load_dataset
 from fastchat.conversation import get_conv_template
 from tqdm import tqdm
-from transformers import pipeline
+from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
+                          pipeline)
 
-from herm import prepare_dialogue
 
 # data repo to upload results
 EVAL_REPO = "ai2-rlhf-collab/rm-benchmark-results"
@@ -63,12 +63,19 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, default="natolambert/gpt2-dummy-rm", help="path to model")
     parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
+    # option for store_true boolean of "direct_load"
+    parser.add_argument("--direct_load", action="store_true", help="directly load model instead of pipeline")
+    parser.add_argument("--batch_size", type=int, default=64, help="batch size for inference")
     args = parser.parse_args()
     return args
 
 
 def main():
     args = get_args()
+
+    # some models need custom code to be run
+    if "oasst" in args.model or "oasst" in args.chat_template:
+        from herm.models import openassistant
 
     ###############
     # Setup logging
@@ -94,51 +101,74 @@ def main():
     ############################
     logger.info("*** Load dataset ***")
     raw_dataset = load_dataset("ai2-rlhf-collab/rm-benchmark-dev", split="filtered")
-    dataset = raw_dataset.map(
-        prepare_dialogue,
-        fn_kwargs={"dialogue_template": conv},
-    )
-    dataset = dataset.map(
-        prepare_dialogue,
-        fn_kwargs={"dialogue_template": conv},
-    )
+
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    # if tokenizer.chat_template exists, use that
+    if False: #tokenizer.chat_template:
+        raise NotImplementedError("TODO implement this")
+        # docs https://huggingface.co/docs/transformers/main/en/chat_templating
+        # dataset = raw_dataset.map(
+        #     lambda x: x)
+        # e.g. PairRM
+    
+    # else use FastChat to get chat template
+    else:
+        from herm import prepare_dialogue
+        dataset = raw_dataset.map(
+            prepare_dialogue,
+            fn_kwargs={"dialogue_template": conv},
+        )
+        dataset = dataset.map(
+            prepare_dialogue,
+            fn_kwargs={"dialogue_template": conv},
+        )
 
     ############################
     # Load reward model pipeline
     ############################
+    BATCH_SIZE = args.batch_size
     logger.info("*** Load reward model ***")
     reward_pipeline_kwargs = {
-        "batch_size": 4,  # eval_args.inference_batch_size,
+        "batch_size": BATCH_SIZE,  # eval_args.inference_batch_size,
         "truncation": True,
         "padding": True,
         "max_length": 2048,
         "function_to_apply": "none",  # Compute raw logits
         "return_token_type_ids": False,
     }
-
-    reward_pipe = pipeline(
-        "text-classification",
-        model=args.model,
-        revision="main",
-        model_kwargs={
-            # "load_in_8bit": True, # TODO reinstall conda env (not from root user, so things work properly)
-            "device_map": {"": current_device},
-            "torch_dtype": torch.float16,
-        }
-        if torch.cuda.is_available()
-        else None,
-    )
+    model_kwargs = {
+        "load_in_8bit": True,  # TODO reinstall conda env (not from root user, so things work properly)
+        "device_map": {"": current_device},
+        "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
+    }
+    if args.direct_load:
+        model = AutoModelForSequenceClassification.from_pretrained(args.model, **model_kwargs)
+        tokenizer = AutoTokenizer.from_pretrained(args.model)
+        reward_pipe = pipeline(
+            "text-classification",
+            model=model,
+            tokenizer=tokenizer,
+        )
+    else:
+        reward_pipe = pipeline(
+            "text-classification",
+            model=args.model,
+            revision="main",
+            model_kwargs=model_kwargs,
+        )
 
     # def collator(data):
     #     return dict((key, [d[key] for d in data]) for key in data[0])
 
     dataloader = torch.utils.data.DataLoader(
         dataset,
-        batch_size=4,
+        batch_size=BATCH_SIZE,
         # collate_fn=collator,
         shuffle=False,
         drop_last=False,
     )
+
+    dataloader, reward_pipe = accelerator.prepare(dataloader, reward_pipe)
 
     if reward_pipe.tokenizer.pad_token_id is None:
         reward_pipe.model.config.pad_token_id = reward_pipe.tokenizer.eos_token_id
@@ -160,8 +190,8 @@ def main():
             results.append(1) if chosen > rejected else results.append(0)
             for chosen, rejected in zip(score_chosen, score_rejected)
         ]
-        import ipdb; ipdb.set_trace()
 
+    import ipdb; ipdb.set_trace()
     # add column for results for easy printing
     dataset = dataset.add_column("results", results)
 
