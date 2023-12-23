@@ -12,6 +12,11 @@ For contributors, it can be found in this [HuggingFace org](https://huggingface.
 ## Installation
 Please install `torch`` on your system, and then install the following requirements.
 ```
+pip install -e .
+```
+
+### Older instructions
+```
 pip install requirements.txt
 ```
 

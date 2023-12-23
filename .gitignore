@@ -1,0 +1,20 @@
+# Ignore compiled files
+*.class
+*.o
+*.pyc
+__pycache__/
+
+# Ignore build output
+build/
+dist/
+*.egg-info/
+
+# Ignore IDE and editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Ignore system files
+.DS_Store
+Thumbs.db
