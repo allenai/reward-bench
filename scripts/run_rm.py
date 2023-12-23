@@ -193,11 +193,11 @@ def main():
 
     import ipdb; ipdb.set_trace()
     # add column for results for easy printing
-    dataset = dataset.add_column("results", results)
+    out_dataset = dataset.add_column("results", results)
 
     # print per subset
     for subset in EVAL_SUBSETS:
-        subset_dataset = dataset.filter(lambda example: example["subset"] == subset)
+        subset_dataset = out_dataset.filter(lambda example: example["subset"] == subset)
         num_correct = sum(subset_dataset["results"])
         num_total = len(subset_dataset["results"])
         print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
