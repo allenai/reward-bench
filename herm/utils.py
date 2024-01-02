@@ -9,18 +9,6 @@ def prepare_dialogue(
 ) -> Dict[str, Any]:
     """Format example to single- or multi-turn dialogue."""
     if all(k in example.keys() for k in ("chosen", "rejected")):
-        # some datasets must be formatted
-        # dialogue_template.messages = [
-        #     {"role": "user", "content": example["prompt"]},
-        #     {"role": "assistant", "content": example["chosen"]},
-        # ]
-        # example["text_chosen"] = dialogue_template.get_prompt()
-        # dialogue_template.messages = [
-        #     {"role": "user", "content": example["prompt"]},
-        #     {"role": "assistant", "content": example["rejected"]},
-        # ]
-        # example["text_rejected"] = dialogue_template.get_prompt()
-
         dialogue_template.messages = [
             ["user", example["prompt"]],
             ["assistant", example["chosen"]],

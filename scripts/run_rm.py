@@ -13,7 +13,9 @@
 # limitations under the License.
 
 import argparse
+import json
 import logging
+import os
 import sys
 
 import torch
@@ -21,10 +23,10 @@ from accelerate import Accelerator
 from accelerate.logging import get_logger
 from datasets import load_dataset
 from fastchat.conversation import get_conv_template
+from huggingface_hub import upload_file
 from tqdm import tqdm
 from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
                           pipeline)
-
 
 # data repo to upload results
 EVAL_REPO = "ai2-rlhf-collab/rm-benchmark-results"
@@ -45,17 +47,6 @@ EVAL_SUBSETS = [
 ]
 
 
-def push_results_to_hub(hub_path, output_path):
-    api = HfApi()
-    api.upload_folder(
-        folder_path=output_path,
-        path_in_repo=hub_path,
-        repo_id=SFT_RM_REPO,
-        repo_type="dataset",
-    )
-    logging.info(f"Uploaded results to www.huggingface.co/datasets/{hub_path}")
-
-
 def get_args():
     """
     Parse arguments strings model and chat_template
@@ -65,6 +56,7 @@ def get_args():
     parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
     # option for store_true boolean of "direct_load"
     parser.add_argument("--direct_load", action="store_true", help="directly load model instead of pipeline")
+    parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
     parser.add_argument("--batch_size", type=int, default=64, help="batch size for inference")
     args = parser.parse_args()
     return args
@@ -104,16 +96,17 @@ def main():
 
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     # if tokenizer.chat_template exists, use that
-    if False: #tokenizer.chat_template:
+    if False:  # tokenizer.chat_template:
         raise NotImplementedError("TODO implement this")
         # docs https://huggingface.co/docs/transformers/main/en/chat_templating
         # dataset = raw_dataset.map(
         #     lambda x: x)
         # e.g. PairRM
-    
+
     # else use FastChat to get chat template
     else:
         from herm import prepare_dialogue
+
         dataset = raw_dataset.map(
             prepare_dialogue,
             fn_kwargs={"dialogue_template": conv},
@@ -191,16 +184,49 @@ def main():
             for chosen, rejected in zip(score_chosen, score_rejected)
         ]
 
-    import ipdb; ipdb.set_trace()
     # add column for results for easy printing
     out_dataset = dataset.add_column("results", results)
 
-    # print per subset
+    results = {}
+    results["model"] = args.model
+    results["chat_template"] = args.chat_template
+    # print per subset and log into results file
     for subset in EVAL_SUBSETS:
         subset_dataset = out_dataset.filter(lambda example: example["subset"] == subset)
         num_correct = sum(subset_dataset["results"])
         num_total = len(subset_dataset["results"])
         print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
+        results[subset] = num_correct / num_total
+
+    ############################
+    # Upload results to hub
+    ############################
+    # Save results locally (results/results.json)\
+    dumped = json.dumps(results, indent=4, sort_keys=True, default=str)
+    logger.info(f"Stored local JSON data {dumped}.")
+    path = f"results/{args.model}.json"
+    dirname = os.path.dirname(path)
+
+    if dirname != "":
+        os.makedirs(dirname, exist_ok=True)
+
+    # remove old data
+    if os.path.isfile(path):
+        os.remove(path)
+
+    with open(path, "w") as f:
+        f.write(dumped)
+
+    # Upload results as json
+    if not args.do_not_save:
+        scores_url = upload_file(
+            path_or_fileobj=path,
+            path_in_repo=f"data/{args.model}.json",
+            repo_id=EVAL_REPO,
+            repo_type="dataset",
+            commit_message=f"Add reward model scores for  model {args.model}",
+        )
+        logger.info(f"Uploaded reward model scores to {scores_url}")
 
 
 if __name__ == "__main__":
