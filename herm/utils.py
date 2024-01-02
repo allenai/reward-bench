@@ -21,6 +21,7 @@ def prepare_dialogue(
         example["text_rejected"] = dialogue_template.get_prompt()
     else:
         raise ValueError(
-            f"Could not format example as dialogue for `rm` task! Require `[chosen, rejected]` keys but found {list(example.keys())}"
+            "Could not format example as dialogue for `rm` task!"
+            f"Require `[chosen, rejected]` keys but found {list(example.keys())}"
         )
     return example

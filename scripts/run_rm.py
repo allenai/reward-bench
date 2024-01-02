@@ -53,8 +53,10 @@ def get_args():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, default="natolambert/gpt2-dummy-rm", help="path to model")
+    parser.add_argument(
+        "--tokenizer", type=str, default=None, help="path to non-matching tokenizer, requires --direct_load"
+    )
     parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
-    # option for store_true boolean of "direct_load"
     parser.add_argument("--direct_load", action="store_true", help="directly load model instead of pipeline")
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
     parser.add_argument("--batch_size", type=int, default=64, help="batch size for inference")
@@ -67,7 +69,21 @@ def main():
 
     # some models need custom code to be run
     if "oasst" in args.model or "oasst" in args.chat_template:
-        from herm.models import openassistant
+        from herm.models import openassistant  # noqa
+
+        model_builder = AutoModelForSequenceClassification.from_pretrained
+        pipeline_builder = pipeline
+        quantized = True
+    elif "Starling" in args.model or "Starling" in args.chat_template:
+        from herm.models.starling import RMPipeline, build_starling_rm
+
+        model_builder = build_starling_rm
+        pipeline_builder = RMPipeline
+        quantized = False
+    else:
+        model_builder = AutoModelForSequenceClassification.from_pretrained
+        pipeline_builder = pipeline
+        quantized = True
 
     ###############
     # Setup logging
@@ -94,7 +110,8 @@ def main():
     logger.info("*** Load dataset ***")
     raw_dataset = load_dataset("ai2-rlhf-collab/rm-benchmark-dev", split="filtered")
 
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    tokenizer_path = args.tokenizer if args.tokenizer else args.model
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
     # if tokenizer.chat_template exists, use that
     if False:  # tokenizer.chat_template:
         raise NotImplementedError("TODO implement this")
@@ -129,15 +146,18 @@ def main():
         "function_to_apply": "none",  # Compute raw logits
         "return_token_type_ids": False,
     }
-    model_kwargs = {
-        "load_in_8bit": True,  # TODO reinstall conda env (not from root user, so things work properly)
-        "device_map": {"": current_device},
-        "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
-    }
+    if quantized:
+        model_kwargs = {
+            "load_in_8bit": True,
+            "device_map": {"": current_device},
+            "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
+        }
+    else:
+        model_kwargs = {"device_map": {"": current_device}}
     if args.direct_load:
-        model = AutoModelForSequenceClassification.from_pretrained(args.model, **model_kwargs)
-        tokenizer = AutoTokenizer.from_pretrained(args.model)
-        reward_pipe = pipeline(
+        model = model_builder(args.model, **model_kwargs)
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+        reward_pipe = pipeline_builder(
             "text-classification",
             model=model,
             tokenizer=tokenizer,
@@ -177,8 +197,14 @@ def main():
         # for each item in batch, record 1 if chosen > rejected
         # extra score from dict within batched results (e.g. logits)
         # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
-        score_chosen = [result["score"] for result in rewards_chosen]
-        score_rejected = [result["score"] for result in rewards_rejected]
+        if isinstance(rewards_chosen[0], dict):
+            score_chosen = [result["score"] for result in rewards_chosen]
+            score_rejected = [result["score"] for result in rewards_rejected]
+        # for classes that directly output scores (custom code)
+        else:
+            score_chosen = rewards_chosen.cpu().numpy().tolist()
+            score_rejected = rewards_rejected.cpu().numpy().tolist()
+
         [
             results.append(1) if chosen > rejected else results.append(0)
             for chosen, rejected in zip(score_chosen, score_rejected)

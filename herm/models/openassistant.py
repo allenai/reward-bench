@@ -1,4 +1,5 @@
-# Copied from https://github.com/LAION-AI/Open-Assistant/blob/main/model/model_training/models/reward_model.py for simplicity
+# noqa
+# Copied from https://github.com/LAION-AI/Open-Assistant/blob/main/model/model_training/models/reward_model.py
 
 from dataclasses import dataclass
 from typing import Literal, Optional

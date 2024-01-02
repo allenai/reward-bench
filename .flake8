@@ -1,0 +1,4 @@
+[flake8]
+exclude = 
+    herm/models/openassistant.py
+    herm/models/starling.py

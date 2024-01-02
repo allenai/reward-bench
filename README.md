@@ -35,8 +35,9 @@ Next:
 ```
 python scripts/run_rm.py --model=openbmb/UltraRM-13b --chat_template=billa
 python scripts/run_rm.py --model=OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5 --chat_template=oasst_pythia --direct_load
-python scripts/run_rm.py --model=OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1 --chat_template=oasst_pythia --direct_loa
+python scripts/run_rm.py --model=OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1 --chat_template=oasst_pythia --direct_load
 python scripts/run_rm.py --model=OpenAssistant/reward-model-deberta-v3-large-v2 --chat_template=raw
+python scripts/run_rm.py --model=weqweasdas/hh_rlhf_rm_open_llama_3b --chat_template=Robin
+python scripts/run_rm.py --model=llm-blender/PairRM --chat_template=raw #TODO needs custom code
+python scripts/run_rm.py --model=berkeley-nest/Starling-RM-7B-alpha --tokenizer=meta-llama/Llama-2-7b-chat-hf --chat_template=llama-2 --direct_load --batch_size=16
 ```
-
-Notes, pipeline cannot load OAsst model because `gpt_neox_reward_model` not in Transformers models. Even with this, it wouldn't load (requires custom openassistant code)
