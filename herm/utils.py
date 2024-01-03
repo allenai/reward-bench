@@ -3,6 +3,35 @@ from typing import Any, Dict
 from fastchat.conversation import Conversation
 
 
+def prepare_dialogue_from_tokenizer(
+    example: Dict[str, Any],
+    tokenizer,
+) -> Dict[str, Any]:
+    if all(k in example.keys() for k in ("chosen", "rejected")):
+        messages = [
+            {"role": "user", "content": example["prompt"]},
+            {"role": "assistant", "content": example["chosen"]},
+        ]
+        example["text_chosen"] = tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+        )
+        messages = [
+            {"role": "user", "content": example["prompt"]},
+            {"role": "assistant", "content": example["rejected"]},
+        ]
+        example["text_rejected"] = tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+        )
+    else:
+        raise ValueError(
+            "Could not format example as dialogue for `rm` task!"
+            f"Require `[chosen, rejected]` keys but found {list(example.keys())}"
+        )
+    return example
+
+
 def prepare_dialogue(
     example: Dict[str, Any],
     dialogue_template: Conversation,

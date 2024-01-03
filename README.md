@@ -41,3 +41,8 @@ python scripts/run_rm.py --model=weqweasdas/hh_rlhf_rm_open_llama_3b --chat_temp
 python scripts/run_rm.py --model=llm-blender/PairRM --chat_template=raw #TODO needs custom code
 python scripts/run_rm.py --model=berkeley-nest/Starling-RM-7B-alpha --tokenizer=meta-llama/Llama-2-7b-chat-hf --chat_template=llama-2 --direct_load --batch_size=16
 ```
+
+And for DPO:
+```
+python scripts/run_dpo.py --model=stabilityai/stablelm-zephyr-3b --ref_model=stabilityai/stablelm-3b-4e1t --batch_size=32
+```

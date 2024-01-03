@@ -29,5 +29,6 @@ setup(
         "scipy",
         "tokenizers",
         "transformers",
+        "trl>=0.7.7",
     ],
 )
