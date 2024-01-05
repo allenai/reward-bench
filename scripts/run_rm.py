@@ -21,15 +21,18 @@ import sys
 import torch
 from accelerate import Accelerator
 from accelerate.logging import get_logger
-from datasets import load_dataset
+from datasets import load_dataset, concatenate_datasets
 from fastchat.conversation import get_conv_template
 from huggingface_hub import upload_file
 from tqdm import tqdm
 from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
                           pipeline)
+from herm import prepare_dialogue
 
 # data repo to upload results
 EVAL_REPO = "ai2-rlhf-collab/rm-benchmark-results"
+PREFS_REPO = "ai2-rlhf-collab/rm-testset-results"
+
 EVAL_SUBSETS = [
     "alpacaeval-easy",
     "alpacaeval-hard",
@@ -60,6 +63,7 @@ def get_args():
     parser.add_argument("--direct_load", action="store_true", help="directly load model instead of pipeline")
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
     parser.add_argument("--batch_size", type=int, default=64, help="batch size for inference")
+    parser.add_argument("--pref_sets", action="store_true", help="run on common preference sets instead of our custom eval set")
     args = parser.parse_args()
     return args
 
@@ -108,7 +112,27 @@ def main():
     # Load dataset from ai2-rlhf-collab/rm-benchmark-dev, "filtered" split
     ############################
     logger.info("*** Load dataset ***")
-    raw_dataset = load_dataset("ai2-rlhf-collab/rm-benchmark-dev", split="filtered")
+    # existing dataset test sets
+    if args.pref_sets:
+        raw_dataset = load_dataset("allenai/pref-test-sets")
+        # for each split in the dataset dict, add the column "subet" with the split name to the dataset, concat all splits
+
+        modified_datasets = []
+
+        # Iterate over each subset in the DatasetDict
+        for subset_name, dataset in raw_dataset.items():
+            # Add a new column 'subset' to the dataset with the subset name
+            dataset = dataset.add_column("subset", [subset_name] * len(dataset))
+
+            # Append the modified dataset to the list
+            modified_datasets.append(dataset)
+
+        # Concatenate all the modified datasets into one dataset
+        raw_dataset = concatenate_datasets(modified_datasets)
+
+    # our custom eval set
+    else:
+        raw_dataset = load_dataset("ai2-rlhf-collab/rm-benchmark-dev", split="filtered")
 
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
@@ -122,15 +146,11 @@ def main():
 
     # else use FastChat to get chat template
     else:
-        from herm import prepare_dialogue
-
         dataset = raw_dataset.map(
             prepare_dialogue,
             fn_kwargs={"dialogue_template": conv},
-        )
-        dataset = dataset.map(
-            prepare_dialogue,
-            fn_kwargs={"dialogue_template": conv},
+            remove_columns=["prompt", "chosen", "rejected"],
+            num_proc=4
         )
 
     ############################
@@ -248,7 +268,7 @@ def main():
         scores_url = upload_file(
             path_or_fileobj=path,
             path_in_repo=f"data/{args.model}.json",
-            repo_id=EVAL_REPO,
+            repo_id=EVAL_REPO if not args.pref_sets else PREFS_REPO, # push to correct results repo
             repo_type="dataset",
             commit_message=f"Add reward model scores for  model {args.model}",
         )

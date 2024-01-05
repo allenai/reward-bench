@@ -190,7 +190,8 @@ class DPOInference:
 
     def inference_step(self, batch) -> list:
         """
-        Uses TRL inference batched logprob computation to compute chosen + rejected logprobs then compute rewards and win rate.
+        Uses TRL inference batched logprob computation to compute chosen + rejected 
+        logprobs then compute rewards and win rate.
         """
         (
             policy_chosen_logps,

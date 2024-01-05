@@ -46,3 +46,5 @@ And for DPO:
 ```
 python scripts/run_dpo.py --model=stabilityai/stablelm-zephyr-3b --ref_model=stabilityai/stablelm-3b-4e1t --batch_size=32
 ```
+
+To run with the known test sets rather than our custom subsets, at the arg `--pref_sets`
