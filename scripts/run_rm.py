@@ -34,6 +34,7 @@ EVAL_REPO = "ai2-rlhf-collab/rm-benchmark-results"
 PREFS_REPO = "ai2-rlhf-collab/rm-testset-results"
 
 EVAL_SUBSETS = [
+    # custom subsets above
     "alpacaeval-easy",
     "alpacaeval-hard",
     "alpacaeval-length",
@@ -47,6 +48,13 @@ EVAL_SUBSETS = [
     "mt-bench-med",
     "refusals-dangerous",
     "refusals-offensive",
+    # pref subsets below
+    "anthropic",
+    "summarize",
+    "summarize_prompted",
+    "pku_better",
+    "pku_safer",
+    "shp",
 ]
 
 
@@ -79,11 +87,17 @@ def main():
         pipeline_builder = pipeline
         quantized = True
     elif "Starling" in args.model or "Starling" in args.chat_template:
-        from herm.models.starling import RMPipeline, build_starling_rm
+        from herm.models.starling import StarlingPipeline, build_starling_rm
 
         model_builder = build_starling_rm
-        pipeline_builder = RMPipeline
+        pipeline_builder = StarlingPipeline
         quantized = False
+    elif "openbmb" in args.model or "openbmb" in args.chat_template:
+        from herm.models.openbmb import LlamaRewardModel, OpenBMBPipeline
+
+        model_builder = LlamaRewardModel.from_pretrained
+        pipeline_builder = OpenBMBPipeline
+        quantized = True
     else:
         model_builder = AutoModelForSequenceClassification.from_pretrained
         pipeline_builder = pipeline

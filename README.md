@@ -33,7 +33,7 @@ For reference on Chat Templates, many models follow the base / sft model termino
 I was debugging with default gpt2, but the random head may be causing numerical stability issues.
 Next:
 ```
-python scripts/run_rm.py --model=openbmb/UltraRM-13b --chat_template=billa
+python scripts/run_rm.py --model=openbmb/UltraRM-13b --chat_template=billa --batch_size=16
 python scripts/run_rm.py --model=OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5 --chat_template=oasst_pythia --direct_load
 python scripts/run_rm.py --model=OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1 --chat_template=oasst_pythia --direct_load
 python scripts/run_rm.py --model=OpenAssistant/reward-model-deberta-v3-large-v2 --chat_template=raw

@@ -72,7 +72,7 @@ class GPTRewardModel(nn.Module):
         return scores
 
 
-class RMPipeline:
+class StarlingPipeline:
     def __init__(self, task, model, tokenizer):
         self.task = task
         self.model = model.to("cuda")
