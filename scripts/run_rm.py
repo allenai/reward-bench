@@ -19,21 +19,27 @@ import os
 import sys
 
 import torch
+import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
-from datasets import load_dataset, concatenate_datasets
+from datasets import concatenate_datasets, load_dataset
 from fastchat.conversation import get_conv_template
-from huggingface_hub import upload_file
+from huggingface_hub import HfApi
 from tqdm import tqdm
 from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
                           pipeline)
+
 from herm import prepare_dialogue
+
+# get token from HF_TOKEN env variable, but if it doesn't exist pass none
+HF_TOKEN = os.getenv("HF_TOKEN", None)
+api = HfApi(token=HF_TOKEN)
 
 # data repo to upload results
 EVAL_REPO = "ai2-rlhf-collab/rm-benchmark-results"
 PREFS_REPO = "ai2-rlhf-collab/rm-testset-results"
 
-EVAL_SUBSETS = [
+EVAL_SUBSETS = [  # noqa
     # custom subsets above
     "alpacaeval-easy",
     "alpacaeval-hard",
@@ -71,21 +77,23 @@ def get_args():
     parser.add_argument("--direct_load", action="store_true", help="directly load model instead of pipeline")
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
     parser.add_argument("--batch_size", type=int, default=64, help="batch size for inference")
-    parser.add_argument("--pref_sets", action="store_true", help="run on common preference sets instead of our custom eval set")
+    parser.add_argument(
+        "--pref_sets", action="store_true", help="run on common preference sets instead of our custom eval set"
+    )
     args = parser.parse_args()
     return args
 
 
 def main():
     args = get_args()
-
+    quantized = True  # only Starling isn't quantized for now
+    custom_dialogue = False  # only PairRM uses custom dialogue for now
     # some models need custom code to be run
     if "oasst" in args.model or "oasst" in args.chat_template:
         from herm.models import openassistant  # noqa
 
         model_builder = AutoModelForSequenceClassification.from_pretrained
         pipeline_builder = pipeline
-        quantized = True
     elif "Starling" in args.model or "Starling" in args.chat_template:
         from herm.models.starling import StarlingPipeline, build_starling_rm
 
@@ -97,11 +105,15 @@ def main():
 
         model_builder = LlamaRewardModel.from_pretrained
         pipeline_builder = OpenBMBPipeline
-        quantized = True
+    elif "PairRM" in args.model or "PairRM" in args.chat_template:
+        from herm.models.pairrm import DebertaV2PairRM, PairRMPipeline
+
+        custom_dialogue = True
+        model_builder = DebertaV2PairRM.from_pretrained
+        pipeline_builder = PairRMPipeline
     else:
         model_builder = AutoModelForSequenceClassification.from_pretrained
         pipeline_builder = pipeline
-        quantized = True
 
     ###############
     # Setup logging
@@ -115,6 +127,11 @@ def main():
         datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[logging.StreamHandler(sys.stdout)],
     )
+    log_level = logging.INFO
+    logger.setLevel(log_level)
+    transformers.utils.logging.set_verbosity(log_level)
+    transformers.utils.logging.enable_default_handler()
+    transformers.utils.logging.enable_explicit_format()
 
     logger.info(f"Running reward model on {args.model} with chat template {args.chat_template}")
 
@@ -135,6 +152,10 @@ def main():
 
         # Iterate over each subset in the DatasetDict
         for subset_name, dataset in raw_dataset.items():
+            # if subset column exists, move to subsubset (for pref sets)
+            if "subset" in dataset.column_names:
+                dataset = dataset.rename_column("subset", "subsubset")
+
             # Add a new column 'subset' to the dataset with the subset name
             dataset = dataset.add_column("subset", [subset_name] * len(dataset))
 
@@ -150,8 +171,31 @@ def main():
 
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+    # if model needs custom dialogue formatting, do that at inference
+    if custom_dialogue:
+        # TODO when benchmark is multi-turn and formatted correctly, do not need these
+        def make_conversation(prompt, answer):
+            out = [{"role": "user", "content": prompt}, {"role": "assistant", "content": answer}]
+            return out
+
+        def map_conversations(example):
+            example["text_chosen"] = make_conversation(example["prompt"], example["chosen"])
+            example["text_rejected"] = make_conversation(example["prompt"], example["rejected"])
+            return example
+
+        def map_conversations_testsets(example):
+            example["text_chosen"] = example["prompt"].append({"role": "assistant", "content": example["chosen"]})
+            example["text_rejected"] = example["prompt"].append({"role": "assistant", "content": example["rejected"]})
+
+        if args.pref_sets:
+            dataset = raw_dataset.map(
+                map_conversations_testsets, remove_columns=["prompt", "chosen", "rejected"], num_proc=4
+            )
+        else:
+            dataset = raw_dataset.map(map_conversations, remove_columns=["prompt", "chosen", "rejected"], num_proc=4)
+
     # if tokenizer.chat_template exists, use that
-    if False:  # tokenizer.chat_template:
+    elif False:  # tokenizer.chat_template:
         raise NotImplementedError("TODO implement this")
         # docs https://huggingface.co/docs/transformers/main/en/chat_templating
         # dataset = raw_dataset.map(
@@ -164,7 +208,7 @@ def main():
             prepare_dialogue,
             fn_kwargs={"dialogue_template": conv},
             remove_columns=["prompt", "chosen", "rejected"],
-            num_proc=4
+            num_proc=4,
         )
 
     ############################
@@ -200,49 +244,90 @@ def main():
         reward_pipe = pipeline(
             "text-classification",
             model=args.model,
+            tokenizer=tokenizer,
             revision="main",
             model_kwargs=model_kwargs,
         )
 
-    # def collator(data):
-    #     return dict((key, [d[key] for d in data]) for key in data[0])
-
-    dataloader = torch.utils.data.DataLoader(
-        dataset,
-        batch_size=BATCH_SIZE,
-        # collate_fn=collator,
-        shuffle=False,
-        drop_last=False,
-    )
-
-    dataloader, reward_pipe = accelerator.prepare(dataloader, reward_pipe)
-
+    ############################
+    # Tokenization settings & dataset preparation
+    ############################
+    # set pad token to eos token if not set
     if reward_pipe.tokenizer.pad_token_id is None:
         reward_pipe.model.config.pad_token_id = reward_pipe.tokenizer.eos_token_id
         reward_pipe.tokenizer.pad_token_id = reward_pipe.tokenizer.eos_token_id
 
-    results = []
-    for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
-        logger.info(f"RM inference step {step}/{len(dataloader)}")
+    # if using HF pipeline, can pass entire dataset and get results
+    # first, handle custom pipelines that we must batch normally
+    if not args.direct_load or pipeline_builder == pipeline:
+        logger.info("*** Running forward pass via built in pipeline abstraction ***")
+        # this setup can be optimized slightly with one pipeline call, I just find the logic here more failsafe on correct indexing
+        # prepare for inference
+        reward_pipe = accelerator.prepare(reward_pipe)
 
-        rewards_chosen = reward_pipe(batch["text_chosen"], **reward_pipeline_kwargs)
-        rewards_rejected = reward_pipe(batch["text_rejected"], **reward_pipeline_kwargs)
+        results_rej = reward_pipe(dataset["text_rejected"], **reward_pipeline_kwargs)
+        results_cho = reward_pipe(dataset["text_chosen"], **reward_pipeline_kwargs)
 
-        # for each item in batch, record 1 if chosen > rejected
-        # extra score from dict within batched results (e.g. logits)
-        # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
-        if isinstance(rewards_chosen[0], dict):
-            score_chosen = [result["score"] for result in rewards_chosen]
-            score_rejected = [result["score"] for result in rewards_rejected]
-        # for classes that directly output scores (custom code)
-        else:
-            score_chosen = rewards_chosen.cpu().numpy().tolist()
-            score_rejected = rewards_rejected.cpu().numpy().tolist()
+        # extract scores from results which is list of dicts, e.g. [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
+        score_chosen = [result["score"] for result in results_cho]
+        score_rejected = [result["score"] for result in results_rej]
 
-        [
-            results.append(1) if chosen > rejected else results.append(0)
-            for chosen, rejected in zip(score_chosen, score_rejected)
-        ]
+        # pairwise comparison list comprehension
+        results = [1 if chosen > rejected else 0 for chosen, rejected in zip(score_chosen, score_rejected)]
+
+    else:
+        logger.info("*** Running dataloader to collect results ***")
+        # TODO make more custom pipelines work with pre-tokenized data
+        from torch.utils.data.dataloader import default_collate
+
+        # for PairRM, hmm
+        def custom_collate_fn(batch):
+            # check if ['text_chosen'] is in first batch element
+            # Check if the first element of the batch is a dictionary
+            if isinstance(batch[0]["text_chosen"][0], dict):
+                return batch  # Return the batch as-is if it's a list of dicts
+            else:
+                return default_collate(batch)  # Use the default collate behavior otherwise
+
+        dataloader = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=BATCH_SIZE,
+            collate_fn=custom_collate_fn if not args.pref_sets else None,
+            shuffle=False,
+            drop_last=False,
+        )
+
+        dataloader, model = accelerator.prepare(dataloader, reward_pipe.model)
+        reward_pipe.model = model
+
+        results = []
+        for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
+            logger.info(f"RM inference step {step}/{len(dataloader)}")
+
+            if "PairRM" in args.model or "PairRM" in args.chat_template:
+                text_rejected = [b["text_rejected"] for b in batch]
+                text_chosen = [b["text_chosen"] for b in batch]
+                results_sub = reward_pipe(text_chosen, text_rejected, **reward_pipeline_kwargs)
+                [results.append(1) if result else results.append(0) for result in results_sub.cpu().numpy().tolist()]
+            else:
+                rewards_chosen = reward_pipe(batch["text_chosen"], **reward_pipeline_kwargs)
+                rewards_rejected = reward_pipe(batch["text_rejected"], **reward_pipeline_kwargs)
+
+                # for each item in batch, record 1 if chosen > rejected
+                # extra score from dict within batched results (e.g. logits)
+                # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
+                if isinstance(rewards_chosen[0], dict):
+                    score_chosen = [result["score"] for result in rewards_chosen]
+                    score_rejected = [result["score"] for result in rewards_rejected]
+                # for classes that directly output scores (custom code)
+                else:
+                    score_chosen = rewards_chosen.cpu().numpy().tolist()
+                    score_rejected = rewards_rejected.cpu().numpy().tolist()
+
+                [
+                    results.append(1) if chosen > rejected else results.append(0)
+                    for chosen, rejected in zip(score_chosen, score_rejected)
+                ]
 
     # add column for results for easy printing
     out_dataset = dataset.add_column("results", results)
@@ -251,7 +336,8 @@ def main():
     results["model"] = args.model
     results["chat_template"] = args.chat_template
     # print per subset and log into results file
-    for subset in EVAL_SUBSETS:
+    present_subsets = raw_dataset.unique("subset")
+    for subset in present_subsets:
         subset_dataset = out_dataset.filter(lambda example: example["subset"] == subset)
         num_correct = sum(subset_dataset["results"])
         num_total = len(subset_dataset["results"])
@@ -279,10 +365,10 @@ def main():
 
     # Upload results as json
     if not args.do_not_save:
-        scores_url = upload_file(
+        scores_url = api.upload_file(
             path_or_fileobj=path,
             path_in_repo=f"data/{args.model}.json",
-            repo_id=EVAL_REPO if not args.pref_sets else PREFS_REPO, # push to correct results repo
+            repo_id=EVAL_REPO if not args.pref_sets else PREFS_REPO,  # push to correct results repo
             repo_type="dataset",
             commit_message=f"Add reward model scores for  model {args.model}",
         )

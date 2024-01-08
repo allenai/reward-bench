@@ -49,7 +49,7 @@ def prepare_dialogue(
                     dialogue_template.messages.append([dialogue_template.roles[1], p])
             # assert that the last message before this is user
             assert dialogue_template.messages[-1][0] == dialogue_template.roles[0]
-            
+
             # end with chosen/rejected
             dialogue_template.messages.append([dialogue_template.roles[1], example["chosen"]])
             example["text_chosen"] = dialogue_template.get_prompt()

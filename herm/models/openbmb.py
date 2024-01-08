@@ -1,9 +1,11 @@
 # noqa
-from transformers import PreTrainedModel, LlamaConfig, LlamaModel
-import torch.nn as nn
+from typing import List, Optional
+
 import torch
-from typing import Optional, List
-from fastchat.conversation import register_conv_template, Conversation, SeparatorStyle
+import torch.nn as nn
+from fastchat.conversation import (Conversation, SeparatorStyle,
+                                   register_conv_template)
+from transformers import LlamaConfig, LlamaModel, PreTrainedModel
 
 # UltraLM / UltraRM Chat Template
 # Reference1: https://huggingface.co/openbmb/UltraLM-65b
@@ -18,10 +20,11 @@ register_conv_template(
     )
 )
 
+
 class OpenBMBPipeline:
     def __init__(self, task, model, tokenizer):
         self.task = task
-        self.model = model.to("cuda")
+        self.model = model
         self.tokenizer = tokenizer
 
     def __call__(self, samples, **kwargs):
@@ -38,17 +41,18 @@ class OpenBMBPipeline:
         ).to("cuda")
         with torch.no_grad():
             outputs = self.model(**inputs)
-        return outputs.item()
+        return outputs
 
 
 class LlamaRewardModel(PreTrainedModel):
     config_class = LlamaConfig
+
     def __init__(self, config):
         super().__init__(config)
         self.model = LlamaModel(config)
         self.regression_head = nn.Linear(self.config.hidden_size, 1, bias=False)
 
-    def forward( # args are the same as LlamaForCausalLM
+    def forward(  # args are the same as LlamaForCausalLM
         self,
         input_ids: torch.LongTensor = None,
         attention_mask: Optional[torch.Tensor] = None,
@@ -61,19 +65,18 @@ class LlamaRewardModel(PreTrainedModel):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
     ):
-
         transformer_outputs = self.model(
-                                input_ids,
-                                attention_mask=attention_mask,
-                                position_ids=position_ids,
-                                past_key_values=past_key_values,
-                                inputs_embeds=inputs_embeds,                               
-                            )
+            input_ids,
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            past_key_values=past_key_values,
+            inputs_embeds=inputs_embeds,
+        )
 
         hidden_states = transformer_outputs[0]
         rewards = self.regression_head(hidden_states).squeeze(-1)
-        
-        ends = attention_mask.cumsum(dim=1).argmax(dim=1).view(-1,1)
+
+        ends = attention_mask.cumsum(dim=1).argmax(dim=1).view(-1, 1)
         rewards = torch.gather(rewards, 1, ends)
-        
+
         return rewards
