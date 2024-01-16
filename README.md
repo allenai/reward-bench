@@ -44,6 +44,7 @@ python scripts/run_rm.py --model=OpenAssistant/reward-model-deberta-v3-large-v2 
 python scripts/run_rm.py --model=weqweasdas/hh_rlhf_rm_open_llama_3b --chat_template=Robin
 python scripts/run_rm.py --model=llm-blender/PairRM-hf --direct_load
 python scripts/run_rm.py --model=berkeley-nest/Starling-RM-7B-alpha --tokenizer=meta-llama/Llama-2-7b-chat-hf --chat_template=llama-2 --direct_load --batch_size=16
+python scripts/run_rm.py --model=stanfordnlp/SteamSHP-flan-t5-xl --direct_load
 ```
 
 And for DPO:

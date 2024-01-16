@@ -26,7 +26,12 @@ from datasets import concatenate_datasets, load_dataset
 from fastchat.conversation import get_conv_template
 from huggingface_hub import HfApi
 from tqdm import tqdm
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
+from transformers import (
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    T5ForConditionalGeneration,
+    pipeline,
+)
 
 from herm import prepare_dialogue
 
@@ -110,6 +115,12 @@ def main():
         custom_dialogue = True
         model_builder = DebertaV2PairRM.from_pretrained
         pipeline_builder = PairRMPipeline
+    elif "SHP" in args.model or "SHP" in args.chat_template:
+        from herm.models.shp import SHPPipeline
+
+        custom_dialogue = True
+        model_builder = T5ForConditionalGeneration.from_pretrained
+        pipeline_builder = SHPPipeline
     else:
         model_builder = AutoModelForSequenceClassification.from_pretrained
         pipeline_builder = pipeline
@@ -170,7 +181,7 @@ def main():
 
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-    # if model needs custom dialogue formatting, do that at inference
+    # if model needs custom dialogue formatting, do that at inference, so map raw datasets now
     if custom_dialogue:
         logger.info("*** Preparing dataset with custom code ***")
 
@@ -198,7 +209,7 @@ def main():
             )
         else:
             dataset = raw_dataset.map(
-                map_conversations, remove_columns=["prompt", "chosen", "rejected", "subset", "subsubset"], num_proc=4
+                map_conversations, remove_columns=["prompt", "chosen", "rejected", "subset"], num_proc=4
             )
 
     # if tokenizer.chat_template exists, use that
@@ -266,6 +277,9 @@ def main():
         reward_pipe.model.config.pad_token_id = reward_pipe.tokenizer.eos_token_id
         reward_pipe.tokenizer.pad_token_id = reward_pipe.tokenizer.eos_token_id
 
+    ############################
+    # Run inference [1/2]" built in transformers
+    ############################
     # if using HF pipeline, can pass entire dataset and get results
     # first, handle custom pipelines that we must batch normally
     if not args.direct_load or pipeline_builder == pipeline:
@@ -284,6 +298,9 @@ def main():
         # pairwise comparison list comprehension
         results = [1 if chosen > rejected else 0 for chosen, rejected in zip(score_chosen, score_rejected)]
 
+    ############################
+    # Run inference [2/2] custom pipelines
+    ############################
     else:
         logger.info("*** Running dataloader to collect results ***")
         # TODO make more custom pipelines work with pre-tokenized data
@@ -313,7 +330,12 @@ def main():
         for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
             logger.info(f"RM inference step {step}/{len(dataloader)}")
 
-            if "PairRM" in args.model or "PairRM" in args.chat_template:
+            if (
+                "PairRM" in args.model
+                or "PairRM" in args.chat_template
+                or "SHP" in args.model
+                or "SHP" in args.chat_template
+            ):
                 text_rejected = [b["text_rejected"] for b in batch]
                 text_chosen = [b["text_chosen"] for b in batch]
                 results_sub = reward_pipe(text_chosen, text_rejected, **reward_pipeline_kwargs)
@@ -338,6 +360,9 @@ def main():
                     for chosen, rejected in zip(score_chosen, score_rejected)
                 ]
 
+    ############################
+    # Print & process results
+    ############################
     # add column for results for easy printing
     out_dataset = raw_dataset.add_column("results", results)
 

@@ -5,6 +5,7 @@ from typing import List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
+from transformers import PreTrainedModel, PreTrainedTokenizer
 from transformers.models.deberta_v2.modeling_deberta_v2 import (
     DebertaV2Model,
     DebertaV2PreTrainedModel,
@@ -37,7 +38,9 @@ def tokenize_conv_pair(tokenizer, convAs: List[str], convBs: List[str], **kwargs
     for c in convAs + convBs:
         if not all([c[i]["role"] == "assistant" for i in range(1, len(c), 2)]):
             print(c)
-            import ipdb; ipdb.set_trace()
+            import ipdb
+
+            ipdb.set_trace()
 
         assert len(c) % 2 == 0, "Each conversation must have even number of turns"
         assert all([c[i]["role"] == "user" for i in range(0, len(c), 2)]), "Each even turn must be USER"
@@ -102,7 +105,7 @@ class PairRMPipeline:
     This class outputs a delta rather than a score for each.
     """
 
-    def __init__(self, task, model, tokenizer):
+    def __init__(self, task, model: PreTrainedModel, tokenizer: PreTrainedTokenizer):
         self.model = model
         self.tokenizer = tokenizer
         # turn off gradients for model and set in eval mode
