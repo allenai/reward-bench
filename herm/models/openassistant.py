@@ -8,7 +8,10 @@ import torch
 import torch.nn as nn
 from transformers import AutoConfig, AutoModelForSequenceClassification
 from transformers.models.gpt_neox.modeling_gpt_neox import (
-    GPTNeoXConfig, GPTNeoXModel, GPTNeoXPreTrainedModel)
+    GPTNeoXConfig,
+    GPTNeoXModel,
+    GPTNeoXPreTrainedModel,
+)
 from transformers.utils import ModelOutput
 
 

@@ -3,8 +3,7 @@ from typing import List, Optional
 
 import torch
 import torch.nn as nn
-from fastchat.conversation import (Conversation, SeparatorStyle,
-                                   register_conv_template)
+from fastchat.conversation import Conversation, SeparatorStyle, register_conv_template
 from transformers import LlamaConfig, LlamaModel, PreTrainedModel
 
 # UltraLM / UltraRM Chat Template

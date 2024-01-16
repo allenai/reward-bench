@@ -29,8 +29,7 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from trl.trainer.utils import DPODataCollatorWithPadding
 
-from herm import (DPOInference, prepare_dialogue,
-                  prepare_dialogue_from_tokenizer)
+from herm import DPOInference, prepare_dialogue, prepare_dialogue_from_tokenizer
 
 # data repo to upload results
 EVAL_REPO = "ai2-rlhf-collab/rm-benchmark-results"

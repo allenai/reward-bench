@@ -7,7 +7,7 @@ check_dirs := herm scripts
 
 style:
 	python -m black --line-length 119 --target-version py310 $(check_dirs) setup.py
-	python -m isort $(check_dirs) setup.py
+	python -m isort $(check_dirs) setup.py --profile black
 
 quality:
 	python -m flake8 --max-line-length 119 $(check_dirs) setup.py

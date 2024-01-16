@@ -6,7 +6,10 @@ from typing import List, Optional, Tuple, Union
 import torch
 import torch.nn as nn
 from transformers.models.deberta_v2.modeling_deberta_v2 import (
-    DebertaV2Model, DebertaV2PreTrainedModel, SequenceClassifierOutput)
+    DebertaV2Model,
+    DebertaV2PreTrainedModel,
+    SequenceClassifierOutput,
+)
 
 
 def tokenize_conv_pair(tokenizer, convAs: List[str], convBs: List[str], **kwargs):
@@ -32,6 +35,10 @@ def tokenize_conv_pair(tokenizer, convAs: List[str], convBs: List[str], **kwargs
     """
 
     for c in convAs + convBs:
+        if not all([c[i]["role"] == "assistant" for i in range(1, len(c), 2)]):
+            print(c)
+            import ipdb; ipdb.set_trace()
+
         assert len(c) % 2 == 0, "Each conversation must have even number of turns"
         assert all([c[i]["role"] == "user" for i in range(0, len(c), 2)]), "Each even turn must be USER"
         assert all([c[i]["role"] == "assistant" for i in range(1, len(c), 2)]), "Each odd turn must be ASSISTANT"

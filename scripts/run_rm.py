@@ -26,8 +26,7 @@ from datasets import concatenate_datasets, load_dataset
 from fastchat.conversation import get_conv_template
 from huggingface_hub import HfApi
 from tqdm import tqdm
-from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
-                          pipeline)
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
 
 from herm import prepare_dialogue
 
@@ -151,16 +150,16 @@ def main():
         modified_datasets = []
 
         # Iterate over each subset in the DatasetDict
-        for subset_name, dataset in raw_dataset.items():
+        for subset_name, subdataset in raw_dataset.items():
             # if subset column exists, move to subsubset (for pref sets)
-            if "subset" in dataset.column_names:
-                dataset = dataset.rename_column("subset", "subsubset")
+            if "subset" in subdataset.column_names:
+                subdataset = subdataset.rename_column("subset", "subsubset")
 
             # Add a new column 'subset' to the dataset with the subset name
-            dataset = dataset.add_column("subset", [subset_name] * len(dataset))
+            subdataset = subdataset.add_column("subset", [subset_name] * len(subdataset))
 
             # Append the modified dataset to the list
-            modified_datasets.append(dataset)
+            modified_datasets.append(subdataset)
 
         # Concatenate all the modified datasets into one dataset
         raw_dataset = concatenate_datasets(modified_datasets)
@@ -173,6 +172,8 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
     # if model needs custom dialogue formatting, do that at inference
     if custom_dialogue:
+        logger.info("*** Preparing dataset with custom code ***")
+
         # TODO when benchmark is multi-turn and formatted correctly, do not need these
         def make_conversation(prompt, answer):
             out = [{"role": "user", "content": prompt}, {"role": "assistant", "content": answer}]
@@ -184,18 +185,25 @@ def main():
             return example
 
         def map_conversations_testsets(example):
-            example["text_chosen"] = example["prompt"].append({"role": "assistant", "content": example["chosen"]})
-            example["text_rejected"] = example["prompt"].append({"role": "assistant", "content": example["rejected"]})
+            prompt = example["prompt"]
+            example["text_chosen"] = prompt + [{"role": "assistant", "content": example["chosen"]}]
+            example["text_rejected"] = prompt + [{"role": "assistant", "content": example["rejected"]}]
+            return example
 
         if args.pref_sets:
             dataset = raw_dataset.map(
-                map_conversations_testsets, remove_columns=["prompt", "chosen", "rejected"], num_proc=4
+                map_conversations_testsets,
+                remove_columns=["prompt", "chosen", "rejected", "subset", "subsubset"],
+                num_proc=4,
             )
         else:
-            dataset = raw_dataset.map(map_conversations, remove_columns=["prompt", "chosen", "rejected"], num_proc=4)
+            dataset = raw_dataset.map(
+                map_conversations, remove_columns=["prompt", "chosen", "rejected", "subset", "subsubset"], num_proc=4
+            )
 
     # if tokenizer.chat_template exists, use that
     elif False:  # tokenizer.chat_template:
+        logger.info("*** Preparing dataset with tokenizer.chat_template ***")
         raise NotImplementedError("TODO implement this")
         # docs https://huggingface.co/docs/transformers/main/en/chat_templating
         # dataset = raw_dataset.map(
@@ -204,6 +212,7 @@ def main():
 
     # else use FastChat to get chat template
     else:
+        logger.info("*** Preparing dataset with FastChat ***")
         dataset = raw_dataset.map(
             prepare_dialogue,
             fn_kwargs={"dialogue_template": conv},
@@ -280,7 +289,7 @@ def main():
         # TODO make more custom pipelines work with pre-tokenized data
         from torch.utils.data.dataloader import default_collate
 
-        # for PairRM, hmm
+        # for PairRM, hmm, will move all of this later
         def custom_collate_fn(batch):
             # check if ['text_chosen'] is in first batch element
             # Check if the first element of the batch is a dictionary
@@ -292,7 +301,7 @@ def main():
         dataloader = torch.utils.data.DataLoader(
             dataset,
             batch_size=BATCH_SIZE,
-            collate_fn=custom_collate_fn if not args.pref_sets else None,
+            collate_fn=custom_collate_fn,  # if not args.pref_sets else None,
             shuffle=False,
             drop_last=False,
         )
@@ -330,7 +339,7 @@ def main():
                 ]
 
     # add column for results for easy printing
-    out_dataset = dataset.add_column("results", results)
+    out_dataset = raw_dataset.add_column("results", results)
 
     results = {}
     results["model"] = args.model
