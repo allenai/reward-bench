@@ -26,6 +26,7 @@ setup(
         "fschat[model_worker,webui]",
         "huggingface_hub",
         "isort>=5.12.0",
+        "pytest",
         "scipy",
         "tokenizers",
         "transformers",

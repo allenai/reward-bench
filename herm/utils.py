@@ -36,7 +36,7 @@ def load_eval_dataset(
     conv: Conversation = None,
     tokenizer: PreTrainedTokenizer = None,
     logger: logging.Logger = None,
-):
+) -> Dataset:
     """
     Loads either the core eval set for HERM or the existing preference data test sets.
 
@@ -58,7 +58,7 @@ def load_eval_dataset(
         assert conv is not None or hasattr(tokenizer, "chat_template")
 
         if hasattr(tokenizer, "chat_template"):
-            logger.info("*** Preparing dataset with HF Transformers ***")
+            if logger is not None: logger.info("*** Preparing dataset with HF Transformers ***")
             # docs https://huggingface.co/docs/transformers/main/en/chat_templating
             dataset = raw_dataset.map(
                 prepare_dialogue_from_tokenizer,
@@ -67,7 +67,7 @@ def load_eval_dataset(
 
         # else use FastChat to get chat template
         else:
-            logger.info("*** Preparing dataset with FastChat ***")
+            if logger is not None: logger.info("*** Preparing dataset with FastChat ***")
             dataset = raw_dataset.map(
                 prepare_dialogue,
                 fn_kwargs={"dialogue_template": conv},
@@ -75,7 +75,7 @@ def load_eval_dataset(
                 num_proc=4,
             )
     else:
-        logger.info("*** Preparing dataset with custom formatting ***")
+        if logger is not None: logger.info("*** Preparing dataset with custom formatting ***")
 
         def map_conversations(example, core_set=True):
             if core_set:
