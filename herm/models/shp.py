@@ -11,10 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# Instructions from readme here https://huggingface.co/stanfordnlp/SteamSHP-flan-t5-xl
 
 import random
+import torch 
 
-# Instructions from readme here https://huggingface.co/stanfordnlp/SteamSHP-flan-t5-xl
 from typing import Dict, List
 
 from transformers import PreTrainedModel, PreTrainedTokenizer
@@ -70,11 +71,14 @@ class SHPPipeline:
         assert len(candidates_A) == len(candidates_B), "Batches of candidates A and B must have the same length"
 
         input_texts = []
-        for batch_A, batch_B in zip(candidates_A, candidates_B):
-            for cand_A, cand_B in zip(batch_A, batch_B):
-                post = self._extract_post(cand_A, cand_B)
-                formatted_input = self._format_input(post, cand_A["content"], cand_B["content"])
-                input_texts.append(formatted_input)
+        orders = []
+        for conv_A, conv_B in zip(candidates_A, candidates_B):
+            conversation = self._extract_conversation(conv_A, conv_B)
+            response_A = conv_A[-1]['content']  # Last message of A
+            response_B = conv_B[-1]['content']  # Last message of B
+            formatted_input, order = self._format_input(conversation, response_A, response_B)
+            input_texts.append(formatted_input)
+            orders.append(order)
 
         _ = kwargs.get("batch_size", 1)
         truncation = kwargs.get("truncation", True)
@@ -90,16 +94,27 @@ class SHPPipeline:
         ).to("cuda")
         outputs = self.model.generate(**tokenized_inputs, max_new_tokens=1)
         decoded_outputs = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        
+        bools = [output == "A" for output in decoded_outputs]
+        # for each order in orders, if order is BA, flip the bool in bools 
+        for i, order in enumerate(orders):
+            if order == "BA":
+                bools[i] = not bools[i]
+        return torch.Tensor(bools)
 
-        return [output == "A" for output in decoded_outputs]
-
-    def _extract_post(self, cand_A: Dict, cand_B: Dict) -> str:
-        # Assuming the 'post' part is the same in both candidates
-        return cand_A["content"] if cand_A["role"] == "user" else cand_B["content"]
-
+    def _extract_conversation(self, conv_A: List[Dict], conv_B: List[Dict]) -> str:
+            # Combine the messages in the conversation, excluding the last responses
+            conversation = [msg['content'] for msg in conv_A[:-1]]  # Exclude last response
+            return ' '.join(conversation)
+            
     def _format_input(self, post: str, response_A: str, response_B: str) -> str:
-        # Randomize the order of responses
-        responses = [("A", response_A), ("B", response_B)]
+        # Randomize the order of responses, but keep labels (A, B) fixed
+        responses = [(response_A, "A"), (response_B, "B")]
         random.shuffle(responses)
-        formatted_responses = "\n\n RESPONSE ".join([f"{label}: {text}" for label, text in responses])
-        return f"POST: {post}\n\n{formatted_responses}\n\n Which response is better? RESPONSE"
+
+        # Keep track of the order
+        order = "".join([label for _, label in responses])
+
+        # Use fixed labels with potentially swapped response contents
+        formatted_responses = f"\n\n RESPONSE A: {responses[0][0]}\n\n RESPONSE B: {responses[1][0]}"
+        return f"POST: {post}{formatted_responses}\n\n Which response is better? RESPONSE", order

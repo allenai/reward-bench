@@ -91,7 +91,7 @@ def get_args():
 def main():
     args = get_args()
     quantized = True  # only Starling isn't quantized for now
-    custom_dialogue = False  # only PairRM uses custom dialogue for now
+    custom_dialogue = False  
     # some models need custom code to be run
     if "oasst" in args.model or "oasst" in args.chat_template:
         from herm.models import openassistant  # noqa
