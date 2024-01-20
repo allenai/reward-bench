@@ -33,7 +33,7 @@ from transformers import (
     pipeline,
 )
 
-from herm import prepare_dialogue
+from herm import load_eval_dataset, prepare_dialogue, prepare_dialogue_from_tokenizer
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -91,7 +91,7 @@ def get_args():
 def main():
     args = get_args()
     quantized = True  # only Starling isn't quantized for now
-    custom_dialogue = False  
+    custom_dialogue = False
     # some models need custom code to be run
     if "oasst" in args.model or "oasst" in args.chat_template:
         from herm.models import openassistant  # noqa
@@ -213,13 +213,13 @@ def main():
             )
 
     # if tokenizer.chat_template exists, use that
-    elif False:  # tokenizer.chat_template:
-        logger.info("*** Preparing dataset with tokenizer.chat_template ***")
-        raise NotImplementedError("TODO implement this")
+    elif hasattr(tokenizer, "chat_template"):
         # docs https://huggingface.co/docs/transformers/main/en/chat_templating
-        # dataset = raw_dataset.map(
-        #     lambda x: x)
-        # e.g. PairRM
+        # double up to bypass some weid bug
+        dataset = raw_dataset.map(
+            prepare_dialogue_from_tokenizer,
+            fn_kwargs={"tokenizer": tokenizer},
+        )
 
     # else use FastChat to get chat template
     else:

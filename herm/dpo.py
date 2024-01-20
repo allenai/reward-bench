@@ -188,7 +188,8 @@ class DPOInference:
             attention_mask=answer_attention_mask,
         )
 
-    def inference_step(self, batch) -> list:
+    # modified / new code for multiple DPO reward functions
+    def inference_step(self, batch, ref_free: bool = False) -> list:
         """
         Uses TRL inference batched logprob computation to compute chosen + rejected
         logprobs then compute rewards and win rate.
@@ -200,15 +201,22 @@ class DPOInference:
             _,  # policy_rejected_logits,
         ) = self.concatenated_forward(self.model, batch)
 
-        (
-            ref_chosen_logps,
-            ref_rejected_logps,
-            _,  # ref_chosen_logits,
-            _,  # ref_rejected_logits,
-        ) = self.concatenated_forward(self.ref_model, batch)
+        # optionally compute reward without normalizing via reference model
+        if not ref_free:
+            (
+                ref_chosen_logps,
+                ref_rejected_logps,
+                _,  # ref_chosen_logits,
+                _,  # ref_rejected_logits,
+            ) = self.concatenated_forward(self.ref_model, batch)
 
-        chosen_logratios = policy_chosen_logps - ref_chosen_logps
-        rejected_logratios = policy_rejected_logps - ref_rejected_logps
+            chosen_logratios = policy_chosen_logps - ref_chosen_logps
+            rejected_logratios = policy_rejected_logps - ref_rejected_logps
+
+        else:
+            chosen_logratios = policy_chosen_logps
+            rejected_logratios = policy_rejected_logps
+
         return chosen_logratios, rejected_logratios
 
     def concatenated_forward(
