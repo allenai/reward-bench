@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 from datasets import Dataset, load_dataset
 from fastchat.conversation import Conversation
@@ -48,7 +48,7 @@ def load_eval_dataset(
         dataset: loaded dataset with required properties.
     """
     if core_set:
-        raw_dataset = load_dataset(CORE_EVAL_SET)
+        raw_dataset = load_dataset(CORE_EVAL_SET, split="filtered")
     else:
         raw_dataset = load_dataset(EXTRA_PREF_SETS)
 
@@ -58,7 +58,8 @@ def load_eval_dataset(
         assert conv is not None or hasattr(tokenizer, "chat_template")
 
         if hasattr(tokenizer, "chat_template"):
-            if logger is not None: logger.info("*** Preparing dataset with HF Transformers ***")
+            if logger is not None:
+                logger.info("*** Preparing dataset with HF Transformers ***")
             # docs https://huggingface.co/docs/transformers/main/en/chat_templating
             dataset = raw_dataset.map(
                 prepare_dialogue_from_tokenizer,
@@ -67,7 +68,8 @@ def load_eval_dataset(
 
         # else use FastChat to get chat template
         else:
-            if logger is not None: logger.info("*** Preparing dataset with FastChat ***")
+            if logger is not None:
+                logger.info("*** Preparing dataset with FastChat ***")
             dataset = raw_dataset.map(
                 prepare_dialogue,
                 fn_kwargs={"dialogue_template": conv},
@@ -75,7 +77,8 @@ def load_eval_dataset(
                 num_proc=4,
             )
     else:
-        if logger is not None: logger.info("*** Preparing dataset with custom formatting ***")
+        if logger is not None:
+            logger.info("*** Preparing dataset with custom formatting ***")
 
         def map_conversations(example, core_set=True):
             if core_set:
@@ -108,22 +111,50 @@ def prepare_dialogue_from_tokenizer(
     tokenizer,
 ) -> Dict[str, Any]:
     if all(k in example.keys() for k in ("chosen", "rejected")):
-        messages = [
-            {"role": "user", "content": example["prompt"]},
-            {"role": "assistant", "content": example["chosen"]},
-        ]
-        example["text_chosen"] = tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-        )
-        messages = [
-            {"role": "user", "content": example["prompt"]},
-            {"role": "assistant", "content": example["rejected"]},
-        ]
-        example["text_rejected"] = tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-        )
+        # multi turn
+        if isinstance(example["prompt"], list) and len(example["prompt"]) > 0:
+            # iterate through prompt messages, alternate user and assistant, end with example["chosen"]/rejected
+            messages = []
+            for i, (line) in enumerate(example["prompt"]):
+                p = line["content"]
+                _ = line["role"]
+                if (i + 1) % 2 == 1:
+                    messages.append({"role": "user", "content": p})
+                else:
+                    messages.append({"role": "assistant", "content": p})
+            # assert that the last message before this is user
+            assert messages[-1]["role"] == "user"
+
+            # end with chosen/rejected
+            messages.append({"role": "assistant", "content": example["chosen"]})
+            example["text_chosen"] = tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+            )
+
+            messages[-1] = {"role": "assistant", "content": example["rejected"]}
+            example["text_rejected"] = tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+            )
+        # single turn
+        else:
+            messages = [
+                {"role": "user", "content": example["prompt"]},
+                {"role": "assistant", "content": example["chosen"]},
+            ]
+            example["text_chosen"] = tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+            )
+            messages = [
+                {"role": "user", "content": example["prompt"]},
+                {"role": "assistant", "content": example["rejected"]},
+            ]
+            example["text_rejected"] = tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+            )
     else:
         raise ValueError(
             "Could not format example as dialogue for `rm` task!"
@@ -142,7 +173,9 @@ def prepare_dialogue(
         if isinstance(example["prompt"], list) and len(example["prompt"]) > 0:
             # iterate through prompt messages, alternate user and assistant, end with example["chosen"]/rejected
             dialogue_template.messages = []
-            for i, p in enumerate(example["prompt"]):
+            for i, (line) in enumerate(example["prompt"]):
+                p = line["content"]
+                _ = line["role"]
                 if (i + 1) % 2 == 1:
                     dialogue_template.messages.append([dialogue_template.roles[0], p])
                 else:
