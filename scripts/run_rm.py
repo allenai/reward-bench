@@ -43,6 +43,7 @@ api = HfApi(token=HF_TOKEN)
 EVAL_REPO = "ai2-rlhf-collab/rm-benchmark-results"
 PREFS_REPO = "ai2-rlhf-collab/rm-testset-results"
 
+
 def get_args():
     """
     Parse arguments strings model and chat_template
