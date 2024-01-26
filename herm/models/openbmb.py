@@ -27,7 +27,7 @@ class OpenBMBPipeline:
         self.tokenizer = tokenizer
 
     def __call__(self, samples, **kwargs):
-        batch_size = kwargs.get("batch_size", 1)
+        _ = kwargs.get("batch_size", 1)
         truncation = kwargs.get("truncation", True)
         padding = kwargs.get("padding", True)
         max_length = kwargs.get("max_length", 2048)

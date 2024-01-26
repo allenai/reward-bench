@@ -18,36 +18,26 @@ import logging
 import os
 import sys
 
+import numpy as np
 import torch
 import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
-from datasets import load_dataset
 from fastchat.conversation import get_conv_template
-from huggingface_hub import upload_file
+from huggingface_hub import HfApi
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from trl.trainer.utils import DPODataCollatorWithPadding
 
-from herm import DPOInference, prepare_dialogue, prepare_dialogue_from_tokenizer
+from herm import DPOInference, load_eval_dataset
+
+# get token from HF_TOKEN env variable, but if it doesn't exist pass none
+HF_TOKEN = os.getenv("HF_TOKEN", None)
+api = HfApi(token=HF_TOKEN)
 
 # data repo to upload results
 EVAL_REPO = "ai2-rlhf-collab/rm-benchmark-results"
-EVAL_SUBSETS = [
-    "alpacaeval-easy",
-    "alpacaeval-hard",
-    "alpacaeval-length",
-    "llmbar-adver-GPTInst",
-    "llmbar-adver-GPTOut",
-    "llmbar-adver-manual",
-    "llmbar-adver-neighbor",
-    "llmbar-natural",
-    "mt-bench-easy",
-    "mt-bench-hard",
-    "mt-bench-med",
-    "refusals-dangerous",
-    "refusals-offensive",
-]
+PREFS_REPO = "ai2-rlhf-collab/rm-testset-results"
 
 
 def get_args():
@@ -64,6 +54,9 @@ def get_args():
     parser.add_argument("--direct_load", action="store_true", help="directly load model instead of pipeline")
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
     parser.add_argument("--batch_size", type=int, default=64, help="batch size for inference")
+    parser.add_argument(
+        "--pref_sets", action="store_true", help="run on common preference sets instead of our custom eval set"
+    )
     args = parser.parse_args()
     return args
 
@@ -96,36 +89,18 @@ def main():
     conv = get_conv_template(chat_template)
 
     ############################
-    # Load dataset from ai2-rlhf-collab/rm-benchmark-dev, "filtered" split
+    # Load dataset
     ############################
     logger.info("*** Load dataset ***")
-    raw_dataset = load_dataset("ai2-rlhf-collab/rm-benchmark-dev", split="filtered")
-
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-    # if tokenizer.chat_template exists, use that
-    if hasattr(tokenizer, "chat_template"):
-        ex = prepare_dialogue_from_tokenizer(raw_dataset[0], tokenizer)
-        # docs https://huggingface.co/docs/transformers/main/en/chat_templating
-        # double up to bypass some weid bug
-        dataset = raw_dataset.map(
-            prepare_dialogue_from_tokenizer,
-            fn_kwargs={"tokenizer": tokenizer},
-        )
-        dataset = dataset.map(
-            prepare_dialogue_from_tokenizer,
-            fn_kwargs={"tokenizer": tokenizer},
-        )
-    # else use FastChat to get chat template
-    else:
-        dataset = raw_dataset.map(
-            prepare_dialogue,
-            fn_kwargs={"dialogue_template": conv},
-        )
-        dataset = dataset.map(
-            prepare_dialogue,
-            fn_kwargs={"dialogue_template": conv},
-        )
+    dataset, subsets = load_eval_dataset(
+        core_set=not args.pref_sets,
+        conv=conv,
+        tokenizer=tokenizer,
+        logger=logger,
+        keep_columns=["text_chosen", "text_rejected"],
+    )
 
     ############################
     # Load reward model pipeline
@@ -192,6 +167,9 @@ def main():
             for chosen, rejected in zip(score_chosen, score_rejected)
         ]
 
+    ############################
+    # Print & process results
+    ############################
     # add column for results for easy printing
     out_dataset = dataset.add_column("results", results)
 
@@ -199,7 +177,8 @@ def main():
     results["model"] = args.model
     results["chat_template"] = args.chat_template
     # print per subset and log into results file
-    for subset in EVAL_SUBSETS:
+    present_subsets = np.unique(subsets)
+    for subset in present_subsets:
         subset_dataset = out_dataset.filter(lambda example: example["subset"] == subset)
         num_correct = sum(subset_dataset["results"])
         num_total = len(subset_dataset["results"])
@@ -227,10 +206,10 @@ def main():
 
     # Upload results as json
     if not args.do_not_save:
-        scores_url = upload_file(
+        scores_url = api.upload_file(
             path_or_fileobj=path,
             path_in_repo=f"data/{args.model}.json",
-            repo_id=EVAL_REPO,
+            repo_id=EVAL_REPO if not args.pref_sets else PREFS_REPO,  # push to correct results repo
             repo_type="dataset",
             commit_message=f"Add reward model scores for  model {args.model}",
         )

@@ -2,3 +2,4 @@
 exclude = 
     herm/models/openassistant.py
     herm/models/starling.py
+extend-ignore = E203

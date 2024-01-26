@@ -126,7 +126,7 @@ def main():
     conv = get_conv_template(chat_template)
 
     ############################
-    # Load dataset from ai2-rlhf-collab/rm-benchmark-dev, "filtered" split
+    # Load dataset
     ############################
     logger.info("*** Load dataset ***")
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
@@ -134,6 +134,7 @@ def main():
     dataset, subsets = load_eval_dataset(
         core_set=not args.pref_sets,
         conv=conv,
+        custom_dialogue_formatting=custom_dialogue,
         tokenizer=tokenizer,
         logger=logger,
         keep_columns=["text_chosen", "text_rejected"],
@@ -192,7 +193,7 @@ def main():
     # first, handle custom pipelines that we must batch normally
     if not args.direct_load or pipeline_builder == pipeline:
         logger.info("*** Running forward pass via built in pipeline abstraction ***")
-        # this setup can be optimized slightly with one pipeline call, I just find the logic here more failsafe on correct indexing
+        # this setup can be optimized slightly with one pipeline call
         # prepare for inference
         reward_pipe = accelerator.prepare(reward_pipe)
 

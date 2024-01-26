@@ -59,7 +59,10 @@ class SHPPipeline:
         Pass it into the model, decide on winner.
 
         From the model readme:
-        >> input_text = "POST: Instacart gave me 50 pounds of limes instead of 5 pounds... what the hell do I do with 50 pounds of limes? I've already donated a bunch and gave a bunch away. I'm planning on making a bunch of lime-themed cocktails, but... jeez. Ceviche? \n\n RESPONSE A: Lime juice, and zest, then freeze in small quantities.\n\n RESPONSE B: Lime marmalade lol\n\n Which response is better? RESPONSE"
+        >> input_text = "POST: Instacart gave me 50 pounds of limes instead of 5 pounds...
+            what the hell do I do with 50 pounds of limes? I've already donated a bunch and gave a bunch away.
+            I'm planning on making a bunch of lime-themed cocktails, but... jeez. Ceviche? \n\n RESPONSE A: Lime juice,
+            then freeze in small quantities.\n\n RESPONSE B: Lime marmalade lol\n\n Which response is better? RESPONSE"
         >> x = tokenizer([input_text], return_tensors='pt').input_ids.to(device)
         >> y = model.generate(x, max_new_tokens=1)
         >> tokenizer.batch_decode(y, skip_special_tokens=True)
