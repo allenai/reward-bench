@@ -23,7 +23,6 @@ import torch
 import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
-from datasets import concatenate_datasets, load_dataset
 from fastchat.conversation import get_conv_template
 from huggingface_hub import HfApi
 from tqdm import tqdm
@@ -34,7 +33,7 @@ from transformers import (
     pipeline,
 )
 
-from herm import load_eval_dataset, prepare_dialogue, prepare_dialogue_from_tokenizer
+from herm import load_eval_dataset
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -43,31 +42,6 @@ api = HfApi(token=HF_TOKEN)
 # data repo to upload results
 EVAL_REPO = "ai2-rlhf-collab/rm-benchmark-results"
 PREFS_REPO = "ai2-rlhf-collab/rm-testset-results"
-
-EVAL_SUBSETS = [  # noqa
-    # custom subsets above
-    "alpacaeval-easy",
-    "alpacaeval-hard",
-    "alpacaeval-length",
-    "llmbar-adver-GPTInst",
-    "llmbar-adver-GPTOut",
-    "llmbar-adver-manual",
-    "llmbar-adver-neighbor",
-    "llmbar-natural",
-    "mt-bench-easy",
-    "mt-bench-hard",
-    "mt-bench-med",
-    "refusals-dangerous",
-    "refusals-offensive",
-    # pref subsets below
-    "anthropic",
-    "summarize",
-    "summarize_prompted",
-    "pku_better",
-    "pku_safer",
-    "shp",
-]
-
 
 def get_args():
     """
