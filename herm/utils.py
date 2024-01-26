@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import logging
-from typing import Any, Dict, Union
+from typing import Any, Dict, List
 
-from datasets import Dataset, load_dataset
+from datasets import Dataset, concatenate_datasets, load_dataset
 from fastchat.conversation import Conversation
 from transformers import PreTrainedTokenizer
 
@@ -36,6 +36,7 @@ def load_eval_dataset(
     conv: Conversation = None,
     tokenizer: PreTrainedTokenizer = None,
     logger: logging.Logger = None,
+    keep_columns: List[str] = None,
 ) -> Dataset:
     """
     Loads either the core eval set for HERM or the existing preference data test sets.
@@ -51,6 +52,22 @@ def load_eval_dataset(
         raw_dataset = load_dataset(CORE_EVAL_SET, split="filtered")
     else:
         raw_dataset = load_dataset(EXTRA_PREF_SETS)
+        modified_datasets = []
+
+        # Iterate over each subset in the DatasetDict
+        for subset_name, subdataset in raw_dataset.items():
+            # if subset column exists, move to subsubset (for pref sets)
+            if "subset" in subdataset.column_names:
+                subdataset = subdataset.rename_column("subset", "subsubset")
+
+            # Add a new column 'subset' to the dataset with the subset name
+            subdataset = subdataset.add_column("subset", [subset_name] * len(subdataset))
+
+            # Append the modified dataset to the list
+            modified_datasets.append(subdataset)
+
+        # Concatenate all the modified datasets into one dataset
+        raw_dataset = concatenate_datasets(modified_datasets)
 
     # Apply chat template
     if not custom_dialogue_formatting:
@@ -73,8 +90,7 @@ def load_eval_dataset(
             dataset = raw_dataset.map(
                 prepare_dialogue,
                 fn_kwargs={"dialogue_template": conv},
-                remove_columns=["prompt", "chosen", "rejected"],
-                num_proc=4,
+                num_proc=8,
             )
     else:
         if logger is not None:
@@ -99,11 +115,17 @@ def load_eval_dataset(
         dataset = raw_dataset.map(
             map_conversations,
             fn_kwargs={"core_set": core_set},
-            remove_columns=["prompt", "chosen", "rejected"],
-            num_proc=4,
+            num_proc=8,
         )
 
-    return dataset
+    # take column subset from dataset
+    subsets = dataset["subset"]
+
+    # remove columns if set and not custom_dialogue_formatting
+    all_cols = dataset.column_names
+    dataset = dataset.remove_columns([c for c in all_cols if c not in keep_columns])
+
+    return dataset, subsets
 
 
 def prepare_dialogue_from_tokenizer(

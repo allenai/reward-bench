@@ -18,6 +18,7 @@ import logging
 import os
 import sys
 
+import numpy as np
 import torch
 import transformers
 from accelerate import Accelerator
@@ -153,83 +154,15 @@ def main():
     # Load dataset from ai2-rlhf-collab/rm-benchmark-dev, "filtered" split
     ############################
     logger.info("*** Load dataset ***")
-    # existing dataset test sets
-    if args.pref_sets:
-        raw_dataset = load_dataset("allenai/pref-test-sets")
-        # for each split in the dataset dict, add the column "subet" with the split name to the dataset, concat all splits
-
-        modified_datasets = []
-
-        # Iterate over each subset in the DatasetDict
-        for subset_name, subdataset in raw_dataset.items():
-            # if subset column exists, move to subsubset (for pref sets)
-            if "subset" in subdataset.column_names:
-                subdataset = subdataset.rename_column("subset", "subsubset")
-
-            # Add a new column 'subset' to the dataset with the subset name
-            subdataset = subdataset.add_column("subset", [subset_name] * len(subdataset))
-
-            # Append the modified dataset to the list
-            modified_datasets.append(subdataset)
-
-        # Concatenate all the modified datasets into one dataset
-        raw_dataset = concatenate_datasets(modified_datasets)
-
-    # our custom eval set
-    else:
-        raw_dataset = load_dataset("ai2-rlhf-collab/rm-benchmark-dev", split="filtered")
-
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-    # if model needs custom dialogue formatting, do that at inference, so map raw datasets now
-    if custom_dialogue:
-        logger.info("*** Preparing dataset with custom code ***")
-
-        # TODO when benchmark is multi-turn and formatted correctly, do not need these
-        def make_conversation(prompt, answer):
-            out = [{"role": "user", "content": prompt}, {"role": "assistant", "content": answer}]
-            return out
-
-        def map_conversations(example):
-            example["text_chosen"] = make_conversation(example["prompt"], example["chosen"])
-            example["text_rejected"] = make_conversation(example["prompt"], example["rejected"])
-            return example
-
-        def map_conversations_testsets(example):
-            prompt = example["prompt"]
-            example["text_chosen"] = prompt + [{"role": "assistant", "content": example["chosen"]}]
-            example["text_rejected"] = prompt + [{"role": "assistant", "content": example["rejected"]}]
-            return example
-
-        if args.pref_sets:
-            dataset = raw_dataset.map(
-                map_conversations_testsets,
-                remove_columns=["prompt", "chosen", "rejected", "subset", "subsubset"],
-                num_proc=4,
-            )
-        else:
-            dataset = raw_dataset.map(
-                map_conversations, remove_columns=["prompt", "chosen", "rejected", "subset"], num_proc=4
-            )
-
-    # if tokenizer.chat_template exists, use that
-    elif hasattr(tokenizer, "chat_template"):
-        # docs https://huggingface.co/docs/transformers/main/en/chat_templating
-        # double up to bypass some weid bug
-        dataset = raw_dataset.map(
-            prepare_dialogue_from_tokenizer,
-            fn_kwargs={"tokenizer": tokenizer},
-        )
-
-    # else use FastChat to get chat template
-    else:
-        logger.info("*** Preparing dataset with FastChat ***")
-        dataset = raw_dataset.map(
-            prepare_dialogue,
-            fn_kwargs={"dialogue_template": conv},
-            remove_columns=["prompt", "chosen", "rejected"],
-            num_proc=4,
-        )
+    dataset, subsets = load_eval_dataset(
+        core_set=not args.pref_sets,
+        conv=conv,
+        tokenizer=tokenizer,
+        logger=logger,
+        keep_columns=["text_chosen", "text_rejected"],
+    )
 
     ############################
     # Load reward model pipeline
@@ -364,13 +297,13 @@ def main():
     # Print & process results
     ############################
     # add column for results for easy printing
-    out_dataset = raw_dataset.add_column("results", results)
+    out_dataset = dataset.add_column("results", results)
 
     results = {}
     results["model"] = args.model
     results["chat_template"] = args.chat_template
     # print per subset and log into results file
-    present_subsets = raw_dataset.unique("subset")
+    present_subsets = np.unique(subsets)
     for subset in present_subsets:
         subset_dataset = out_dataset.filter(lambda example: example["subset"] == subset)
         num_correct = sum(subset_dataset["results"])

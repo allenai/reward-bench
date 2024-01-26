@@ -98,12 +98,15 @@ class PrepareDialoguesTest(unittest.TestCase):
 
 class DatasetTest(unittest.TestCase):
     def test_core_dataset_lens(self):
+        # must be updated whenever dataset is updated
         dataset = load_dataset("ai2-rlhf-collab/rm-benchmark-dev", split="filtered")
         assert len(dataset) == 3213
 
     def test_test_sets_lens(self):
+        # must be updated whenever dataset is updated
         dataset = load_dataset("allenai/pref-test-sets")
-        assert len(dataset["anthropic"]) == 8458
+        assert len(dataset["anthropic_harmless"]) == 2266
+        assert len(dataset["anthropic_helpful"]) == 6192
         assert len(dataset["anthropic_hhh"]) == 221
         assert len(dataset["summarize"]) == 9000
         assert len(dataset["pku_better"]) == 9000
@@ -111,23 +114,3 @@ class DatasetTest(unittest.TestCase):
         assert len(dataset["shp"]) == 1741
         assert len(dataset["mtbench_human"]) == 3355
         assert len(dataset["mtbench_gpt4"]) == 2400
-
-
-class LoadEvalDatasetTest(unittest.TestCase):
-    def test_load_core_set(self):
-        # TODO
-        conv = get_conv_template("tulu")
-        dataset = load_eval_dataset(core_set=True, conv=conv)
-        pass
-
-    def test_load_core_custom_models(self):
-        # TODO
-        pass
-
-    def test_load_extra_sets(self):
-        # TODO
-        pass
-
-    def test_load_extra_custom_models(self):
-        # TODO
-        pass
