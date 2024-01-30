@@ -9,6 +9,8 @@ MODEL_PATH=microsoft/deberta-v3-large
 TRAIN_DATASET=lvwerra/stack-exchange-paired
 EVAL_DATASET=lvwerra/stack-exchange-paired
 # MODEL_PATH=/net/nfs.cirrascale/allennlp/yizhongw/hf_llama2_models/${MODEL_SIZE}
+OUTPUT_DIR=test-models/
+# OUTPUT_DIR=net/nfs.cirrascale/allennlp/jacobm/modular_adaptation/checkpoints/${DATASET}_${MODEL_SIZE}/
 echo "Training llama model ${MODEL_SIZE} using $NUM_GPUS GPUs, $BATCH_SIZE_PER_GPU batch size per GPU, $GRADIENT_ACC_STEPS gradient accumulation steps"
 
 accelerate launch \
@@ -17,12 +19,12 @@ accelerate launch \
     --num_processes $NUM_GPUS \
     --use_deepspeed \
     --deepspeed_config_file ds_configs/stage3_no_offloading_accelerate.conf \
-    open_instruct/finetune.py \
+    scripts/train_rm.py \
     --model_name_or_path $MODEL_PATH \
     --use_flash_attn \
     --tokenizer_name $MODEL_PATH \
     --use_slow_tokenizer \
-    --train_file training_data/${DATASET}.jsonl \
+    --train_file $TRAIN_DATASET \
     --max_seq_length 2048 \
     --preprocessing_num_workers 16 \
     --per_device_train_batch_size $BATCH_SIZE_PER_GPU \
@@ -32,7 +34,7 @@ accelerate launch \
     --warmup_ratio 0.03 \
     --weight_decay 0. \
     --num_train_epochs 2 \
-    --output_dir /net/nfs.cirrascale/allennlp/jacobm/modular_adaptation/checkpoints/${DATASET}_${MODEL_SIZE}/ \
+    --output_dir / \
     --with_tracking \
     --report_to tensorboard \
     --logging_steps 1
