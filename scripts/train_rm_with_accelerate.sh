@@ -23,7 +23,6 @@ accelerate launch \
     --deepspeed_config_file ds_configs/stage3_no_offloading_accelerate.conf \
     scripts/train_rm.py \
     --model_name_or_path $MODEL_PATH \
-    --use_flash_attn \
     --tokenizer_name $MODEL_PATH \
     --use_slow_tokenizer \
     --dataset_name $TRAIN_DATASET \
@@ -40,3 +39,5 @@ accelerate launch \
     --with_tracking \
     --report_to tensorboard \
     --logging_steps 1
+
+    # --use_flash_attn \
