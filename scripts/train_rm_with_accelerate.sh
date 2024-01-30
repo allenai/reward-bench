@@ -26,7 +26,7 @@ accelerate launch \
     --tokenizer_name $MODEL_PATH \
     --use_slow_tokenizer \
     --dataset_name $TRAIN_DATASET \
-    --max_seq_length 2048 \
+    --max_seq_length 512 \
     --preprocessing_num_workers 16 \
     --per_device_train_batch_size $BATCH_SIZE_PER_GPU \
     --gradient_accumulation_steps $GRADIENT_ACC_STEPS \
