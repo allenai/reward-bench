@@ -378,12 +378,16 @@ def main():
 
     if args.dataset_name is not None:
         # Load the human stack-exchange-paired dataset for tuning the reward model.
-        train_dataset = load_dataset("lvwerra/stack-exchange-paired", data_dir="data/reward", split="train")
+        train_dataset = load_dataset(args.dataset_name, data_dir="data/reward", split="train")
+        # train_dataset = load_dataset("lvwerra/stack-exchange-paired", data_dir="data/reward", split="train")
         # if script_args.train_subset > 0:
             # train_dataset = train_dataset.select(range(script_args.train_subset))
-        eval_dataset = load_dataset("lvwerra/stack-exchange-paired", data_dir="data/evaluation", split="train")
+        eval_dataset = load_dataset(args.dataset_name, data_dir="data/evaluation", split="train")
+        # eval_dataset = load_dataset("lvwerra/stack-exchange-paired", data_dir="data/evaluation", split="train")
         # if script_args.eval_subset > 0:
             # eval_dataset = eval_dataset.select(range(script_args.eval_subset))
+    else:
+        raise ValueError("No dataset provided")
 
     # if args.dataset_name is not None:
     #     # Downloading and loading a dataset from the hub.
