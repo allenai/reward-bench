@@ -33,7 +33,7 @@ from transformers import (
     Trainer,
 )
 from transformers.trainer_utils import get_last_checkpoint
-from finetune import encode_with_prompt_completion_format, encode_with_messages_format
+# from finetune import encode_with_prompt_completion_format, encode_with_messages_format
 
 from trl import ModelConfig, RewardConfig, RewardTrainer, get_kbit_device_map, get_peft_config, get_quantization_config
 
