@@ -387,8 +387,8 @@ def main():
         # if script_args.eval_subset > 0:
             # eval_dataset = eval_dataset.select(range(script_args.eval_subset))
         raw_data = load_dataset('json', data_files='training_data/alpaca_human_preference.json')
-        train_dataset = raw_data[:len(raw_data) - 1000]
-        eval_dataset = raw_data[len(raw_data) - 1000:]
+        train_dataset = raw_data['train'][:len(raw_data) - 1000]
+        eval_dataset = raw_data['train'][len(raw_data) - 1000:]
     else:
         raise ValueError("No dataset provided")
 
