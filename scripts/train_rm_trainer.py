@@ -361,6 +361,8 @@ def main():
     #     )
     # else:
     #     raise ValueError("You need to have either 'prompt'&'completion' or 'messages' in your column names.")
+        
+    original_columns = train_dataset.column_names
     
     def preprocess_alpaca_farm_function(examples):
         new_examples = {
@@ -422,12 +424,10 @@ def main():
             example_rejected = f"Human: {instruction} {input} Assistant: {dispreferred}"
             tokenized_chosen = tokenizer(example_chosen, max_length=data_args.max_seq_length, truncation=True)
             tokenized_rejected = tokenizer(example_rejected, max_length=data_args.max_seq_length, truncation=True)
-
             new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
             new_examples["attention_mask_chosen"].append(tokenized_chosen["attention_mask"])
             new_examples["input_ids_rejected"].append(tokenized_rejected["input_ids"])
             new_examples["attention_mask_rejected"].append(tokenized_rejected["attention_mask"])
-
         return new_examples
 
 
@@ -438,7 +438,7 @@ def main():
         preprocess_alpaca_farm_function_reward_trainer,
         batched=True,
         num_proc=data_args.preprocessing_num_workers,
-        # remove_columns=original_columns,
+        remove_columns=original_columns,
     )
     train_dataset = train_dataset.filter(
         lambda x: len(x["input_ids_chosen"]) <= data_args.max_seq_length
@@ -451,7 +451,7 @@ def main():
         preprocess_alpaca_farm_function_reward_trainer,
         batched=True,
         num_proc=data_args.preprocessing_num_workers,
-        # remove_columns=original_columns,
+        remove_columns=original_columns,
     )
 
     # # To speed up this part, we use multiprocessing.
