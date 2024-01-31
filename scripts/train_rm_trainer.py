@@ -19,7 +19,7 @@ from datasets import load_dataset, Dataset
 import transformers
 from transformers import (
     AutoConfig,
-    AutoModelForCausalLM,
+    AutoModelForSequenceClassification,
     AutoTokenizer,
     LlamaTokenizer,
     LlamaTokenizerFast,
@@ -303,7 +303,7 @@ def main():
             if model_args.torch_dtype in ["auto", None]
             else getattr(torch, model_args.torch_dtype)
         )
-        model = AutoModelForCausalLM.from_pretrained(
+        model = AutoModelForSequenceClassification.from_pretrained(
             model_args.model_name_or_path,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
             config=config,
@@ -317,7 +317,7 @@ def main():
         )
     else:
         logger.warning("No pretrained model_name_or_path is given. Training new model from scratch.")
-        model = AutoModelForCausalLM.from_config(config, trust_remote_code=model_args.trust_remote_code)
+        model = AutoModelForSequenceClassification.from_config(config, trust_remote_code=model_args.trust_remote_code)
         n_params = sum({p.data_ptr(): p.numel() for p in model.parameters()}.values())
         logger.info(f"Training new model from scratch - Total size={n_params/2**20:.2f}M params")
 
