@@ -636,7 +636,7 @@ def main():
         # preprocess_function,
         preprocess_alpaca_farm_function,
         # preprocess_alpaca_farm_function_reward_trainer,
-        batched=True,
+        batched=False,
         num_proc=args.preprocessing_num_workers,
         remove_columns=original_columns,
     )
@@ -648,7 +648,7 @@ def main():
         # preprocess_function,
         preprocess_alpaca_farm_function,
         # preprocess_alpaca_farm_function_reward_trainer,
-        batched=True,
+        batched=False,
         num_proc=args.preprocessing_num_workers,
         remove_columns=original_columns,
     )
