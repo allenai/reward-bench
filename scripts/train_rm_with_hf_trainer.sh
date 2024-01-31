@@ -38,7 +38,8 @@ deepspeed --include localhost:0,1 scripts/train_rm_trainer.py \
     --save_strategy epoch \
     --save_total_limit 1 \
     --num_train_epochs 2 \
-    --output_dir $OUTPUT_DIR # \
+    --output_dir $OUTPUT_DIR \
+    --overwrite_output_dir
     # --output_dir output/tulu_v1_${MODEL_SIZE}/ # \
     # --bf16 \
     # --tf32 True \
