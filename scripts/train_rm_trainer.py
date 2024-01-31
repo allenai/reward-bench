@@ -69,7 +69,7 @@ class ModelArguments:
         default=None, metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"}
     )
     use_flash_attn: bool = field(
-        default=True,
+        default=False,
         metadata={"help": "Whether to use flash attention in the model training"},
     )
     cache_dir: Optional[str] = field(
