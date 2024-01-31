@@ -19,7 +19,7 @@ from datasets import Dataset, concatenate_datasets, load_dataset
 from fastchat.conversation import Conversation
 from transformers import PreTrainedTokenizer
 
-CORE_EVAL_SET = "ai2-rlhf-collab/rm-benchmark-dev"
+CORE_EVAL_SET = "ai2-adapt-dev/rm-benchmark-dev"
 EXTRA_PREF_SETS = "allenai/pref-test-sets"
 
 

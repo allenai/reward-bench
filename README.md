@@ -2,8 +2,8 @@
 
 This will hold scripts for generating scores and uploading results.
 Two primary scripts need to be created:
-1. `run_c_rm.py`:
-2. `run_dpo_rm.py`:
+1. `run_rm.py`: Run evaluations for reward models.
+2. `run_dpo.py`: Run evaluations for direct preference optimization (DPO) models.
 
 ## Links
 Dataset, space, etc coming soon.
