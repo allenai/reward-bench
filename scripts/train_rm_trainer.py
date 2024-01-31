@@ -185,6 +185,8 @@ class DataTrainingArguments:
 
 
 def main():
+    os.environ["WANDB_DISABLED"] = "true"
+
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         model_args, data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
