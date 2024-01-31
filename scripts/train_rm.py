@@ -546,6 +546,8 @@ def main():
             "attention_mask_k": [],
         }
         for question, response_j, response_k in zip(examples["question"], examples["response_j"], examples["response_k"]):
+            example_one = ""
+            example_two = ""
             tokenized_j = tokenizer("Question: " + question + "\n\nAnswer: " + response_j, max_length=args.max_seq_length, truncation=True)
             tokenized_k = tokenizer("Question: " + question + "\n\nAnswer: " + response_k, max_length=args.max_seq_length, truncation=True)
 
