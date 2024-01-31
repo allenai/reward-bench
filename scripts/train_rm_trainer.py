@@ -128,6 +128,14 @@ class ModelArguments:
             )
         },
     )
+    use_slow_tokenizer: bool = field(
+        default=False,
+        metadata={
+            "help": (
+                "use slow tokenizer or not."
+            )
+        },
+    )
 
 
 @dataclass
@@ -278,6 +286,7 @@ def main():
         "revision": model_args.model_revision,
         "token": model_args.token,
         "trust_remote_code": model_args.trust_remote_code,
+        "use_fast": not model_args.use_slow_tokenizer,
     }
     if model_args.tokenizer_name:
         tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, **tokenizer_kwargs)
