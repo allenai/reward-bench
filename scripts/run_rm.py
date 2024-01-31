@@ -40,8 +40,8 @@ HF_TOKEN = os.getenv("HF_TOKEN", None)
 api = HfApi(token=HF_TOKEN)
 
 # data repo to upload results
-EVAL_REPO = "ai2-rlhf-collab/rm-benchmark-results"
-PREFS_REPO = "ai2-rlhf-collab/rm-testset-results"
+EVAL_REPO = "ai2-adapt-dev/rm-benchmark-results"
+PREFS_REPO = "ai2-adapt-dev/rm-testset-results"
 
 
 def get_args():
@@ -274,6 +274,8 @@ def main():
     ############################
     # add column for results for easy printing
     out_dataset = dataset.add_column("results", results)
+    # add subsets back (removed so it's not handled by cuda)
+    out_dataset = out_dataset.add_column("subset", subsets)
 
     results = {}
     results["model"] = args.model
