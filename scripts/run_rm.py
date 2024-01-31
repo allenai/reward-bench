@@ -37,6 +37,7 @@ from herm import load_eval_dataset
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
+print(f'token: {HF_TOKEN}')
 api = HfApi(token=HF_TOKEN)
 
 # data repo to upload results
