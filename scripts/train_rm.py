@@ -378,14 +378,17 @@ def main():
 
     if args.dataset_name is not None:
         # Load the human stack-exchange-paired dataset for tuning the reward model.
-        train_dataset = load_dataset(args.dataset_name, data_dir="data/reward", split="train")
+        # train_dataset = load_dataset(args.dataset_name, data_dir="data/reward", split="train")
         # train_dataset = load_dataset("lvwerra/stack-exchange-paired", data_dir="data/reward", split="train")
         # if script_args.train_subset > 0:
             # train_dataset = train_dataset.select(range(script_args.train_subset))
-        eval_dataset = load_dataset(args.dataset_name, data_dir="data/evaluation", split="train")
+        # eval_dataset = load_dataset(args.dataset_name, data_dir="data/evaluation", split="train")
         # eval_dataset = load_dataset("lvwerra/stack-exchange-paired", data_dir="data/evaluation", split="train")
         # if script_args.eval_subset > 0:
             # eval_dataset = eval_dataset.select(range(script_args.eval_subset))
+        raw_data = load_dataset('json', data_files='training_data/alpaca_human_preference.json')
+        train_dataset = raw_data[:len(raw_data) - 1000]
+        eval_dataset = raw_data[len(raw_data) - 1000:]
     else:
         raise ValueError("No dataset provided")
 
@@ -546,7 +549,8 @@ def main():
             "attention_mask_k": [],
         }
         for question, response_j, response_k in zip(examples["question"], examples["response_j"], examples["response_k"]):
-            example_one = ""
+            example_one = f"Human: {response_j}"
+            + f" Assistant: {''}"
             example_two = ""
             tokenized_j = tokenizer("Question: " + question + "\n\nAnswer: " + response_j, max_length=args.max_seq_length, truncation=True)
             tokenized_k = tokenizer("Question: " + question + "\n\nAnswer: " + response_k, max_length=args.max_seq_length, truncation=True)
@@ -557,11 +561,81 @@ def main():
             new_examples["attention_mask_k"].append(tokenized_k["attention_mask"])
 
         return new_examples
+    
+    def preprocess_alpaca_farm_function(examples):
+        new_examples = {
+            "input_ids_j": [],
+            "attention_mask_j": [],
+            "input_ids_k": [],
+            "attention_mask_k": [],
+        }
+        for instruction, input, output_1, output_2, preference in zip(
+                examples["instruction"],
+                examples["input"],
+                examples["output_1"],
+                examples["output_2"],
+                examples["preference"]
+            ):
+            if preference == 1:
+                preferred = output_1
+                dispreferred = output_2
+            elif preference == 2:
+                preferred = output_2
+                dispreferred = output_1
+            else:
+                raise ValueError(f'Unexpected value for preference: {preference}')
+            example_chosen = f"Human: {instruction} {input} Assistant: {preferred}"
+            example_rejected = f"Human: {instruction} {input} Assistant: {dispreferred}"
+            tokenized_chosen = tokenizer(example_chosen, max_length=args.max_seq_length, truncation=True)
+            tokenized_rejected = tokenizer(example_rejected, max_length=args.max_seq_length, truncation=True)
+
+            new_examples["input_ids_j"].append(tokenized_chosen["input_ids"])
+            new_examples["attention_mask_j"].append(tokenized_chosen["attention_mask"])
+            new_examples["input_ids_k"].append(tokenized_rejected["input_ids"])
+            new_examples["attention_mask_k"].append(tokenized_rejected["attention_mask"])
+
+        return new_examples
+    
+    def preprocess_alpaca_farm_function_reward_trainer(examples):
+        new_examples = {
+            "input_ids_chosen": [],
+            "attention_mask_chosen": [],
+            "input_ids_rejected": [],
+            "attention_mask_rejected": [],
+        }
+        for instruction, input, output_1, output_2, preference in zip(
+                examples["instruction"],
+                examples["input"],
+                examples["output_1"],
+                examples["output_2"],
+                examples["preference"]
+            ):
+            if preference == 1:
+                preferred = output_1
+                dispreferred = output_2
+            elif preference == 2:
+                preferred = output_2
+                dispreferred = output_1
+            else:
+                raise ValueError(f'Unexpected value for preference: {preference}')
+            example_chosen = f"Human: {instruction} {input} Assistant: {preferred}"
+            example_rejected = f"Human: {instruction} {input} Assistant: {dispreferred}"
+            tokenized_chosen = tokenizer(example_chosen, max_length=args.max_seq_length, truncation=True)
+            tokenized_rejected = tokenizer(example_rejected, max_length=args.max_seq_length, truncation=True)
+
+            new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
+            new_examples["attention_mask_chosen"].append(tokenized_chosen["attention_mask"])
+            new_examples["input_ids_rejected"].append(tokenized_rejected["input_ids"])
+            new_examples["attention_mask_rejected"].append(tokenized_rejected["attention_mask"])
+
+        return new_examples
 
 
     # preprocess the dataset and filter out QAs that are longer than script_args.max_length
     train_dataset = train_dataset.map(
-        preprocess_function,
+        # preprocess_function,
+        preprocess_alpaca_farm_function,
+        # preprocess_alpaca_farm_function_reward_trainer,
         batched=True,
         num_proc=args.preprocessing_num_workers,
         remove_columns=original_columns,
@@ -571,7 +645,9 @@ def main():
     )
 
     eval_dataset = eval_dataset.map(
-        preprocess_function,
+        # preprocess_function,
+        preprocess_alpaca_farm_function,
+        # preprocess_alpaca_farm_function_reward_trainer,
         batched=True,
         num_proc=args.preprocessing_num_workers,
         remove_columns=original_columns,
