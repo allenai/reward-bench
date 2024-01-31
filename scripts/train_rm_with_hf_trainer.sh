@@ -24,7 +24,7 @@ deepspeed --include localhost:0,1 scripts/train_rm_trainer.py \
     --use_slow_tokenizer \
     --dataset_name $TRAIN_DATASET \
     --max_seq_length 2048 \
-    --preprocessing_num_workers 64 \
+    --preprocessing_num_workers 16 \
     --do_train \
     --do_eval \
     --per_device_train_batch_size $BATCH_SIZE_PER_GPU \
