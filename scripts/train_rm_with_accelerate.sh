@@ -35,9 +35,9 @@ accelerate launch \
     --warmup_ratio 0.03 \
     --weight_decay 0. \
     --num_train_epochs 2 \
-    --output_dir / \
-    --with_tracking \
-    --report_to tensorboard \
-    --logging_steps 1
+    --output_dir ~/ # \
+    # --with_tracking \
+    # --report_to tensorboard \
+    # --logging_steps 1
 
     # --use_flash_attn \
