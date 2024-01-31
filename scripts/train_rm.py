@@ -12,7 +12,7 @@ from functools import partial
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.utils import set_seed
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
@@ -387,8 +387,8 @@ def main():
         # if script_args.eval_subset > 0:
             # eval_dataset = eval_dataset.select(range(script_args.eval_subset))
         raw_data = load_dataset('json', data_files='training_data/alpaca_human_preference.json')
-        train_dataset = raw_data['train'][:len(raw_data) - 1000]
-        eval_dataset = raw_data['train'][len(raw_data) - 1000:]
+        train_dataset = Dataset.from_dict(raw_data['train'][:len(raw_data) - 1000])
+        eval_dataset = Dataset.from_dict(raw_data['train'][len(raw_data) - 1000:])
     else:
         raise ValueError("No dataset provided")
 
@@ -536,7 +536,7 @@ def main():
 
     # train_dataset = lm_datasets["train"]
         
-    # original_columns = train_dataset.column_names
+    original_columns = train_dataset.column_names
 
 
     # Turn the dataset into pairs of post + summaries, where text_j is the preferred question + answer and text_k is the other.
@@ -638,7 +638,7 @@ def main():
         # preprocess_alpaca_farm_function_reward_trainer,
         batched=True,
         num_proc=args.preprocessing_num_workers,
-        # remove_columns=original_columns,
+        remove_columns=original_columns,
     )
     train_dataset = train_dataset.filter(
         lambda x: len(x["input_ids_j"]) <= args.max_seq_length and len(x["input_ids_k"]) <= args.max_seq_length
@@ -650,7 +650,7 @@ def main():
         # preprocess_alpaca_farm_function_reward_trainer,
         batched=True,
         num_proc=args.preprocessing_num_workers,
-        # remove_columns=original_columns,
+        remove_columns=original_columns,
     )
 
     # TODO: don't filter eval examples?
