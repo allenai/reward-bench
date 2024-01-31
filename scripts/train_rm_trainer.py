@@ -439,7 +439,8 @@ def main():
         # remove_columns=original_columns,
     )
     train_dataset = train_dataset.filter(
-        lambda x: len(x["input_ids_j"]) <= data_args.max_seq_length and len(x["input_ids_k"]) <= data_args.max_seq_length
+        lambda x: len(x["input_ids_chosen"]) <= data_args.max_seq_length
+        and len(x["input_ids_rejected"]) <= data_args.max_seq_length
     )
 
     eval_dataset = eval_dataset.map(
