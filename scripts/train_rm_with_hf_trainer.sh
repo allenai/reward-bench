@@ -1,10 +1,10 @@
-export CUDA_VISIBLE_DEVICES=0 #,1,2,3
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 
 MODEL_SIZE=7B
-NUM_GPUS=1
+NUM_GPUS=4
 BATCH_SIZE_PER_GPU=1
-# TOTAL_BATCH_SIZE=128
-TOTAL_BATCH_SIZE=1
+TOTAL_BATCH_SIZE=128
+# TOTAL_BATCH_SIZE=1
 GRADIENT_ACC_STEPS=$(($TOTAL_BATCH_SIZE/$NUM_GPUS/$BATCH_SIZE_PER_GPU))
 MODEL_PATH=microsoft/deberta-v3-large
 # TRAIN_DATASET=lvwerra/stack-exchange-paired
@@ -18,7 +18,7 @@ OUTPUT_DIR=test-models/
 # OUTPUT_DIR=net/nfs.cirrascale/allennlp/jacobm/modular_adaptation/checkpoints/${DATASET}_${MODEL_SIZE}/
 echo "Training llama model ${MODEL_SIZE} using $NUM_GPUS GPUs, $BATCH_SIZE_PER_GPU batch size per GPU, $GRADIENT_ACC_STEPS gradient accumulation steps"
 
-deepspeed --include localhost:0 scripts/train_rm_trainer.py \
+deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --deepspeed ds_configs/stage3_no_offloading.conf \
     --model_name_or_path $MODEL_PATH \
     --tokenizer_name $MODEL_PATH \
