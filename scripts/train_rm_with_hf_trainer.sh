@@ -14,7 +14,7 @@ MODEL_PATH=openai-community/gpt2-large
 TRAIN_DATASET=alpaca_farm_human_preferences
 EVAL_DATASET=alpaca_farm_human_preferences
 # MODEL_PATH=/net/nfs.cirrascale/allennlp/yizhongw/hf_llama2_models/${MODEL_SIZE}
-OUTPUT_DIR=test-models/
+OUTPUT_DIR=test-models/gpt2
 # OUTPUT_DIR=net/nfs.cirrascale/allennlp/jacobm/modular_adaptation/checkpoints/${DATASET}_${MODEL_SIZE}/
 echo "Training llama model ${MODEL_SIZE} using $NUM_GPUS GPUs, $BATCH_SIZE_PER_GPU batch size per GPU, $GRADIENT_ACC_STEPS gradient accumulation steps"
 

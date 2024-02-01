@@ -324,9 +324,9 @@ def main():
         logger.info(f"Training new model from scratch - Total size={n_params/2**20:.2f}M params")
 
     if 'gpt2' in model_args.model_name_or_path:
+        print('Adding padding token for GPT2 models')
         tokenizer.add_special_tokens({'pad_token': tokenizer.eos_token})
-        if 'gpt2' in model_args.model_name_or_path:
-            config.pad_token_id = config.eos_token_id
+        config.pad_token_id = config.eos_token_id
 
     # no default pad token for llama!
     # here we add all special tokens again, because the default ones are not in the special_tokens_map
