@@ -464,7 +464,8 @@ def main():
         # preprocess_alpaca_farm_function,
         preprocess_alpaca_farm_function_reward_trainer,
         batched=True,
-        num_proc=data_args.preprocessing_num_workers,
+        # TODO: reenable for non-streaming datasets
+        # num_proc=data_args.preprocessing_num_workers,
         remove_columns=original_columns,
     )
     train_dataset = train_dataset.filter(
@@ -477,7 +478,8 @@ def main():
         # preprocess_alpaca_farm_function,
         preprocess_alpaca_farm_function_reward_trainer,
         batched=True,
-        num_proc=data_args.preprocessing_num_workers,
+        # TODO: reenable for non-streaming datasets
+        # num_proc=data_args.preprocessing_num_workers,
         remove_columns=original_columns,
     )
 
