@@ -251,9 +251,15 @@ def main():
         #     token=model_args.token,
         #     streaming=data_args.streaming,
         # )
-        raw_data = load_dataset('json', data_files='training_data/alpaca_human_preference.json')
-        train_dataset = Dataset.from_dict(raw_data['train'][:len(raw_data) - 1001])
-        eval_dataset = Dataset.from_dict(raw_data['train'][len(raw_data) - 1001:])
+
+        # # STACK EXCHANGE
+        train_dataset = load_dataset("lvwerra/stack-exchange-paired", data_dir="data/reward", split="train")
+        eval_dataset = load_dataset("lvwerra/stack-exchange-paired", data_dir="data/evaluation", split="train")
+
+        # # ALPACA FARM
+        # raw_data = load_dataset('json', data_files='training_data/alpaca_human_preference.json')
+        # train_dataset = Dataset.from_dict(raw_data['train'][:len(raw_data) - 1001])
+        # eval_dataset = Dataset.from_dict(raw_data['train'][len(raw_data) - 1001:])
     else:
         raise ValueError('wrong dataset')
         # data_files = {}
@@ -440,7 +446,6 @@ def main():
             # example_chosen = _concat_messages(instruction, input, preferred) # f"Human: {instruction} {input} Assistant: {preferred}"
             # example_rejected = _concat_messages(instruction, input, dispreferred) # f"Human: {instruction} {input} Assistant: {dispreferred}"
         # # STACK EXCHANGE:
-        print(f'keys: {examples.keys()}')
         for question, response_j, response_k in zip(examples["question"], examples["response_j"], examples["response_k"]):
             example_chosen = _concat_messages(question, '', response_j) # f"Human: {instruction} {input} Assistant: {preferred}"
             example_rejected = _concat_messages(question, '', response_k) # f"Human: {instruction} {input} Assistant: {dispreferred}"
