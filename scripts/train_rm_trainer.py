@@ -328,6 +328,8 @@ def main():
         tokenizer.add_special_tokens({'pad_token': tokenizer.eos_token})
         config.pad_token_id = config.eos_token_id
 
+    print(f'model config: {config}')
+
     # no default pad token for llama!
     # here we add all special tokens again, because the default ones are not in the special_tokens_map
     if isinstance(tokenizer, LlamaTokenizer) or isinstance(tokenizer, LlamaTokenizerFast):
