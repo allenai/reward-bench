@@ -222,6 +222,7 @@ def main():
     ############################
     # if using HF pipeline, can pass entire dataset and get results
     # first, handle custom pipelines that we must batch normally
+    print('starting scores!!!!!!!!')
     if not args.direct_load or pipeline_builder == pipeline:
         logger.info("*** Running forward pass via built in pipeline abstraction ***")
         # this setup can be optimized slightly with one pipeline call
@@ -233,7 +234,9 @@ def main():
 
         # extract scores from results which is list of dicts, e.g. [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
         score_chosen = [result["score"] for result in results_cho]
+        print(score_chosen)
         score_rejected = [result["score"] for result in results_rej]
+        print(score_rejected)
 
         # pairwise comparison list comprehension
         results = [1 if chosen > rejected else 0 for chosen, rejected in zip(score_chosen, score_rejected)]
@@ -320,7 +323,7 @@ def main():
         print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
         results[subset] = num_correct / num_total
 
-    print(subset_dataset)
+    print(subset_dataset['results'])
 
     ############################
     # Upload results to hub
