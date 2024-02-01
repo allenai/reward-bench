@@ -159,6 +159,7 @@ def main():
         tokenizer_path,
         use_fast=not args.use_slow_tokenizer,
     )
+    print(f'first tokenizer: {tokenizer}')
     dataset, subsets = load_eval_dataset(
         core_set=not args.pref_sets,
         conv=conv,
@@ -194,6 +195,7 @@ def main():
     if args.direct_load or not pipeline_builder == pipeline:
         model = model_builder(args.model, **model_kwargs, trust_remote_code=trust_remote_code)
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+        print(f'tokenizer: {tokenizer}')
         reward_pipe = pipeline_builder(
             "text-classification",
             model=model,
