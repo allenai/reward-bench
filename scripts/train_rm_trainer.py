@@ -459,8 +459,18 @@ def main():
         for question, response_j, response_k in zip(examples["question"], examples["response_j"], examples["response_k"]):
             example_chosen = _concat_messages(question, '', response_j) # f"Human: {instruction} {input} Assistant: {preferred}"
             example_rejected = _concat_messages(question, '', response_k) # f"Human: {instruction} {input} Assistant: {dispreferred}"
-            tokenized_chosen = tokenizer(example_chosen, max_length=data_args.max_seq_length, truncation=True)
-            tokenized_rejected = tokenizer(example_rejected, max_length=data_args.max_seq_length, truncation=True)
+            tokenized_chosen = tokenizer(
+                example_chosen,
+                max_length=data_args.max_seq_length,
+                truncation=True,
+                padding='max_length',
+            )
+            tokenized_rejected = tokenizer(
+                example_rejected,
+                max_length=data_args.max_seq_length,
+                truncation=True,
+                padding='max_length',
+            )
             new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
             new_examples["attention_mask_chosen"].append(tokenized_chosen["attention_mask"])
             new_examples["input_ids_rejected"].append(tokenized_rejected["input_ids"])
