@@ -26,7 +26,6 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --max_seq_length 1024 \
     --preprocessing_num_workers 16 \
     --do_train \
-    --do_eval \
     --per_device_train_batch_size $BATCH_SIZE_PER_GPU \
     --gradient_accumulation_steps $GRADIENT_ACC_STEPS \
     --learning_rate 2e-5 \
@@ -40,6 +39,8 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --num_train_epochs 1 \
     --output_dir $OUTPUT_DIR \
     --overwrite_output_dir
+    # --do_eval \
+
     # --use_slow_tokenizer \
     # --output_dir output/tulu_v1_${MODEL_SIZE}/ # \
     # --bf16 \
