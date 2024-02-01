@@ -253,8 +253,8 @@ def main():
         # )
 
         # # STACK EXCHANGE
-        train_dataset = load_dataset("lvwerra/stack-exchange-paired", data_dir="data/reward", split="train")
-        eval_dataset = load_dataset("lvwerra/stack-exchange-paired", data_dir="data/evaluation", split="train")
+        train_dataset = load_dataset("lvwerra/stack-exchange-paired", data_dir="data/reward", split="train", streaming=True)
+        eval_dataset = load_dataset("lvwerra/stack-exchange-paired", data_dir="data/evaluation", split="train", streaming=True)
 
         # # ALPACA FARM
         # raw_data = load_dataset('json', data_files='training_data/alpaca_human_preference.json')
