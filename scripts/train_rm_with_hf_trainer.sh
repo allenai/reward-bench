@@ -22,7 +22,6 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --deepspeed ds_configs/stage3_no_offloading.conf \
     --model_name_or_path $MODEL_PATH \
     --tokenizer_name $MODEL_PATH \
-    --use_slow_tokenizer \
     --dataset_name $TRAIN_DATASET \
     --max_seq_length 512 \
     --preprocessing_num_workers 16 \
@@ -41,6 +40,7 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --num_train_epochs 2 \
     --output_dir $OUTPUT_DIR \
     --overwrite_output_dir
+    # --use_slow_tokenizer \
     # --output_dir output/tulu_v1_${MODEL_SIZE}/ # \
     # --bf16 \
     # --tf32 True \
