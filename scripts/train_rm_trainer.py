@@ -406,6 +406,15 @@ def main():
         return new_examples
     
     def preprocess_alpaca_farm_function_reward_trainer(examples):
+        '''
+        Here we assume each example has a 'messages' field Each message is a dict with 'role' and 'content' fields.
+        We concatenate all messages with the roles as delimiters and tokenize them together.
+        '''        
+        def _concat_messages(instruction, input, response):
+            message_text = ("<|user|>\n" + instruction.strip() + ' ' + input.strip()).strip() + "\n"
+            message_text += "<|assistant|>\n" + response.strip() + tokenizer.eos_token + "\n"
+            return message_text
+
         new_examples = {
             "input_ids_chosen": [],
             "attention_mask_chosen": [],
@@ -427,8 +436,8 @@ def main():
                 dispreferred = output_1
             else:
                 raise ValueError(f'Unexpected value for preference: {preference}')
-            example_chosen = f"Human: {instruction} {input} Assistant: {preferred}"
-            example_rejected = f"Human: {instruction} {input} Assistant: {dispreferred}"
+            example_chosen = _concat_messages(instruction, input, preferred) # f"Human: {instruction} {input} Assistant: {preferred}"
+            example_rejected = _concat_messages(instruction, input, dispreferred) # f"Human: {instruction} {input} Assistant: {dispreferred}"
             tokenized_chosen = tokenizer(example_chosen, max_length=data_args.max_seq_length, truncation=True)
             tokenized_rejected = tokenizer(example_rejected, max_length=data_args.max_seq_length, truncation=True)
             new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
