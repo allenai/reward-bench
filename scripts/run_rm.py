@@ -133,7 +133,7 @@ def main():
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_path,
-        use_fast=False if args.use_slow_tokenizer is not None else True,
+        use_fast=not args.use_slow_tokenizer,
     )
     dataset, subsets = load_eval_dataset(
         core_set=not args.pref_sets,
