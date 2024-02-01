@@ -3,8 +3,8 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3
 MODEL_SIZE=7B
 NUM_GPUS=4
 BATCH_SIZE_PER_GPU=1
-# TOTAL_BATCH_SIZE=128
-TOTAL_BATCH_SIZE=512
+TOTAL_BATCH_SIZE=128
+# TOTAL_BATCH_SIZE=512
 GRADIENT_ACC_STEPS=$(($TOTAL_BATCH_SIZE/$NUM_GPUS/$BATCH_SIZE_PER_GPU))
 MODEL_PATH=openai-community/gpt2
 # TRAIN_DATASET=lvwerra/stack-exchange-paired
@@ -14,7 +14,7 @@ EVAL_DATASET=mychen76/stack-exchange-paired-500k
 # TRAIN_DATASET=alpaca_farm_human_preferences
 # EVAL_DATASET=alpaca_farm_human_preferences
 # MODEL_PATH=/net/nfs.cirrascale/allennlp/yizhongw/hf_llama2_models/${MODEL_SIZE}
-OUTPUT_DIR=test-models/gpt2
+OUTPUT_DIR=test-models/gpt2-large
 # OUTPUT_DIR=net/nfs.cirrascale/allennlp/jacobm/modular_adaptation/checkpoints/${DATASET}_${MODEL_SIZE}/
 echo "Training llama model ${MODEL_SIZE} using $NUM_GPUS GPUs, $BATCH_SIZE_PER_GPU batch size per GPU, $GRADIENT_ACC_STEPS gradient accumulation steps"
 
@@ -34,9 +34,9 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --weight_decay 0. \
     --evaluation_strategy no \
     --logging_steps 1 \
-    --save_strategy steps \
+    --save_strategy epoch \
     --save_total_limit 1 \
-    --max_steps 250 \
+    --num_train_epochs 1 \
     --output_dir $OUTPUT_DIR \
     --overwrite_output_dir
     # --do_eval \
