@@ -195,6 +195,8 @@ def main():
     if args.direct_load or not pipeline_builder == pipeline:
         model = model_builder(args.model, **model_kwargs, trust_remote_code=trust_remote_code)
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+        if 'gpt2' in args.model:
+            model.config.pad_token_id = model.config.eos_token_id
         print(f'tokenizer: {tokenizer}')
         reward_pipe = pipeline_builder(
             "text-classification",
