@@ -421,23 +421,28 @@ def main():
             "input_ids_rejected": [],
             "attention_mask_rejected": [],
         }
-        for instruction, input, output_1, output_2, preference in zip(
-                examples["instruction"],
-                examples["input"],
-                examples["output_1"],
-                examples["output_2"],
-                examples["preference"]
-            ):
-            if preference == 1:
-                preferred = output_1
-                dispreferred = output_2
-            elif preference == 2:
-                preferred = output_2
-                dispreferred = output_1
-            else:
-                raise ValueError(f'Unexpected value for preference: {preference}')
-            example_chosen = _concat_messages(instruction, input, preferred) # f"Human: {instruction} {input} Assistant: {preferred}"
-            example_rejected = _concat_messages(instruction, input, dispreferred) # f"Human: {instruction} {input} Assistant: {dispreferred}"
+        # # ALPACA FARM:
+        # for instruction, input, output_1, output_2, preference in zip(
+        #         examples["instruction"],
+        #         examples["input"],
+        #         examples["output_1"],
+        #         examples["output_2"],
+        #         examples["preference"]
+        #     ):
+            # if preference == 1:
+            #     preferred = output_1
+            #     dispreferred = output_2
+            # elif preference == 2:
+            #     preferred = output_2
+            #     dispreferred = output_1
+            # else:
+            #     raise ValueError(f'Unexpected value for preference: {preference}')
+            # example_chosen = _concat_messages(instruction, input, preferred) # f"Human: {instruction} {input} Assistant: {preferred}"
+            # example_rejected = _concat_messages(instruction, input, dispreferred) # f"Human: {instruction} {input} Assistant: {dispreferred}"
+        # # STACK EXCHANGE:
+        for question, response_j, response_k in zip(examples["question"], examples["response_j"], examples["response_k"]):
+            example_chosen = _concat_messages(question, '', response_j) # f"Human: {instruction} {input} Assistant: {preferred}"
+            example_rejected = _concat_messages(question, '', response_k) # f"Human: {instruction} {input} Assistant: {dispreferred}"
             tokenized_chosen = tokenizer(example_chosen, max_length=data_args.max_seq_length, truncation=True)
             tokenized_rejected = tokenizer(example_rejected, max_length=data_args.max_seq_length, truncation=True)
             new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
