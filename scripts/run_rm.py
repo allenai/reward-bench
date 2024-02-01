@@ -60,7 +60,7 @@ def get_args():
     parser.add_argument(
         "--tokenizer", type=str, default=None, help="path to non-matching tokenizer, requires --direct_load"
     )
-    parser.add_argument("--use_slow_tokenizer", type=bool, default=None, help="use slow tokenizer or not")
+    parser.add_argument("--use_slow_tokenizer", type="store_true", help="use slow tokenizer")
     parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
     parser.add_argument(
         "--direct_load", action="store_true", default=False, help="directly load model instead of pipeline"
