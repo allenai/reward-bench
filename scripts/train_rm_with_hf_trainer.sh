@@ -37,7 +37,7 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --logging_steps 1 \
     --save_strategy epoch \
     --save_total_limit 1 \
-    --num_train_epochs 2 \
+    --num_train_epochs 1 \
     --output_dir $OUTPUT_DIR \
     --overwrite_output_dir
     # --use_slow_tokenizer \
