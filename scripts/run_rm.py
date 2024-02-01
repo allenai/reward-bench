@@ -159,7 +159,6 @@ def main():
         tokenizer_path,
         use_fast=not args.use_slow_tokenizer,
     )
-    print(f'first tokenizer: {tokenizer}')
     dataset, subsets = load_eval_dataset(
         core_set=not args.pref_sets,
         conv=conv,
@@ -197,7 +196,6 @@ def main():
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
         if 'gpt2' in args.model:
             model.config.pad_token_id = model.config.eos_token_id
-        print(f'tokenizer: {tokenizer}')
         reward_pipe = pipeline_builder(
             "text-classification",
             model=model,
