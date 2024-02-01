@@ -253,8 +253,18 @@ def main():
         # )
 
         # # STACK EXCHANGE
-        train_dataset = load_dataset("lvwerra/stack-exchange-paired", data_dir="data/reward", split="train", streaming=True)
-        eval_dataset = load_dataset("lvwerra/stack-exchange-paired", data_dir="data/evaluation", split="train", streaming=True)
+        train_dataset = load_dataset(
+            "lvwerra/stack-exchange-paired",
+            data_dir="data/reward",
+            split="train",
+            # streaming=True
+        )
+        eval_dataset = load_dataset(
+            "lvwerra/stack-exchange-paired",
+            data_dir="data/evaluation",
+            split="train",
+            # streaming=True
+        )
 
         # # ALPACA FARM
         # raw_data = load_dataset('json', data_files='training_data/alpaca_human_preference.json')
@@ -405,13 +415,13 @@ def main():
                 example_chosen,
                 max_length=data_args.max_seq_length,
                 truncation=True,
-                padding='max_length',
+                # padding='max_length',
             )
             tokenized_rejected = tokenizer(
                 example_rejected,
                 max_length=data_args.max_seq_length,
                 truncation=True,
-                padding='max_length',
+                # padding='max_length',
             )
 
             new_examples["input_ids_j"].append(tokenized_chosen["input_ids"])
@@ -463,13 +473,13 @@ def main():
                 example_chosen,
                 max_length=data_args.max_seq_length,
                 truncation=True,
-                padding='max_length',
+                # padding='max_length',
             )
             tokenized_rejected = tokenizer(
                 example_rejected,
                 max_length=data_args.max_seq_length,
                 truncation=True,
-                padding='max_length',
+                # padding='max_length',
             )
             new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
             new_examples["attention_mask_chosen"].append(tokenized_chosen["attention_mask"])
