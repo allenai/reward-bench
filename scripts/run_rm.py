@@ -296,8 +296,6 @@ def main():
         print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
         results[subset] = num_correct / num_total
 
-    print(subset_dataset['results'])
-
     ############################
     # Upload results to hub
     ############################

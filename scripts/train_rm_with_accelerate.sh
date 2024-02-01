@@ -5,7 +5,7 @@ NUM_GPUS=4
 BATCH_SIZE_PER_GPU=2
 TOTAL_BATCH_SIZE=128
 GRADIENT_ACC_STEPS=$(($TOTAL_BATCH_SIZE/$NUM_GPUS/$BATCH_SIZE_PER_GPU))
-MODEL_PATH=microsoft/deberta-v3-large
+MODEL_PATH=google/flan-t5-large
 # TRAIN_DATASET=lvwerra/stack-exchange-paired
 # EVAL_DATASET=lvwerra/stack-exchange-paired
 # TRAIN_DATASET=mychen76/stack-exchange-paired-500k
@@ -28,7 +28,7 @@ accelerate launch \
     --tokenizer_name $MODEL_PATH \
     --use_slow_tokenizer \
     --dataset_name $TRAIN_DATASET \
-    --max_seq_length 512 \
+    --max_seq_length 2048 \
     --preprocessing_num_workers 16 \
     --per_device_train_batch_size $BATCH_SIZE_PER_GPU \
     --gradient_accumulation_steps $GRADIENT_ACC_STEPS \
