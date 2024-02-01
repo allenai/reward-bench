@@ -37,7 +37,6 @@ from herm import load_eval_dataset
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
-print(f'token: {HF_TOKEN}')
 api = HfApi(token=HF_TOKEN)
 
 # this is necessary to automatically log in when running this script in docker/batch beaker jobs
@@ -158,7 +157,7 @@ def main():
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_path,
-        use_fast=None if args.use_slow_tokenizer is None else not args.use_slow_tokenizer
+        use_fast=False if args.use_slow_tokenizer is not None else True,
     )
     dataset, subsets = load_eval_dataset(
         core_set=not args.pref_sets,
