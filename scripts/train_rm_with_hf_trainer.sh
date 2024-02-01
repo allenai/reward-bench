@@ -32,7 +32,7 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --lr_scheduler_type linear \
     --warmup_ratio 0.03 \
     --weight_decay 0. \
-    --evaluation_strategy none \
+    --evaluation_strategy no \
     --logging_steps 1 \
     --save_strategy epoch \
     --save_total_limit 1 \
