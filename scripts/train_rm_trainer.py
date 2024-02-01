@@ -259,7 +259,7 @@ def main():
                 data_dir="data/reward",
                 split="train",
                 # streaming=True
-            )[:500000]
+            )[:100000]
         )
         eval_dataset = Dataset.from_dict(
                 load_dataset(
