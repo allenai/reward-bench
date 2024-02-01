@@ -36,7 +36,7 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --logging_steps 1 \
     --save_strategy steps \
     --save_total_limit 1 \
-    --max_steps 500000 \
+    --max_steps 250 \
     --output_dir $OUTPUT_DIR \
     --overwrite_output_dir
     # --do_eval \

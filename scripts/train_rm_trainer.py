@@ -401,8 +401,18 @@ def main():
                 raise ValueError(f'Unexpected value for preference: {preference}')
             example_chosen = f"Human: {instruction} {input} Assistant: {preferred}"
             example_rejected = f"Human: {instruction} {input} Assistant: {dispreferred}"
-            tokenized_chosen = tokenizer(example_chosen, max_length=data_args.max_seq_length, truncation=True)
-            tokenized_rejected = tokenizer(example_rejected, max_length=data_args.max_seq_length, truncation=True)
+            tokenized_chosen = tokenizer(
+                example_chosen,
+                max_length=data_args.max_seq_length,
+                truncation=True,
+                padding='max_length',
+            )
+            tokenized_rejected = tokenizer(
+                example_rejected,
+                max_length=data_args.max_seq_length,
+                truncation=True,
+                padding='max_length',
+            )
 
             new_examples["input_ids_j"].append(tokenized_chosen["input_ids"])
             new_examples["attention_mask_j"].append(tokenized_chosen["attention_mask"])
