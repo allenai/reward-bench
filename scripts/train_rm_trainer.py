@@ -440,6 +440,7 @@ def main():
             # example_chosen = _concat_messages(instruction, input, preferred) # f"Human: {instruction} {input} Assistant: {preferred}"
             # example_rejected = _concat_messages(instruction, input, dispreferred) # f"Human: {instruction} {input} Assistant: {dispreferred}"
         # # STACK EXCHANGE:
+        print(f'keys: {examples.keys()}')
         for question, response_j, response_k in zip(examples["question"], examples["response_j"], examples["response_k"]):
             example_chosen = _concat_messages(question, '', response_j) # f"Human: {instruction} {input} Assistant: {preferred}"
             example_rejected = _concat_messages(question, '', response_k) # f"Human: {instruction} {input} Assistant: {dispreferred}"
