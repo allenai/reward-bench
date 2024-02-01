@@ -154,7 +154,7 @@ def main():
         "batch_size": BATCH_SIZE,  # eval_args.inference_batch_size,
         "truncation": True,
         "padding": True,
-        "max_length": 2048,
+        "max_length": 1024,
         "function_to_apply": "none",  # Compute raw logits
         "return_token_type_ids": False,
     }
