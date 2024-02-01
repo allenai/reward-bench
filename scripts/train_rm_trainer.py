@@ -253,17 +253,21 @@ def main():
         # )
 
         # # STACK EXCHANGE
-        train_dataset = load_dataset(
-            "lvwerra/stack-exchange-paired",
-            data_dir="data/reward",
-            split="train",
-            # streaming=True
+        train_dataset = Dataset.from_dict(
+                load_dataset(
+                "lvwerra/stack-exchange-paired",
+                data_dir="data/reward",
+                split="train",
+                # streaming=True
+            )[:500000]
         )
-        eval_dataset = load_dataset(
-            "lvwerra/stack-exchange-paired",
-            data_dir="data/evaluation",
-            split="train",
-            # streaming=True
+        eval_dataset = Dataset.from_dict(
+                load_dataset(
+                "lvwerra/stack-exchange-paired",
+                data_dir="data/evaluation",
+                split="train",
+                # streaming=True
+            )[:10]
         )
 
         # # ALPACA FARM
