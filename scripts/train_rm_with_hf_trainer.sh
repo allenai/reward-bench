@@ -7,7 +7,7 @@ TOTAL_BATCH_SIZE=128
 # TOTAL_BATCH_SIZE=512
 GRADIENT_ACC_STEPS=$(($TOTAL_BATCH_SIZE/$NUM_GPUS/$BATCH_SIZE_PER_GPU))
 # MODEL_PATH=openai-community/gpt2-large
-MODEL_PATH=TinyLlama/TinyLlama-1.1B-step-50K-105b
+# MODEL_PATH=TinyLlama/TinyLlama-1.1B-step-50K-105b
 # TRAIN_DATASET=lvwerra/stack-exchange-paired
 # EVAL_DATASET=lvwerra/stack-exchange-paired
 # TRAIN_DATASET=mychen76/stack-exchange-paired-500k
@@ -16,8 +16,8 @@ TRAIN_DATASET=alpaca_farm_human_preferences
 # EVAL_DATASET=alpaca_farm_human_preferences
 # TRAIN_DATASET=Anthropic/hh-rlhf
 # TRAIN_DATASET=Dahoas/synthetic-instruct-gptj-pairwise
-# MODEL_PATH=/net/nfs.cirrascale/allennlp/yizhongw/hf_llama2_models/${MODEL_SIZE}
-OUTPUT_DIR=test-models/tiny-llama-alpaca_farm_preferences-flash-attn
+MODEL_PATH=/net/nfs.cirrascale/allennlp/yizhongw/hf_llama2_models/7B
+OUTPUT_DIR=test-models/llama2-7b-alpaca_farm_preferences-flash-attn-force-bf16
 # OUTPUT_DIR=net/nfs.cirrascale/allennlp/jacobm/modular_adaptation/checkpoints/${DATASET}_${MODEL_SIZE}/
 echo "Training model ${MODEL_PATH} using $NUM_GPUS GPUs, $BATCH_SIZE_PER_GPU batch size per GPU, $GRADIENT_ACC_STEPS gradient accumulation steps"
 
