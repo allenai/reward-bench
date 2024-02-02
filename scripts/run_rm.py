@@ -29,6 +29,8 @@ from tqdm import tqdm
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
+    LlamaTokenizer,
+    LlamaTokenizerFast,
     T5ForConditionalGeneration,
     pipeline,
 )
@@ -170,6 +172,15 @@ def main():
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
         if 'gpt2' in args.model:
             model.config.pad_token_id = model.config.eos_token_id
+        elif isinstance(tokenizer, LlamaTokenizer) or isinstance(tokenizer, LlamaTokenizerFast):
+            num_added_tokens = tokenizer.add_special_tokens({
+                "bos_token": "<s>",
+                "eos_token": "</s>",
+                "unk_token": "<unk>",
+                "pad_token": "<pad>",
+            })
+            assert num_added_tokens in [0, 1], "LlamaTokenizer should only add one special token - the pad_token, or no tokens if pad token present."
+
         reward_pipe = pipeline_builder(
             "text-classification",
             model=model,
