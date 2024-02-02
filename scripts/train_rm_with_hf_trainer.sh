@@ -42,6 +42,8 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --num_train_epochs 5 \
     --output_dir $OUTPUT_DIR \
     --use_flash_attn \
+    --bf16 \
+    --torch_dtype bfloat16 \
     --overwrite_output_dir
     # --do_eval \
 
