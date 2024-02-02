@@ -186,7 +186,7 @@ def main():
     if quantized:
         print('Quantized, hell yeah')
         model_kwargs = {
-            "load_in_8bit": False,
+            # "load_in_8bit": False,
             # "torch_dtype": "bfloat16",
             "device_map": {"": current_device},
             "torch_dtype": torch.bfloat16, # if torch.cuda.is_available() else None,
