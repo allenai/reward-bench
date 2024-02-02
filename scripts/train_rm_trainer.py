@@ -278,7 +278,7 @@ def main():
         # anthropic hh rlhf, etc
         raw_data = load_dataset(data_args.dataset_name)
         train_dataset = raw_data['train']
-        eval_dataset = raw_data['test']
+        # eval_dataset = raw_data['test']
     else:
         raise ValueError('wrong dataset')
         # data_files = {}
@@ -439,6 +439,43 @@ def main():
             new_examples["attention_mask_k"].append(tokenized_rejected["attention_mask"])
 
         return new_examples
+    
+    def preprocess_instruct_gptj_synthetic(examples):
+        '''
+        Here we assume each example has a 'messages' field Each message is a dict with 'role' and 'content' fields.
+        We concatenate all messages with the roles as delimiters and tokenize them together.
+        '''        
+        def _concat_messages(prompt, response):
+            message_text = "<|user|>\n" + prompt.strip() + "\n"
+            message_text += "<|assistant|>\n" + response.strip() + "\n"
+            return message_text
+
+        new_examples = {
+            "input_ids_chosen": [],
+            "attention_mask_chosen": [],
+            "input_ids_rejected": [],
+            "attention_mask_rejected": [],
+        }
+        for prompt, chosen, rejected in zip(examples["chosen"], examples["rejected"]):
+            example_chosen = _concat_messages(prompt, chosen) # f"Human: {instruction} {input} Assistant: {preferred}"
+            example_rejected = _concat_messages(prompt, rejected) # f"Human: {instruction} {input} Assistant: {dispreferred}"
+            tokenized_chosen = tokenizer(
+                example_chosen,
+                max_length=data_args.max_seq_length,
+                truncation=True,
+                # padding='max_length',
+            )
+            tokenized_rejected = tokenizer(
+                example_rejected,
+                max_length=data_args.max_seq_length,
+                truncation=True,
+                # padding='max_length',
+            )
+            new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
+            new_examples["attention_mask_chosen"].append(tokenized_chosen["attention_mask"])
+            new_examples["input_ids_rejected"].append(tokenized_rejected["input_ids"])
+            new_examples["attention_mask_rejected"].append(tokenized_rejected["attention_mask"])
+        return new_examples
 
     def preprocess_anthropic_hh_rlhf(examples):
         '''
@@ -446,7 +483,7 @@ def main():
         We concatenate all messages with the roles as delimiters and tokenize them together.
         '''        
         def _concat_messages(input):
-            tokens = input.replace('Human:', '').split('Assistant:')
+            tokens = input.replace('Human:', '').strip().split('Assistant:')
             print(tokens)
             assert len(tokens) == 2
             message_text = "<|user|>\n" + tokens[0].strip() + "\n"
@@ -573,7 +610,7 @@ def main():
 
     # preprocess the dataset and filter out QAs that are longer than script_args.max_length
     train_dataset = train_dataset.map(
-        preprocess_anthropic_hh_rlhf,
+        preprocess_instruct_gptj_synthetic,
         batched=True,
         # TODO: reenable for non-streaming datasets
         # num_proc=data_args.preprocessing_num_workers,
@@ -584,13 +621,13 @@ def main():
         and len(x["input_ids_rejected"]) <= data_args.max_seq_length
     )
 
-    eval_dataset = eval_dataset.map(
-        preprocess_anthropic_hh_rlhf,
-        batched=True,
-        # TODO: reenable for non-streaming datasets
-        # num_proc=data_args.preprocessing_num_workers,
-        remove_columns=original_columns,
-    )
+    # eval_dataset = eval_dataset.map(
+    #     preprocess_instruct_gptj_synthetic,
+    #     batched=True,
+    #     # TODO: reenable for non-streaming datasets
+    #     # num_proc=data_args.preprocessing_num_workers,
+    #     remove_columns=original_columns,
+    # )
 
     # # To speed up this part, we use multiprocessing.
     # with training_args.main_process_first(desc="Processing instruction data"):
@@ -625,7 +662,7 @@ def main():
         model=model,
         args=training_args,
         train_dataset=train_dataset if training_args.do_train else None,
-        eval_dataset=eval_dataset,
+        # eval_dataset=eval_dataset,
         tokenizer=tokenizer,
         # data_collator=DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model),
     )
