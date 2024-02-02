@@ -398,50 +398,6 @@ def main():
         
     original_columns = train_dataset.column_names
     
-    def preprocess_alpaca_farm_function(examples):
-        new_examples = {
-            "input_ids_j": [],
-            "attention_mask_j": [],
-            "input_ids_k": [],
-            "attention_mask_k": [],
-        }
-        for instruction, input, output_1, output_2, preference in zip(
-                examples["instruction"],
-                examples["input"],
-                examples["output_1"],
-                examples["output_2"],
-                examples["preference"]
-            ):
-            if preference == 1:
-                preferred = output_1
-                dispreferred = output_2
-            elif preference == 2:
-                preferred = output_2
-                dispreferred = output_1
-            else:
-                raise ValueError(f'Unexpected value for preference: {preference}')
-            example_chosen = f"Human: {instruction} {input} Assistant: {preferred}"
-            example_rejected = f"Human: {instruction} {input} Assistant: {dispreferred}"
-            tokenized_chosen = tokenizer(
-                example_chosen,
-                max_length=data_args.max_seq_length,
-                truncation=True,
-                # padding='max_length',
-            )
-            tokenized_rejected = tokenizer(
-                example_rejected,
-                max_length=data_args.max_seq_length,
-                truncation=True,
-                # padding='max_length',
-            )
-
-            new_examples["input_ids_j"].append(tokenized_chosen["input_ids"])
-            new_examples["attention_mask_j"].append(tokenized_chosen["attention_mask"])
-            new_examples["input_ids_k"].append(tokenized_rejected["input_ids"])
-            new_examples["attention_mask_k"].append(tokenized_rejected["attention_mask"])
-
-        return new_examples
-    
     def preprocess_instruct_gptj_synthetic(examples):
         '''
         Here we assume each example has a 'messages' field Each message is a dict with 'role' and 'content' fields.
@@ -613,7 +569,7 @@ def main():
     # preprocess the dataset and filter out QAs that are longer than script_args.max_length
     train_dataset = train_dataset.map(
         # preprocess_instruct_gptj_synthetic,
-        preprocess_alpaca_farm_function,
+        preprocess_alpaca_farm,
         batched=True,
         # TODO: reenable for non-streaming datasets
         # num_proc=data_args.preprocessing_num_workers,
