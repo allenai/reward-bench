@@ -43,8 +43,8 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --save_total_limit 1 \
     --num_train_epochs 1 \
     --output_dir $OUTPUT_DIR \
-    --use_slow_tokenizer \
     --overwrite_output_dir
+    # --use_slow_tokenizer \
     # --bf16_full_eval \
     # --torch_dtype bfloat16 \
     # --do_eval \
