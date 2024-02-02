@@ -17,7 +17,7 @@ TRAIN_DATASET=alpaca_farm_human_preferences
 # TRAIN_DATASET=Anthropic/hh-rlhf
 # TRAIN_DATASET=Dahoas/synthetic-instruct-gptj-pairwise
 MODEL_PATH=/net/nfs.cirrascale/allennlp/yizhongw/hf_llama2_models/${MODEL_SIZE}
-OUTPUT_DIR=test-models/${TRAIN_DATASET}/${MODEL_PATH}
+OUTPUT_DIR=test-models/llama7b-alpaca_farm_preferences
 # OUTPUT_DIR=net/nfs.cirrascale/allennlp/jacobm/modular_adaptation/checkpoints/${DATASET}_${MODEL_SIZE}/
 echo "Training model ${MODEL_PATH} using $NUM_GPUS GPUs, $BATCH_SIZE_PER_GPU batch size per GPU, $GRADIENT_ACC_STEPS gradient accumulation steps"
 
@@ -39,7 +39,7 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --logging_steps 1 \
     --save_strategy epoch \
     --save_total_limit 1 \
-    --num_train_epochs 5 \
+    --num_train_epochs 1 \
     --output_dir $OUTPUT_DIR \
     --use_flash_attn \
     --bf16 \
