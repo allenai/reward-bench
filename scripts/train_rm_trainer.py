@@ -271,13 +271,15 @@ def main():
         # )
 
         # ALPACA FARM
-        # raw_data = load_dataset('json', data_files='training_data/alpaca_human_preference.json')
-        # train_dataset = Dataset.from_dict(raw_data['train'][:len(raw_data) - 1001])
-        # eval_dataset = Dataset.from_dict(raw_data['train'][len(raw_data) - 1001:])
+        if data_args.dataset_name == 'alpaca_farm_human_preferences':
+            raw_data = load_dataset('json', data_files='training_data/alpaca_human_preference.json')
+            train_dataset = Dataset.from_dict(raw_data['train'][:len(raw_data) - 1001])
+            eval_dataset = Dataset.from_dict(raw_data['train'][len(raw_data) - 1001:])
 
         # anthropic hh rlhf, etc
-        raw_data = load_dataset(data_args.dataset_name)
-        train_dataset = raw_data['train']
+        else:
+            raw_data = load_dataset(data_args.dataset_name)
+            train_dataset = raw_data['train']
         # eval_dataset = raw_data['test']
     else:
         raise ValueError('wrong dataset')
@@ -610,7 +612,8 @@ def main():
 
     # preprocess the dataset and filter out QAs that are longer than script_args.max_length
     train_dataset = train_dataset.map(
-        preprocess_instruct_gptj_synthetic,
+        # preprocess_instruct_gptj_synthetic,
+        preprocess_alpaca_farm_function,
         batched=True,
         # TODO: reenable for non-streaming datasets
         # num_proc=data_args.preprocessing_num_workers,
