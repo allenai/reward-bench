@@ -177,6 +177,7 @@ def main():
             model.config.pad_token_id = model.config.eos_token_id
         # if isinstance(tokenizer, LlamaTokenizer) or isinstance(tokenizer, LlamaTokenizerFast):
         elif 'llama' in args.model or 'Llama' in args.model:
+            print('llama stuff???')
             num_added_tokens = tokenizer.add_special_tokens({
                 "bos_token": "<s>",
                 "eos_token": "</s>",
