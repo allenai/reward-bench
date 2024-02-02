@@ -12,10 +12,11 @@ MODEL_PATH=TinyLlama/TinyLlama-1.1B-step-50K-105b
 # EVAL_DATASET=lvwerra/stack-exchange-paired
 # TRAIN_DATASET=mychen76/stack-exchange-paired-500k
 # EVAL_DATASET=mychen76/stack-exchange-paired-500k
-TRAIN_DATASET=alpaca_farm_human_preferences
-EVAL_DATASET=alpaca_farm_human_preferences
+# TRAIN_DATASET=alpaca_farm_human_preferences
+# EVAL_DATASET=alpaca_farm_human_preferences
+TRAIN_DATASET=Anthropic/hh-rlhf
 # MODEL_PATH=/net/nfs.cirrascale/allennlp/yizhongw/hf_llama2_models/${MODEL_SIZE}
-OUTPUT_DIR=test-models/${MODEL_PATH}
+OUTPUT_DIR=test-models/${TRAIN_DATASET}/${MODEL_PATH}
 # OUTPUT_DIR=net/nfs.cirrascale/allennlp/jacobm/modular_adaptation/checkpoints/${DATASET}_${MODEL_SIZE}/
 echo "Training model ${MODEL_PATH} using $NUM_GPUS GPUs, $BATCH_SIZE_PER_GPU batch size per GPU, $GRADIENT_ACC_STEPS gradient accumulation steps"
 
