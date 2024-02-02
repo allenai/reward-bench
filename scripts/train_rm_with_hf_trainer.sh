@@ -31,8 +31,6 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --do_train \
     --use_flash_attn \
     --bf16 \
-    --bf16_full_eval \
-    --torch_dtype bfloat16 \
     --per_device_train_batch_size $BATCH_SIZE_PER_GPU \
     --gradient_accumulation_steps $GRADIENT_ACC_STEPS \
     --learning_rate 2e-5 \
@@ -46,6 +44,8 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --num_train_epochs 1 \
     --output_dir $OUTPUT_DIR \
     --overwrite_output_dir
+    # --bf16_full_eval \
+    # --torch_dtype bfloat16 \
     # --do_eval \
 
     # --use_slow_tokenizer \
