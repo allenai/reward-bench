@@ -6,7 +6,8 @@ BATCH_SIZE_PER_GPU=1
 TOTAL_BATCH_SIZE=128
 # TOTAL_BATCH_SIZE=512
 GRADIENT_ACC_STEPS=$(($TOTAL_BATCH_SIZE/$NUM_GPUS/$BATCH_SIZE_PER_GPU))
-MODEL_PATH=openai-community/gpt2-large
+# MODEL_PATH=openai-community/gpt2-large
+MODEL_PATH=TinyLlama/TinyLlama-1.1B-step-50K-105b
 # TRAIN_DATASET=lvwerra/stack-exchange-paired
 # EVAL_DATASET=lvwerra/stack-exchange-paired
 TRAIN_DATASET=mychen76/stack-exchange-paired-500k
@@ -14,16 +15,16 @@ EVAL_DATASET=mychen76/stack-exchange-paired-500k
 # TRAIN_DATASET=alpaca_farm_human_preferences
 # EVAL_DATASET=alpaca_farm_human_preferences
 # MODEL_PATH=/net/nfs.cirrascale/allennlp/yizhongw/hf_llama2_models/${MODEL_SIZE}
-OUTPUT_DIR=test-models/gpt2-large
+OUTPUT_DIR=test-models/${MODEL_PATH}
 # OUTPUT_DIR=net/nfs.cirrascale/allennlp/jacobm/modular_adaptation/checkpoints/${DATASET}_${MODEL_SIZE}/
-echo "Training llama model ${MODEL_SIZE} using $NUM_GPUS GPUs, $BATCH_SIZE_PER_GPU batch size per GPU, $GRADIENT_ACC_STEPS gradient accumulation steps"
+echo "Training model ${MODEL_PATH} using $NUM_GPUS GPUs, $BATCH_SIZE_PER_GPU batch size per GPU, $GRADIENT_ACC_STEPS gradient accumulation steps"
 
 deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --deepspeed ds_configs/stage3_no_offloading.conf \
     --model_name_or_path $MODEL_PATH \
     --tokenizer_name $MODEL_PATH \
     --dataset_name $TRAIN_DATASET \
-    --max_seq_length 1024 \
+    --max_seq_length 2048 \
     --preprocessing_num_workers 16 \
     --do_train \
     --per_device_train_batch_size $BATCH_SIZE_PER_GPU \
