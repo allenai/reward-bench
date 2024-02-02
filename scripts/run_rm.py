@@ -173,6 +173,7 @@ def main():
         if 'gpt2' in args.model:
             model.config.pad_token_id = model.config.eos_token_id
         elif 'Llama' in args.model or 'llama' in args.model:
+            print('adding llama tokens???')
             num_added_tokens = tokenizer.add_special_tokens({
                 "bos_token": "<s>",
                 "eos_token": "</s>",
@@ -180,6 +181,7 @@ def main():
                 "pad_token": "<pad>",
             })
             assert num_added_tokens in [0, 1], "LlamaTokenizer should only add one special token - the pad_token, or no tokens if pad token present."
+            print(model.config.pad_token_id)
 
         reward_pipe = pipeline_builder(
             "text-classification",
