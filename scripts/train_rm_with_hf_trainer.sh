@@ -14,7 +14,8 @@ MODEL_PATH=TinyLlama/TinyLlama-1.1B-step-50K-105b
 # EVAL_DATASET=mychen76/stack-exchange-paired-500k
 # TRAIN_DATASET=alpaca_farm_human_preferences
 # EVAL_DATASET=alpaca_farm_human_preferences
-TRAIN_DATASET=Anthropic/hh-rlhf
+# TRAIN_DATASET=Anthropic/hh-rlhf
+TRAIN_DATASET=Dahoas/synthetic-instruct-gptj-pairwise
 # MODEL_PATH=/net/nfs.cirrascale/allennlp/yizhongw/hf_llama2_models/${MODEL_SIZE}
 OUTPUT_DIR=test-models/${TRAIN_DATASET}/${MODEL_PATH}
 # OUTPUT_DIR=net/nfs.cirrascale/allennlp/jacobm/modular_adaptation/checkpoints/${DATASET}_${MODEL_SIZE}/
@@ -38,7 +39,7 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --logging_steps 1 \
     --save_strategy epoch \
     --save_total_limit 1 \
-    --num_train_epochs 3 \
+    --num_train_epochs 5 \
     --output_dir $OUTPUT_DIR \
     --overwrite_output_dir
     # --do_eval \
