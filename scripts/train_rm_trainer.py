@@ -271,9 +271,14 @@ def main():
         # )
 
         # ALPACA FARM
-        raw_data = load_dataset('json', data_files='training_data/alpaca_human_preference.json')
-        train_dataset = Dataset.from_dict(raw_data['train'][:len(raw_data) - 1001])
-        eval_dataset = Dataset.from_dict(raw_data['train'][len(raw_data) - 1001:])
+        # raw_data = load_dataset('json', data_files='training_data/alpaca_human_preference.json')
+        # train_dataset = Dataset.from_dict(raw_data['train'][:len(raw_data) - 1001])
+        # eval_dataset = Dataset.from_dict(raw_data['train'][len(raw_data) - 1001:])
+
+        # anthropic hh rlhf, etc
+        raw_data = load_dataset(data_args.dataset_name)
+        train_dataset = raw_data['train']
+        eval_dataset = raw_data['test']
     else:
         raise ValueError('wrong dataset')
         # data_files = {}
@@ -434,8 +439,49 @@ def main():
             new_examples["attention_mask_k"].append(tokenized_rejected["attention_mask"])
 
         return new_examples
-    
-    def preprocess_alpaca_farm_function_reward_trainer(examples):
+
+    def preprocess_anthropic_hh_rlhf(examples):
+        '''
+        Here we assume each example has a 'messages' field Each message is a dict with 'role' and 'content' fields.
+        We concatenate all messages with the roles as delimiters and tokenize them together.
+        '''        
+        def _concat_messages(input):
+            tokens = input.replace('Human:', '').split('Assistant:')
+            print(tokens)
+            assert len(tokens) == 2
+            message_text = "<|user|>\n" + tokens[0].strip() + "\n"
+            message_text += "<|assistant|>\n" + tokens[1].strip() + "\n"
+            return message_text
+
+        new_examples = {
+            "input_ids_chosen": [],
+            "attention_mask_chosen": [],
+            "input_ids_rejected": [],
+            "attention_mask_rejected": [],
+        }
+        # STACK EXCHANGE:
+        for chosen, rejected in zip(examples["chosen"], examples["rejected"]):
+            example_chosen = _concat_messages(chosen) # f"Human: {instruction} {input} Assistant: {preferred}"
+            example_rejected = _concat_messages(rejected) # f"Human: {instruction} {input} Assistant: {dispreferred}"
+            tokenized_chosen = tokenizer(
+                example_chosen,
+                max_length=data_args.max_seq_length,
+                truncation=True,
+                # padding='max_length',
+            )
+            tokenized_rejected = tokenizer(
+                example_rejected,
+                max_length=data_args.max_seq_length,
+                truncation=True,
+                # padding='max_length',
+            )
+            new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
+            new_examples["attention_mask_chosen"].append(tokenized_chosen["attention_mask"])
+            new_examples["input_ids_rejected"].append(tokenized_rejected["input_ids"])
+            new_examples["attention_mask_rejected"].append(tokenized_rejected["attention_mask"])
+        return new_examples
+
+    def preprocess_stack_exchange(examples):
         '''
         Here we assume each example has a 'messages' field Each message is a dict with 'role' and 'content' fields.
         We concatenate all messages with the roles as delimiters and tokenize them together.
@@ -451,7 +497,44 @@ def main():
             "input_ids_rejected": [],
             "attention_mask_rejected": [],
         }
-        # ALPACA FARM:
+        # STACK EXCHANGE:
+        for question, response_j, response_k in zip(examples["question"], examples["response_j"], examples["response_k"]):
+            example_chosen = _concat_messages(question, '', response_j) # f"Human: {instruction} {input} Assistant: {preferred}"
+            example_rejected = _concat_messages(question, '', response_k) # f"Human: {instruction} {input} Assistant: {dispreferred}"
+            tokenized_chosen = tokenizer(
+                example_chosen,
+                max_length=data_args.max_seq_length,
+                truncation=True,
+                # padding='max_length',
+            )
+            tokenized_rejected = tokenizer(
+                example_rejected,
+                max_length=data_args.max_seq_length,
+                truncation=True,
+                # padding='max_length',
+            )
+            new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
+            new_examples["attention_mask_chosen"].append(tokenized_chosen["attention_mask"])
+            new_examples["input_ids_rejected"].append(tokenized_rejected["input_ids"])
+            new_examples["attention_mask_rejected"].append(tokenized_rejected["attention_mask"])
+        return new_examples
+
+    def preprocess_alpaca_farm(examples):
+        '''
+        Here we assume each example has a 'messages' field Each message is a dict with 'role' and 'content' fields.
+        We concatenate all messages with the roles as delimiters and tokenize them together.
+        '''        
+        def _concat_messages(instruction, input, response):
+            message_text = ("<|user|>\n" + instruction.strip() + ' ' + input.strip()).strip() + "\n"
+            message_text += "<|assistant|>\n" + response.strip() + tokenizer.eos_token + "\n"
+            return message_text
+
+        new_examples = {
+            "input_ids_chosen": [],
+            "attention_mask_chosen": [],
+            "input_ids_rejected": [],
+            "attention_mask_rejected": [],
+        }
         for instruction, input, output_1, output_2, preference in zip(
                 examples["instruction"],
                 examples["input"],
@@ -469,10 +552,6 @@ def main():
                 raise ValueError(f'Unexpected value for preference: {preference}')
             example_chosen = _concat_messages(instruction, input, preferred) # f"Human: {instruction} {input} Assistant: {preferred}"
             example_rejected = _concat_messages(instruction, input, dispreferred) # f"Human: {instruction} {input} Assistant: {dispreferred}"
-        # # STACK EXCHANGE:
-        # for question, response_j, response_k in zip(examples["question"], examples["response_j"], examples["response_k"]):
-            # example_chosen = _concat_messages(question, '', response_j) # f"Human: {instruction} {input} Assistant: {preferred}"
-            # example_rejected = _concat_messages(question, '', response_k) # f"Human: {instruction} {input} Assistant: {dispreferred}"
             tokenized_chosen = tokenizer(
                 example_chosen,
                 max_length=data_args.max_seq_length,
@@ -494,9 +573,7 @@ def main():
 
     # preprocess the dataset and filter out QAs that are longer than script_args.max_length
     train_dataset = train_dataset.map(
-        # preprocess_function,
-        # preprocess_alpaca_farm_function,
-        preprocess_alpaca_farm_function_reward_trainer,
+        preprocess_anthropic_hh_rlhf,
         batched=True,
         # TODO: reenable for non-streaming datasets
         # num_proc=data_args.preprocessing_num_workers,
@@ -508,9 +585,7 @@ def main():
     )
 
     eval_dataset = eval_dataset.map(
-        # preprocess_function,
-        # preprocess_alpaca_farm_function,
-        preprocess_alpaca_farm_function_reward_trainer,
+        preprocess_anthropic_hh_rlhf,
         batched=True,
         # TODO: reenable for non-streaming datasets
         # num_proc=data_args.preprocessing_num_workers,
