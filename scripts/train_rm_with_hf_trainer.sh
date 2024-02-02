@@ -29,6 +29,10 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --max_seq_length 2048 \
     --preprocessing_num_workers 16 \
     --do_train \
+    --use_flash_attn \
+    --bf16 \
+    --bf16_full_eval \
+    --torch_dtype bfloat16 \
     --per_device_train_batch_size $BATCH_SIZE_PER_GPU \
     --gradient_accumulation_steps $GRADIENT_ACC_STEPS \
     --learning_rate 2e-5 \
@@ -41,9 +45,6 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --save_total_limit 1 \
     --num_train_epochs 1 \
     --output_dir $OUTPUT_DIR \
-    --use_flash_attn \
-    --bf16 \
-    --torch_dtype bfloat16 \
     --overwrite_output_dir
     # --do_eval \
 
