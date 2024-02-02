@@ -456,7 +456,7 @@ def main():
             "input_ids_rejected": [],
             "attention_mask_rejected": [],
         }
-        for prompt, chosen, rejected in zip(examples["chosen"], examples["rejected"]):
+        for prompt, chosen, rejected in zip(examples['prompt'], examples["chosen"], examples["rejected"]):
             example_chosen = _concat_messages(prompt, chosen) # f"Human: {instruction} {input} Assistant: {preferred}"
             example_rejected = _concat_messages(prompt, rejected) # f"Human: {instruction} {input} Assistant: {dispreferred}"
             tokenized_chosen = tokenizer(
