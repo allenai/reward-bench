@@ -1,7 +1,7 @@
 export CUDA_VISIBLE_DEVICES=0,1,2,3
 
 MODEL_SIZE=7B
-NUM_GPUS=4
+NUM_GPUS=8
 BATCH_SIZE_PER_GPU=1
 TOTAL_BATCH_SIZE=128
 # TOTAL_BATCH_SIZE=512
@@ -17,7 +17,7 @@ TRAIN_DATASET=alpaca_farm_human_preferences
 # TRAIN_DATASET=Anthropic/hh-rlhf
 # TRAIN_DATASET=Dahoas/synthetic-instruct-gptj-pairwise
 MODEL_PATH=/net/nfs.cirrascale/allennlp/yizhongw/hf_llama2_models/7B
-OUTPUT_DIR=test-models/llama2-7b-alpaca_farm_preferences-flash-attn-force-bf16
+OUTPUT_DIR=models/llama-2-7b-alpaca-farm-test
 # OUTPUT_DIR=net/nfs.cirrascale/allennlp/jacobm/modular_adaptation/checkpoints/${DATASET}_${MODEL_SIZE}/
 echo "Training model ${MODEL_PATH} using $NUM_GPUS GPUs, $BATCH_SIZE_PER_GPU batch size per GPU, $GRADIENT_ACC_STEPS gradient accumulation steps"
 
