@@ -28,7 +28,7 @@ deepspeed --include localhost:0,1,2,3,4,5,6,7 scripts/train_rm_trainer.py \
     --model_name_or_path $MODEL_PATH \
     --tokenizer_name $MODEL_PATH \
     --dataset_name $TRAIN_DATASET \
-    --max_seq_length 2048 \
+    --max_seq_length 512 \
     --preprocessing_num_workers 16 \
     --do_train \
     --use_flash_attn \
