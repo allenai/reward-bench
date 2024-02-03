@@ -12,12 +12,12 @@ GRADIENT_ACC_STEPS=$(($TOTAL_BATCH_SIZE/$NUM_GPUS/$BATCH_SIZE_PER_GPU))
 # EVAL_DATASET=lvwerra/stack-exchange-paired
 # TRAIN_DATASET=mychen76/stack-exchange-paired-500k
 # EVAL_DATASET=mychen76/stack-exchange-paired-500k
-TRAIN_DATASET=alpaca_farm_human_preferences
+# TRAIN_DATASET=alpaca_farm_human_preferences
 # EVAL_DATASET=alpaca_farm_human_preferences
 # TRAIN_DATASET=Anthropic/hh-rlhf
-# TRAIN_DATASET=Dahoas/synthetic-instruct-gptj-pairwise
+TRAIN_DATASET=Dahoas/synthetic-instruct-gptj-pairwise
 MODEL_PATH=/net/nfs.cirrascale/allennlp/yizhongw/hf_llama2_models/7B
-OUTPUT_DIR=models/llama-2-7b-alpaca-farm-test
+OUTPUT_DIR=models/llama-2-7b-gptj-pairwise-5-epochs
 # OUTPUT_DIR=net/nfs.cirrascale/allennlp/jacobm/modular_adaptation/checkpoints/${DATASET}_${MODEL_SIZE}/
 echo "Training model ${MODEL_PATH} using $NUM_GPUS GPUs, $BATCH_SIZE_PER_GPU batch size per GPU, $GRADIENT_ACC_STEPS gradient accumulation steps"
 
@@ -41,7 +41,7 @@ deepspeed --include localhost:0,1,2,3,4,5,6,7 scripts/train_rm_trainer.py \
     --logging_steps 1 \
     --save_strategy epoch \
     --save_total_limit 1 \
-    --num_train_epochs 1 \
+    --num_train_epochs 5 \
     --output_dir $OUTPUT_DIR \
     --use_slow_tokenizer \
     --overwrite_output_dir
