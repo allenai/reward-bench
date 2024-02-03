@@ -435,6 +435,7 @@ def main():
             new_examples["attention_mask_rejected"].append(tokenized_rejected["attention_mask"])
         return new_examples
 
+    # TODO: doesn't work, doesn't handle multi-turn atm
     def preprocess_anthropic_hh_rlhf(examples):
         '''
         Here we assume each example has a 'messages' field Each message is a dict with 'role' and 'content' fields.
@@ -569,7 +570,8 @@ def main():
     # preprocess the dataset and filter out QAs that are longer than script_args.max_length
     train_dataset = train_dataset.map(
         # preprocess_instruct_gptj_synthetic,
-        preprocess_alpaca_farm,
+        # preprocess_alpaca_farm,
+        preprocess_instruct_gptj_synthetic,
         batched=True,
         # TODO: reenable for non-streaming datasets
         # num_proc=data_args.preprocessing_num_workers,

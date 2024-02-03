@@ -12,6 +12,14 @@ WORKDIR /stage/
 COPY requirements.txt .
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# TODO: at least 3 things to install too:
+# TRL (pip)
+# upgrade transformers (check latest open instruct version)
+# fastchat (pip3 install "fschat[model_worker,webui]")
+# run setup.py somehow
+# huggingface login (add as beaker token)
+
 # RUN pip install packaging
 RUN pip install flash-attn --no-build-isolation
 RUN pip install -r requirements.txt
