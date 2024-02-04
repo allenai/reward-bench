@@ -18,6 +18,7 @@ RUN pip install torch torchvision torchaudio --index-url https://download.pytorc
 # RUN pip install flash-attn==2.2.2 --no-build-isolation
 RUN pip install -r requirements.txt
 RUN pip install "fschat[model_worker,webui]"
+RUN pip install -e .
 
 # TODO: enable these when training code is complete
 # COPY eval eval
