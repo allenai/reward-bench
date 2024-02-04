@@ -9,7 +9,7 @@ GRADIENT_ACC_STEPS=$(($TOTAL_BATCH_SIZE/$NUM_GPUS/$BATCH_SIZE_PER_GPU))
 # MODEL_PATH=openai-community/gpt2-large
 # MODEL_PATH=TinyLlama/TinyLlama-1.1B-step-50K-105b
 # MODEL_PATH=/net/nfs.cirrascale/allennlp/yizhongw/hf_llama2_models/7B
-MODEL_PATH=mistralai/Mixtral-8x7B-v0.1
+# MODEL_PATH=mistralai/Mixtral-8x7B-v0.1
 # TRAIN_DATASET=lvwerra/stack-exchange-paired
 # EVAL_DATASET=lvwerra/stack-exchange-paired
 # TRAIN_DATASET=mychen76/stack-exchange-paired-500k
@@ -28,7 +28,7 @@ deepspeed --include localhost:0,1,2,3,4,5,6,7 scripts/train_rm_trainer.py \
     --model_name_or_path $MODEL_PATH \
     --tokenizer_name $MODEL_PATH \
     --dataset_name $TRAIN_DATASET \
-    --max_seq_length 512 \
+    --max_seq_length 2048 \
     --preprocessing_num_workers 16 \
     --do_train \
     --use_flash_attn \

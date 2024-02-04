@@ -17,7 +17,7 @@ RUN pip install torch torchvision torchaudio --index-url https://download.pytorc
 # TRL (pip)
 # upgrade transformers (check latest open instruct version)
 # fastchat (pip3 install "fschat[model_worker,webui]")
-# run setup.py somehow
+# pip install -e .
 # huggingface login (add as beaker token)
 
 # RUN pip install packaging
