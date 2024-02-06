@@ -50,6 +50,9 @@ def print_model_statistics(
             "|",
         )
 
+    # print total number of models involved (minus 2 for human + unkown)
+    print(f"\nTotal number of models involved: {len(total_counter) - 2}")
+
 
 def draw_model_source_histogram(
     dataset_name: str = "ai2-adapt-dev/rm-benchmark-dev",

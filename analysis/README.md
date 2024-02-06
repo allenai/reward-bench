@@ -60,3 +60,5 @@ This will also return the following table by default:
 | wizardlm-13b | 3 | 1 | 2 |
 | tulu-30b | 2 | 2 | 0 |
 | vicuna-33b-v1.3 | 1 | 1 | 0 |
+
+Total number of models involved: 44
