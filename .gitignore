@@ -164,3 +164,6 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# image / plot outputs
+*.png
