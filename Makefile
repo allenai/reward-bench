@@ -3,7 +3,7 @@
 # make sure to test the local checkout in scripts and not the pre-installed one (don't use quotes!)
 export PYTHONPATH = src
 
-check_dirs := herm scripts tests
+check_dirs := herm scripts analysis tests
 
 style:
 	python -m black --line-length 119 --target-version py310 $(check_dirs) setup.py
