@@ -3,6 +3,25 @@
 We're going to add visualizations for both the eval. data and results here.
 So far, we have the following tools:
 
+### Per token uterrance reward
+This returns the reward per-token to show how the reward evolves over a piece of text.
+```
+python analysis/per_token_reward.py --model=OpenAssistant/reward-model-deberta-v3-large-v2 --chat_template=raw --text="I love to walk the dog, what do you like?"
+```
+E.g. with OpenAssistant/reward-model-deberta-v3-large-v2
+Reward: -0.544 | Substring: I
+Reward: -0.556 | Substring: I love
+Reward: -0.566 | Substring: I love to
+Reward: 0.099 | Substring: I love to walk
+Reward: 0.096 | Substring: I love to walk the
+Reward: 0.092 | Substring: I love to walk the dog
+Reward: 0.09 | Substring: I love to walk the dog,
+Reward: 0.087 | Substring: I love to walk the dog, what
+Reward: 0.085 | Substring: I love to walk the dog, what do
+Reward: 0.089 | Substring: I love to walk the dog, what do you
+Reward: 0.09 | Substring: I love to walk the dog, what do you like
+Reward: 0.093 | Substring: I love to walk the dog, what do you like?
+
 ### Model usage within eval. dataset
 To run this, execute:
 ```
