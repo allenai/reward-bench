@@ -43,7 +43,13 @@ def get_args():
         help="HuggingFace repository containing the test set results.",
     )
     parser.add_argument(
-        "--render-latex",
+        "--output_dir",
+        type=Path,
+        default=None,
+        help="Directory to save the results.",
+    )
+    parser.add_argument(
+        "--render_latex",
         action="store_true",
         help="If set, then it will render a LaTeX string instead of Markdown.",
     )
@@ -148,6 +154,11 @@ def main():
         render_string = df.to_latex(index=False) if args.render_latex else df.to_markdown(index=False)
         print(name)
         print(render_string)
+
+        if args.output_dir:
+            print(f"Saving results to '{args.output_dir}/{name}.csv'")
+            Path(args.output_dir).mkdir(exist_ok=True, parents=True)
+            df.to_csv(args.output_dir / f"{name}.csv", index=False)
 
 
 if __name__ == "__main__":
