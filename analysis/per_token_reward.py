@@ -93,7 +93,7 @@ def main():
 
     if custom_dialogue:
         raise ValueError("Custom dialogue formatting not yet supported in this script")
-    
+
     ###############
     # Setup logging
     ###############
