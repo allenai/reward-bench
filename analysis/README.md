@@ -6,7 +6,7 @@ So far, we have the following tools:
 ### Per token uterrance reward
 This returns the reward per-token to show how the reward evolves over a piece of text.
 ```
-python analysis/per_token_reward.py --model=OpenAssistant/reward-model-deberta-v3-large-v2 --chat_template=raw --text="I love to walk the dog, what do you like?"
+python analysis/per_token_reward.py --model=OpenAssistant/reward-model-deberta-v3-large-v2  --text="I love to walk the dog, what do you like?"
 ```
 E.g. with OpenAssistant/reward-model-deberta-v3-large-v2
 Reward: -0.544 | Substring: I
