@@ -150,9 +150,11 @@ def main():
     }
 
     for name, df in all_results.items():
-        df = df.sort_values(by="average", ascending=False)
+        df = df.sort_values(by="average", ascending=False).round(4)
         render_string = (
-            df.to_latex(index=False) if args.render_latex else df.to_markdown(index=False, tablefmt="github")
+            df.round(4).astype(str).to_latex(index=False)
+            if args.render_latex
+            else df.to_markdown(index=False, tablefmt="github")
         )
         render_string = render_string.replace("NaN", "")
         render_string = render_string.replace("nan", "")
