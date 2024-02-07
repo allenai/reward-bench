@@ -62,7 +62,9 @@ def print_model_statistics(
     )
 
     render_string = (
-        model_statistics_df.to_latex(index=False) if render_latex else model_statistics_df.to_markdown(index=False)
+        model_statistics_df.to_latex(index=False)
+        if render_latex
+        else model_statistics_df.to_markdown(index=False, tablefmt="github")
     )
     print(render_string)
     print(f"\nTotal number of models involved: {len(total_ctr) - 2}")

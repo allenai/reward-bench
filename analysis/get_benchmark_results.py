@@ -151,8 +151,11 @@ def main():
 
     for name, df in all_results.items():
         df = df.sort_values(by="average", ascending=False)
-        render_string = df.to_latex(index=False) if args.render_latex else df.to_markdown(index=False)
+        render_string = (
+            df.to_latex(index=False) if args.render_latex else df.to_markdown(index=False, tablefmt="github")
+        )
         render_string = render_string.replace("NaN", "")
+        render_string = render_string.replace("nan", "")
         print(name)
         print(render_string)
 
