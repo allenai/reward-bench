@@ -21,12 +21,21 @@ import datasets
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 
 def print_model_statistics(
     dataset_name: str = "ai2-adapt-dev/rm-benchmark-dev",
     keys: List[str] = ["chosen_model", "rejected_model"],
+    render_latex: bool = False,
 ):
+    """Print model counts and statistics into a Markdown/LaTeX table
+
+    dataset_name (str): the HuggingFace dataset name to source the eval dataset.
+    keys (List[str]): the dataset columns to include in the histogram.
+    render_latex (bool): if True, render a LaTeX string.
+    RETURNS (str): a Markdown/LaTeX rendering of a table.
+    """
     dataset = datasets.load_dataset(dataset_name, split="filtered")
 
     models = {key: [] for key in keys}
@@ -37,21 +46,29 @@ def print_model_statistics(
     counters = [Counter(models) for key, models in models.items()]
 
     # create another counter which is the sum of all in counters
-    total_counter = sum(counters, Counter())
-
-    # create markdown table with model, total counter,
+    total_ctr = sum(counters, Counter())
+    # create a table with model, total counter,
     # and the other counters by keys (0 if not in the sub counter)
-    print("| Model | Total |", " | ".join(keys), "|")
-    print("| --- | --- |", " | ".join(["---"] * len(keys)), "|")
-    for model, count in total_counter.most_common():
-        print(
-            f"| {model} | {count} |",
-            " | ".join([str(counter[model]) if model in counter else "0" for counter in counters]),
-            "|",
-        )
+    total_df = pd.DataFrame(total_ctr.most_common(), columns=["Model", "Total"])
+    chosen_ctr, rejected_ctr = counters
+    chosen_df = pd.DataFrame(chosen_ctr.most_common(), columns=["Model", "chosen_model"])
+    rejected_df = pd.DataFrame(rejected_ctr.most_common(), columns=["Model", "rejected_model"])
+    # merge these DataFrames into a single value
+    model_statistics_df = (
+        total_df.merge(chosen_df, how="left")
+        .merge(rejected_df, how="left")
+        .fillna(0)
+        .astype({key: int for key in keys})
+    )
 
-    # print total number of models involved (minus 2 for human + unkown)
-    print(f"\nTotal number of models involved: {len(total_counter) - 2}")
+    render_string = (
+        model_statistics_df.to_latex(index=False)
+        if render_latex
+        else model_statistics_df.to_markdown(index=False, tablefmt="github")
+    )
+    print(render_string)
+    print(f"\nTotal number of models involved: {len(total_ctr) - 2}")
+    return render_string
 
 
 def draw_model_source_histogram(
