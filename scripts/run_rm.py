@@ -97,6 +97,11 @@ def main():
         custom_dialogue = True
         model_builder = T5ForConditionalGeneration.from_pretrained
         pipeline_builder = SHPPipeline
+    elif "beaver" in args.model or "pku-align" in args.chat_template:
+        from herm.models.beaver import LlamaForScore
+
+        model_builder = LlamaForScore.from_pretrained
+        pipeline_builder = pipeline
     else:
         model_builder = AutoModelForSequenceClassification.from_pretrained
         pipeline_builder = pipeline
