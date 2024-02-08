@@ -45,7 +45,8 @@ python scripts/run_rm.py --model=weqweasdas/hh_rlhf_rm_open_llama_3b --chat_temp
 python scripts/run_rm.py --model=llm-blender/PairRM-hf --direct_load
 python scripts/run_rm.py --model=berkeley-nest/Starling-RM-7B-alpha --tokenizer=meta-llama/Llama-2-7b-chat-hf --chat_template=llama-2 --direct_load --batch_size=16
 python scripts/run_rm.py --model=stanfordnlp/SteamSHP-flan-t5-xl --direct_load --batch_size=32
-python scripts/run_rm.py --model=PKU-Alignment/beaver-7b-v1.0-reward --chat_template=pku-align --direct_load --batch_size=32
+python scripts/run_rm.py --model=PKU-Alignment/beaver-7b-v1.0-reward --chat_template=pku-align --direct_load --batch_size=16
+python scripts/run_rm.py --model=PKU-Alignment/beaver-7b-v1.0-cost --chat_template=pku-align --direct_load --batch_size=16
 ```
 
 And for DPO:
