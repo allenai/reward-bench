@@ -54,7 +54,12 @@ def get_args():
         "--tokenizer", type=str, default=None, help="path to non-matching tokenizer, requires --direct_load"
     )
     parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
-    parser.add_argument("--direct_load", action="store_true", help="directly load model instead of pipeline")
+    parser.add_argument(
+        "--direct_load", action="store_true", default=False, help="directly load model instead of pipeline"
+    )
+    parser.add_argument(
+        "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
+    )
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
     parser.add_argument("--batch_size", type=int, default=64, help="batch size for inference")
     parser.add_argument(
@@ -102,9 +107,17 @@ def main():
 
         model_builder = LlamaForScore.from_pretrained
         pipeline_builder = BeaverPipeline
+    elif "Ziya" in args.model or "Ziya" in args.chat_template:
+        from herm.models.ziya import ZiyaPipeline
+
+        model_builder = AutoModelForSequenceClassification.from_pretrained
+        pipeline_builder = ZiyaPipeline
+        quantized = False  # handled by .half() in the custom pipeline, as in model card
     else:
         model_builder = AutoModelForSequenceClassification.from_pretrained
         pipeline_builder = pipeline
+
+    trust_remote_code = args.trust_remote_code
 
     ###############
     # Setup logging
@@ -168,8 +181,8 @@ def main():
         model_kwargs = {"device_map": {"": current_device}}
     # TODO remove direct load logic
     # if pipeline_builder is pipeline, use built in pipeline, else custom
-    if args.direct_load:
-        model = model_builder(args.model, **model_kwargs)
+    if args.direct_load or not pipeline_builder == pipeline:
+        model = model_builder(args.model, **model_kwargs, trust_remote_code=trust_remote_code)
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
         reward_pipe = pipeline_builder(
             "text-classification",
@@ -183,6 +196,7 @@ def main():
             tokenizer=tokenizer,
             revision="main",
             model_kwargs=model_kwargs,
+            trust_remote_code=trust_remote_code,
         )
 
     ############################
