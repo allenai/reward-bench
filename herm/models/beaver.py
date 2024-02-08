@@ -18,11 +18,13 @@
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Any, ClassVar, Literal, Number
+from typing import Any, ClassVar, Literal
 
 import torch
 import torch.nn as nn
+from fastchat.conversation import Conversation, SeparatorStyle, register_conv_template
 from torch import distributed as dist
+from torch.types import Number
 from transformers import (
     LlamaModel,
     LlamaPreTrainedModel,
@@ -38,9 +40,6 @@ from transformers.utils.doc import (
     replace_return_docstrings,
 )
 from transformers.utils.generic import ModelOutput
-
-from fastchat.conversation import Conversation, SeparatorStyle, register_conv_template
-from transformers import LlamaModel, PreTrainedModel
 
 # UltraLM / UltraRM Chat Template
 # Reference1: https://huggingface.co/openbmb/UltraLM-65b
@@ -148,7 +147,7 @@ class Normalizer(nn.Module):
         shape: tuple[int, ...],
         device: torch.device | str | None = None,
         **kwargs: Any,
-    ) -> Normalizer:  # noqa
+    ):
         """Get a normalizer."""
         if normalizer_type == "RunningMeanStd":
             return RunningMeanStd(
@@ -468,3 +467,28 @@ class LlamaForScore(ScoreModelMixin, LlamaPreTrainedModel):
             attention_mask=attention_mask,
             return_dict=return_dict,
         )
+
+
+# Pipeline addition
+class BeaverPipeline:
+    # init loads task, tokenizer and model
+    def __init__(self, task, model, tokenizer):
+        self.task = task
+        self.model = model
+        self.tokenizer = tokenizer
+
+    def __call__(self, samples, **kwargs):
+        _ = kwargs.get("batch_size", 1)
+        truncation = kwargs.get("truncation", True)
+        padding = kwargs.get("padding", True)
+        max_length = kwargs.get("max_length", 2048)
+        inputs = self.tokenizer(
+            samples,
+            truncation=truncation,
+            max_length=max_length,
+            padding=padding,
+            return_tensors="pt",
+        ).to("cuda")
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+        return outputs.scores
