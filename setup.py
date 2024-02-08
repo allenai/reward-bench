@@ -43,7 +43,7 @@ setup(
         "pandas",
         "pytest",
         "scipy",
-        "tabulate",
+        "tabulate",  # dependency for markdown rendering in pandas
         "tokenizers",
         "transformers",
         "trl>=0.7.7",
