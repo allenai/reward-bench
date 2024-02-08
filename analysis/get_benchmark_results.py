@@ -121,13 +121,18 @@ def get_average_over_herm(
     """Get average over a strict subset of reward models"""
     new_df = df.copy()
     for subset in subsets:
-        subset_cols = [col for col in new_df.columns if subset in col]
+        if subset == "refusals":
+            subset_cols = ["refusals-dangerous", "refusals-offensive", "donotanswer","xstest"]
+        else:
+            subset_cols = [col for col in new_df.columns if subset in col]
         new_df[subset] = np.round(np.nanmean(new_df[subset_cols].values, axis=1), 2)
 
     keep_columns = ["model", "average"] + subsets
     new_df = new_df[keep_columns]
     # Replace 'average' column with new average
     new_df["average"] = np.round(np.nanmean(new_df[subsets].values, axis=1), 2)
+    # Rename column "hep" to "hep (code)"
+    new_df = new_df.rename(columns={"hep": "hep (code)"})        
     return new_df
 
 
