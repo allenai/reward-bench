@@ -17,7 +17,7 @@
 import argparse
 import os
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -53,11 +53,17 @@ def get_args():
         action="store_true",
         help="If set, then it will render a LaTeX string instead of Markdown.",
     )
+    parser.add_argument(
+        "--ignore_columns",
+        type=lambda x: x.split(",") if x is not None else None,
+        default=None,
+        help="Comma-separated column names to exclude from the report.",
+    )
     args = parser.parse_args()
     return args
 
 
-def load_results(repo_dir_path: Union[str, Path]) -> pd.DataFrame:
+def load_results(repo_dir_path: Union[str, Path], ignore_columns: Optional[List[str]] = None) -> pd.DataFrame:
     """Load results into a pandas DataFrame"""
     data_dir = Path(repo_dir_path) / "data"
     orgs_dir = {d.name: d for d in data_dir.iterdir() if d.is_dir()}
@@ -67,11 +73,7 @@ def load_results(repo_dir_path: Union[str, Path]) -> pd.DataFrame:
     _results: List[pd.DataFrame] = []  # will merge later
     for org, filepaths in model_result_files.items():
         for filepath in filepaths:
-            _results.append(
-                pd.DataFrame(
-                    load_dataset("json", data_files=str(filepath), split="train")
-                )
-            )
+            _results.append(pd.DataFrame(load_dataset("json", data_files=str(filepath), split="train")))
     results_df = pd.concat(_results)
 
     # Cleanup the dataframe for presentation
@@ -97,6 +99,15 @@ def load_results(repo_dir_path: Union[str, Path]) -> pd.DataFrame:
         cols = list(df.columns)
         cols.insert(1, cols.pop(cols.index("average")))
         df = df.loc[:, cols]
+
+        # remove columns
+        if ignore_columns:
+            # Get columns from df that exist in ignore_columns
+            _ignore_columns = [col for col in ignore_columns if col in df.columns]
+            if len(_ignore_columns) > 0:
+                print(f"Dropping columns: {', '.join(_ignore_columns)}")
+                df = df.drop(_ignore_columns, axis=1)
+
         return df
 
     results_df = _cleanup(results_df)
@@ -137,7 +148,7 @@ def main():
         etag_timeout=30,
         repo_type="dataset",
     )
-    hf_evals_df = load_results(hf_evals_repo)
+    hf_evals_df = load_results(hf_evals_repo, args.ignore_columns)
     hf_prefs_repo = snapshot_download(
         local_dir=Path(LOCAL_DIR) / "prefs",
         repo_id=args.hf_prefs_repo,
@@ -146,7 +157,7 @@ def main():
         etag_timeout=30,
         repo_type="dataset",
     )
-    hf_prefs_df = load_results(hf_prefs_repo)
+    hf_prefs_df = load_results(hf_prefs_repo, args.ignore_columns)
 
     all_results = {
         "HERM - Overview": get_average_over_herm(hf_evals_df),
