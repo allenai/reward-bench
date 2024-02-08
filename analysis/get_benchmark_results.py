@@ -67,7 +67,11 @@ def load_results(repo_dir_path: Union[str, Path]) -> pd.DataFrame:
     _results: List[pd.DataFrame] = []  # will merge later
     for org, filepaths in model_result_files.items():
         for filepath in filepaths:
-            _results.append(pd.DataFrame(load_dataset("json", data_files=str(filepath), split="train")))
+            _results.append(
+                pd.DataFrame(
+                    load_dataset("json", data_files=str(filepath), split="train")
+                )
+            )
     results_df = pd.concat(_results)
 
     # Cleanup the dataframe for presentation
@@ -100,7 +104,8 @@ def load_results(repo_dir_path: Union[str, Path]) -> pd.DataFrame:
 
 
 def get_average_over_herm(
-    df: pd.DataFrame, subsets: List[str] = ["alpacaeval", "mt-bench", "llmbar", "refusals", "hep"]
+    df: pd.DataFrame,
+    subsets: List[str] = ["alpacaeval", "mt-bench", "llmbar", "refusals", "hep"],
 ) -> pd.DataFrame:
     """Get average over a strict subset of reward models"""
     new_df = df.copy()
@@ -144,8 +149,8 @@ def main():
     hf_prefs_df = load_results(hf_prefs_repo)
 
     all_results = {
-        "HERM - Overview": hf_evals_df,
-        "HERM - Detailed": get_average_over_herm(hf_evals_df),
+        "HERM - Overview": get_average_over_herm(hf_evals_df),
+        "HERM - Detailed": hf_evals_df,
         "Pref Sets - Overview": hf_prefs_df,
     }
 

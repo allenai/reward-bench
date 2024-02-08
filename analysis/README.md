@@ -3,6 +3,30 @@
 We're going to add visualizations for both the eval. data and results here.
 So far, we have the following tools:
 
+### Get benchmark results
+This prints out the HERM results in a Markdown or LaTeX table. Note that you need to pass an API token to the `HF_COLLAB_TOKEN` environment variable.
+```
+# Use --render_latex for LaTeX output
+python analysis/get_benchmark_results.py
+```
+
+Below is a snippet of the output for the HERM - General results:
+
+| model                                            |   average |   alpacaeval |   mt-bench |   llmbar |   refusals |    hep |
+|--------------------------------------------------|-----------|--------------|------------|----------|------------|--------|
+| berkeley-nest/Starling-RM-7B-alpha               |      0.74 |         0.89 |       0.84 |     0.45 |       0.7  |   0.8  |
+| openbmb/UltraRM-13b                              |      0.68 |         0.98 |       0.93 |     0.54 |       0.08 |   0.86 |
+| stabilityai/stablelm-zephyr-3b                   |      0.64 |         0.9  |       0.84 |     0.52 |       0.3  |     |
+| OpenAssistant/reward-model-deberta-v3-large-v2   |      0.64 |         0.88 |       0.81 |     0.25 |       0.61 |   0.65 |
+| OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1     |      0.63 |         0.95 |       0.78 |     0.36 |       0.42 |     |
+| OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5 |      0.62 |         0.86 |       0.79 |     0.5  |       0.35 |     |
+| llm-blender/PairRM-hf                            |      0.6  |         0.85 |       0.86 |     0.53 |       0.13 |   0.64 |
+| weqweasdas/hh_rlhf_rm_open_llama_3b              |      0.54 |         0.79 |       0.72 |     0.41 |       0.22 |     |
+| stanfordnlp/SteamSHP-flan-t5-xl                  |      0.48 |         0.85 |       0.7  |     0.38 |       0.01 |   0.48 |
+
+
+
+
 ### Per token uterrance reward
 This returns the reward per-token to show how the reward evolves over a piece of text.
 ```
@@ -26,7 +50,7 @@ Reward: 0.093 | Substring: I love to walk the dog, what do you like?
 ### Model usage within eval. dataset
 To run this, execute:
 ```
-python -m analysis.draw_model_histogram output.png --log_scale
+python analysis/draw_model_histogram output.png --log_scale
 ```
 ![output](https://github.com/allenai/herm/assets/10695622/e5aa4c0f-83de-4997-8307-f49c22456671)
 
