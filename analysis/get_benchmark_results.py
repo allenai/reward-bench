@@ -122,7 +122,13 @@ def get_average_over_herm(
     new_df = df.copy()
     for subset in subsets:
         if subset == "refusals":
-            subset_cols = ["refusals-dangerous", "refusals-offensive", "donotanswer","xstest-should-refuse", "xstest-should-respond"]
+            subset_cols = [
+                "refusals-dangerous",
+                "refusals-offensive",
+                "donotanswer",
+                "xstest-should-refuse",
+                "xstest-should-respond",
+            ]
         else:
             subset_cols = [col for col in new_df.columns if subset in col]
         new_df[subset] = np.round(np.nanmean(new_df[subset_cols].values, axis=1), 2)
@@ -132,7 +138,7 @@ def get_average_over_herm(
     # Replace 'average' column with new average
     new_df["average"] = np.round(np.nanmean(new_df[subsets].values, axis=1), 2)
     # Rename column "hep" to "hep (code)"
-    new_df = new_df.rename(columns={"hep": "hep (code)"})        
+    new_df = new_df.rename(columns={"hep": "hep (code)"})
     return new_df
 
 
