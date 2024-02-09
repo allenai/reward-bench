@@ -47,6 +47,7 @@ python scripts/run_rm.py --model=berkeley-nest/Starling-RM-7B-alpha --tokenizer=
 python scripts/run_rm.py --model=stanfordnlp/SteamSHP-flan-t5-xl --direct_load --batch_size=32
 python scripts/run_rm.py --model=PKU-Alignment/beaver-7b-v1.0-reward --chat_template=pku-align --direct_load --batch_size=16
 python scripts/run_rm.py --model=PKU-Alignment/beaver-7b-v1.0-cost --chat_template=pku-align --direct_load --batch_size=16
+python scripts/run_rm.py --model=IDEA-CCNL/Ziya-LLaMA-7B-Reward --batch_size=32 --direct_load --trust_remote_code --chat_template=Ziya # custom code causing cuda issues
 ```
 
 And for DPO:

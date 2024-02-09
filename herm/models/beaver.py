@@ -491,4 +491,4 @@ class BeaverPipeline:
         ).to("cuda")
         with torch.no_grad():
             outputs = self.model(**inputs)
-        return outputs.scores
+        return outputs.end_scores
