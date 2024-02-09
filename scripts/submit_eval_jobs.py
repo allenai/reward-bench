@@ -21,9 +21,12 @@ d1['tasks'][0]['context']['cluster'] = cluster
 d1['tasks'][0]['context']['priority'] = "high"
 # d1['tasks'][0]['context']['priority'] = "preemptible"
 d1['tasks'][0]['resources']['gpuCount'] = num_gpus
-d1['tasks'][0]['envVars'][6]['value'] = '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'
+# TODO: DO NOT CHECK IN
+# TODO: Grab this from os.env??
+d1['tasks'][0]['envVars'][6]['value'] = '---'
 # TODO: enable after debugging
-upload_to_hub = False
+# TODO: add to experiment name
+upload_to_hub = True
 # TODO: enable to run on common preference sets instead of our custom eval set
 eval_on_pref_sets = False
 
@@ -356,4 +359,3 @@ for model_config in model_configs:
 
     cmd = "beaker experiment create {} --workspace ai2/herm".format(fn)
     subprocess.Popen(cmd, shell=True)
-    break

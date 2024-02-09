@@ -3,7 +3,7 @@ description: herm-eval-default
 tasks:
   - name: herm-eval-default
     image:
-      beaker: jacobm/herm
+      beaker: jacobm/herm-test
     command: [
       '/bin/sh', '-c'
     ]
