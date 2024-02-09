@@ -15,8 +15,7 @@ tasks:
       --batch_size 64
       --direct_load
       --do_not_save'
-      # --use_slow_tokenizer # TODO: only for Llama models right now
-      # --pref_sets
+      # --use_slow_tokenizer # TODO: may have to use this when training Llama models
     ]
     envVars:
       - name: CUDA_DEVICE_ORDER

@@ -18,9 +18,10 @@ RUN pip install flash-attn==2.2.2 --no-build-isolation
 RUN pip install -r requirements.txt
 RUN pip install "fschat[model_worker,webui]"
 
-COPY herm herm
+# TODO: enable these when training code is complete
 # COPY eval eval
 # COPY ds_configs ds_configs
+COPY herm herm
 COPY scripts scripts
 COPY setup.py setup.py
 COPY Makefile Makefile

@@ -313,6 +313,10 @@ def main():
     with open(path, "w") as f:
         f.write(dumped)
 
+    # Also write results so beaker can display them in the UI
+    with open(f'/output/metrics.json', 'w') as f:
+        f.write(dumped)
+
     # Upload results as json
     if not args.do_not_save:
         scores_url = api.upload_file(
