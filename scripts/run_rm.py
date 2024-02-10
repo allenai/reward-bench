@@ -41,6 +41,12 @@ from herm import load_eval_dataset
 HF_TOKEN = os.getenv("HF_TOKEN", None)
 api = HfApi(token=HF_TOKEN)
 
+# this is necessary to automatically log in when running this script in docker/batch beaker jobs
+if HF_TOKEN is not None:
+    from huggingface_hub._login import _login
+
+    _login(token=HF_TOKEN, add_to_git_credential=False)
+
 # data repo to upload results
 EVAL_REPO = "ai2-adapt-dev/rm-benchmark-results"
 PREFS_REPO = "ai2-adapt-dev/rm-testset-results"
@@ -332,6 +338,10 @@ def main():
         os.remove(path)
 
     with open(path, "w") as f:
+        f.write(dumped)
+
+    # Also write results so beaker can display them in the UI
+    with open("/output/metrics.json", "w") as f:
         f.write(dumped)
 
     # Upload results as json
