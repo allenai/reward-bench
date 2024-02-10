@@ -75,4 +75,4 @@ for model in models_to_evaluate:
     file.close()
 
     cmd = "beaker experiment create {} --workspace ai2/herm".format(fn)
-    # subprocess.Popen(cmd, shell=True)
+    subprocess.Popen(cmd, shell=True)
