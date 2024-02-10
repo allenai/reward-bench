@@ -42,6 +42,7 @@ api = HfApi(token=HF_TOKEN)
 # this is necessary to automatically log in when running this script in docker/batch beaker jobs
 if HF_TOKEN is not None:
     from huggingface_hub._login import _login
+
     _login(token=HF_TOKEN, add_to_git_credential=False)
 
 # data repo to upload results
@@ -314,7 +315,7 @@ def main():
         f.write(dumped)
 
     # Also write results so beaker can display them in the UI
-    with open(f'/output/metrics.json', 'w') as f:
+    with open("/output/metrics.json", "w") as f:
         f.write(dumped)
 
     # Upload results as json
