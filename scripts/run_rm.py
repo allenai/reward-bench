@@ -322,7 +322,7 @@ def main():
     # Save results locally (results/results.json)\
     dumped = json.dumps(results, indent=4, sort_keys=True, default=str)
     logger.info(f"Stored local JSON data {dumped}.")
-    path = f"results/metrics.json"
+    path = "results/metrics.json"
     dirname = os.path.dirname(path)
 
     if dirname != "":

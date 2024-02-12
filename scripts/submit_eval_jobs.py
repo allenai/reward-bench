@@ -1,8 +1,9 @@
 import copy
-import subprocess
-import yaml
 import os
+import subprocess
 from datetime import date
+
+import yaml
 
 today = date.today().strftime("%m%d%Y")
 
