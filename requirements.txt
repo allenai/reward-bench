@@ -12,6 +12,7 @@ click==8.1.7
 contourpy==1.2.0
 cycler==0.12.1
 datasets==2.16.0
+deepspeed>=0.10.0
 dill==0.3.7
 exceptiongroup==1.2.0
 fastapi==0.105.0
