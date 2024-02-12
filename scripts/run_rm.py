@@ -40,8 +40,7 @@ HF_TOKEN = os.getenv("HF_TOKEN", None)
 api = HfApi(token=HF_TOKEN)
 
 # data repo to upload results
-EVAL_REPO = "ai2-adapt-dev/rm-benchmark-results"
-PREFS_REPO = "ai2-adapt-dev/rm-testset-results"
+EVAL_REPO = "ai2-adapt-dev/HERM-Results"
 
 
 def get_args():
@@ -317,10 +316,11 @@ def main():
 
     # Upload results as json
     if not args.do_not_save:
+        sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
         scores_url = api.upload_file(
             path_or_fileobj=path,
-            path_in_repo=f"data/{args.model}.json",
-            repo_id=EVAL_REPO if not args.pref_sets else PREFS_REPO,  # push to correct results repo
+            path_in_repo=sub_path + f"{args.model}.json",
+            repo_id=EVAL_REPO,  # push to correct results repo
             repo_type="dataset",
             commit_message=f"Add reward model scores for  model {args.model}",
         )
