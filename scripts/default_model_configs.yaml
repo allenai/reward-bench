@@ -78,5 +78,68 @@ evaluation:
     direct_load: True
     trust_remote_code: True
 
-# TODO: add our training configs here
-# training:
+# TODO: finish these. we'll probably train in interactive jobs, but these are good to have
+training:
+  TinyLlama/TinyLlama-1.1B-Chat-v1.0:
+    num_gpus: -1
+    batch_size: -1
+    learning_rate: -1
+    num_train_epochs: 2
+    use_slow_tokenizer: False
+    max_seq_length: 2048
+    do_final_eval: True
+    use_flash_attn: False
+    bf16: False
+    # Are these all necessary?
+    per_device_train_batch_size: is this necessary? $BATCH_SIZE_PER_GPU
+    gradient_accumulation_steps: is this necessary? $GRADIENT_ACC_STEPS
+    # learning_rate: 2e-5
+    # lr_scheduler_type: linear
+    # warmup_ratio: 0.03
+    # weight_decay: 0.
+    # evaluation_strategy no
+    # logging_steps 1
+    # save_strategy epoch
+    # output_dir $OUTPUT_DIR
+  meta-llama/Llama-2-7b:
+    num_gpus: -1
+    batch_size: -1
+    learning_rate: -1
+    num_train_epochs: 2
+    use_slow_tokenizer: False
+    max_seq_length: 2048
+    do_final_eval: True
+    use_flash_attn: False
+    bf16: False
+    # Are these all necessary?
+    per_device_train_batch_size: is this necessary? $BATCH_SIZE_PER_GPU
+    gradient_accumulation_steps: is this necessary? $GRADIENT_ACC_STEPS
+    # learning_rate: 2e-5
+    # lr_scheduler_type: linear
+    # warmup_ratio: 0.03
+    # weight_decay: 0.
+    # evaluation_strategy no
+    # logging_steps 1
+    # save_strategy epoch
+    # output_dir $OUTPUT_DIR
+  allenai/tulu-2-7b:
+    num_gpus: -1
+    batch_size: -1
+    learning_rate: -1
+    num_train_epochs: 2
+    use_slow_tokenizer: False
+    max_seq_length: 2048
+    do_final_eval: True
+    use_flash_attn: False
+    bf16: False
+    # Are these all necessary?
+    per_device_train_batch_size: is this necessary? $BATCH_SIZE_PER_GPU
+    gradient_accumulation_steps: is this necessary? $GRADIENT_ACC_STEPS
+    # learning_rate: 2e-5
+    # lr_scheduler_type: linear
+    # warmup_ratio: 0.03
+    # weight_decay: 0.
+    # evaluation_strategy no
+    # logging_steps 1
+    # save_strategy epoch
+    # output_dir $OUTPUT_DIR

@@ -242,34 +242,8 @@ def main():
     # Set seed before initializing model.
     set_seed(training_args.seed)
 
+    # TODO: hardcode assumptions that we're using Hamish's dataset format
     if data_args.dataset_name is not None:
-        # Downloading and loading a dataset from the hub.
-        # raw_datasets = load_dataset(
-        #     data_args.dataset_name,
-        #     data_args.dataset_config_name,
-        #     cache_dir=model_args.cache_dir,
-        #     token=model_args.token,
-        #     streaming=data_args.streaming,
-        # )
-
-        # # STACK EXCHANGE
-        # train_dataset = Dataset.from_dict(
-        #         load_dataset(
-        #         "lvwerra/stack-exchange-paired",
-        #         data_dir="data/reward",
-        #         split="train",
-        #         # streaming=True
-        #     )[:100000]
-        # )
-        # eval_dataset = Dataset.from_dict(
-        #         load_dataset(
-        #         "lvwerra/stack-exchange-paired",
-        #         data_dir="data/evaluation",
-        #         split="train",
-        #         # streaming=True
-        #     )[:10]
-        # )
-
         # ALPACA FARM
         if data_args.dataset_name == 'alpaca_farm_human_preferences':
             raw_data = load_dataset('json', data_files='training_data/alpaca_human_preference.json')
@@ -380,24 +354,11 @@ def main():
     if len(tokenizer) > embedding_size:
         model.resize_token_embeddings(len(tokenizer))
 
-    # # Preprocessing the datasets.
-    # if "prompt" in raw_datasets["train"].column_names and "completion" in raw_datasets["train"].column_names:
-    #     encode_function = partial(
-    #         encode_with_prompt_completion_format,
-    #         tokenizer=tokenizer,
-    #         max_seq_length=data_args.max_seq_length,
-    #     )
-    # elif "messages" in raw_datasets["train"].column_names:
-    #     encode_function = partial(
-    #         encode_with_messages_format,
-    #         tokenizer=tokenizer,
-    #         max_seq_length=data_args.max_seq_length,
-    #     )
-    # else:
-    #     raise ValueError("You need to have either 'prompt'&'completion' or 'messages' in your column names.")
-        
     original_columns = train_dataset.column_names
     
+    ### TODO: assume we're using Hamish's format
+    ### TODO: use fastchat's conversation template
+
     def preprocess_instruct_gptj_synthetic(examples):
         '''
         Here we assume each example has a 'messages' field Each message is a dict with 'role' and 'content' fields.
@@ -616,12 +577,11 @@ def main():
     #         train_dataset = train_dataset.select(range(max_train_samples))
 
     # initalize a trainer
-    # here we use a custom trainer that moves the model to CPU when saving the checkpoint in FSDP mode
-    # we can switch to the default trainer after moving to deepspeed (let's don't change too much for now)
     trainer = RewardTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset if training_args.do_train else None,
+        # TODO: fix eval
         # eval_dataset=eval_dataset,
         tokenizer=tokenizer,
         # data_collator=DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model),
@@ -662,6 +622,8 @@ def main():
     #     trainer.push_to_hub(**kwargs)
     # else:
     #     trainer.create_model_card(**kwargs)
+        
+    # TODO: evaluate on HERM at the end?
 
 
 if __name__ == "__main__":
