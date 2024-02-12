@@ -46,11 +46,8 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, default="natolambert/gpt2-dummy-rm", help="path to model")
     parser.add_argument("--ref_model", type=str, default="natolambert/gpt2-dummy-rm", help="path to model")
-    parser.add_argument(
-        "--tokenizer", type=str, default=None, help="path to non-matching tokenizer, requires --direct_load"
-    )
+    parser.add_argument("--tokenizer", type=str, default=None, help="path to non-matching tokenizer")
     parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
-    parser.add_argument("--direct_load", action="store_true", help="directly load model instead of pipeline")
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
     parser.add_argument("--batch_size", type=int, default=64, help="batch size for inference")
     parser.add_argument(
@@ -171,26 +168,28 @@ def main():
     ############################
     # add column for results for easy printing
     out_dataset = dataset.add_column("results", results)
+    # add subsets back (removed so it's not handled by cuda)
+    out_dataset = out_dataset.add_column("subset", subsets)
 
-    results = {}
-    results["model"] = args.model
-    results["chat_template"] = args.chat_template
-    # print per subset and log into results file
+    results_grouped = {}
+    results_grouped["model"] = args.model
+    results_grouped["chat_template"] = args.chat_template
+    # print per subset and log into results_grouped file
     present_subsets = np.unique(subsets)
     for subset in present_subsets:
         subset_dataset = out_dataset.filter(lambda example: example["subset"] == subset)
         num_correct = sum(subset_dataset["results"])
         num_total = len(subset_dataset["results"])
         print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
-        results[subset] = num_correct / num_total
+        results_grouped[subset] = num_correct / num_total
 
     ############################
     # Upload results to hub
     ############################
     # Save results locally (results/results.json)\
-    dumped = json.dumps(results, indent=4, sort_keys=True, default=str)
+    dumped = json.dumps(results_grouped, indent=4, sort_keys=True, default=str)
     logger.info(f"Stored local JSON data {dumped}.")
-    path = f"results/{args.model}.json"
+    path = "results/metrics.json"
     dirname = os.path.dirname(path)
 
     if dirname != "":
