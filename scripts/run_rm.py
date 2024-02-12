@@ -301,7 +301,7 @@ def main():
     # Save results locally (results/results.json)\
     dumped = json.dumps(results, indent=4, sort_keys=True, default=str)
     logger.info(f"Stored local JSON data {dumped}.")
-    path = f"results/{args.model}.json"
+    path = f"results/metrics.json"
     dirname = os.path.dirname(path)
 
     if dirname != "":
@@ -312,10 +312,6 @@ def main():
         os.remove(path)
 
     with open(path, "w") as f:
-        f.write(dumped)
-
-    # Also write results so beaker can display them in the UI
-    with open("/output/metrics.json", "w") as f:
         f.write(dumped)
 
     # Upload results as json

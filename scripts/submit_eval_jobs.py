@@ -8,17 +8,20 @@ today = date.today().strftime("%m%d%Y")
 
 with open("beaker_configs/default_eval.yaml", "r") as f:
     d1 = yaml.load(f.read(), Loader=yaml.FullLoader)
-with open("scripts/default_model_configs.yaml", "r") as f:
-    configs = yaml.load(f.read(), Loader=yaml.FullLoader)["evaluation"]
+with open("scripts/default_eval_configs.yaml", "r") as f:
+    configs = yaml.load(f.read(), Loader=yaml.FullLoader)
 print(configs)
 
 cluster = "ai2/allennlp-cirrascale"
+# cluster = "ai2/mosaic-cirrascale"
+image = "jacobm/herm"
 num_gpus = 1
 upload_to_hub = False
 eval_on_pref_sets = False
 HF_TOKEN = os.getenv("HF_TOKEN")
 assert HF_TOKEN is not None, "HF Token does not exist -- run `Export HF_TOKEN=<your_write_token_here>'"
 
+d1["tasks"][0]["image"] = image
 d1["tasks"][0]["context"]["cluster"] = cluster
 d1["tasks"][0]["context"]["priority"] = "high"
 d1["tasks"][0]["resources"]["gpuCount"] = num_gpus

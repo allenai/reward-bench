@@ -1,3 +1,4 @@
+# TODO: Update this when releasing HERM publicly
 # This dockerfile is forked from ai2/cuda11.8-cudnn8-dev-ubuntu20.04
 # To get the latest id, run `beaker image pull ai2/cuda11.8-cudnn8-dev-ubuntu20.04` and then `docker image list`
 FROM gcr.io/ai2-beaker-core/public/cn1bn1sukva2b38lbbsg:latest

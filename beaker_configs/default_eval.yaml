@@ -4,7 +4,7 @@ budget: AllenNLP
 tasks:
   - name: herm-eval-default
     image:
-      beaker: jacobm/herm
+      beaker: <image>
     command: [
       '/bin/sh', '-c'
     ]
