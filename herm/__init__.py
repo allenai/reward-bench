@@ -21,4 +21,4 @@ from .utils import (
     save_to_hub,
 )
 
-__all__ = [DPOInference, prepare_dialogue, prepare_dialogue_from_tokenizer, load_eval_dataset, save_to_hub]
+__all__ = [DPOInference, load_eval_dataset, prepare_dialogue, prepare_dialogue_from_tokenizer, save_to_hub]

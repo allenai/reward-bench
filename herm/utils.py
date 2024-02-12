@@ -34,6 +34,9 @@ api = HfApi(token=HF_TOKEN)
 
 
 def save_to_hub(results_dict: Dict, model_name: str, target_path: str, debug: bool = False, local_only: bool = False):
+    """
+    Utility for saving results in dict to the hub in programatic organization.
+    """
     dumped = json.dumps(results_dict, indent=4, sort_keys=True, default=str)
     if "scores" in target_path:
         scores_path = f"results/scores/{model_name}.json"

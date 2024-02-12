@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import argparse
-import json
 import logging
 import os
 import sys
@@ -29,7 +28,7 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from trl.trainer.utils import DPODataCollatorWithPadding
 
-from herm import DPOInference, load_eval_dataset
+from herm import DPOInference, load_eval_dataset, save_to_hub
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -95,8 +94,18 @@ def main():
         conv=conv,
         tokenizer=tokenizer,
         logger=logger,
-        keep_columns=["text_chosen", "text_rejected"],
+        keep_columns=["text_chosen", "text_rejected", "id"],
     )
+
+    # copy id for saving, then remove
+    ids = dataset["id"]
+    dataset = dataset.remove_columns("id")
+
+    # debug: use only 10 examples
+    if args.debug:
+        dataset = dataset.select(range(10))
+        subsets = subsets[:10]
+        ids = ids[:10]
 
     ############################
     # Load reward model pipeline
@@ -143,6 +152,8 @@ def main():
     )
 
     results = []
+    scores_chosen = []
+    scores_rejected = []
     for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
         logger.info(f"RM inference step {step}/{len(dataloader)}")
 
@@ -151,16 +162,16 @@ def main():
         # extra score from dict within batched results (e.g. logits)
         # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
         if isinstance(rewards_chosen[0], dict):
-            score_chosen = [result["score"] for result in rewards_chosen]
-            score_rejected = [result["score"] for result in rewards_rejected]
+            scores_chosen_batch = [result["score"] for result in rewards_chosen]
+            scores_rejected_batch = [result["score"] for result in rewards_rejected]
         # for classes that directly output scores (custom code)
         else:
-            score_chosen = rewards_chosen.cpu().numpy().tolist()
-            score_rejected = rewards_rejected.cpu().numpy().tolist()
+            scores_chosen_batch = rewards_chosen.cpu().numpy().tolist()
+            scores_rejected_batch = rewards_rejected.cpu().numpy().tolist()
 
         [
             results.append(1) if chosen > rejected else results.append(0)
-            for chosen, rejected in zip(score_chosen, score_rejected)
+            for chosen, rejected in zip(scores_chosen_batch, scores_rejected_batch)
         ]
 
     ############################
@@ -168,8 +179,13 @@ def main():
     ############################
     # add column for results for easy printing
     out_dataset = dataset.add_column("results", results)
+
     # add subsets back (removed so it's not handled by cuda)
     out_dataset = out_dataset.add_column("subset", subsets)
+
+    # add scores_chosen and scores_rejected to the dataset
+    out_dataset = out_dataset.add_column("scores_chosen", scores_chosen)
+    out_dataset = out_dataset.add_column("scores_rejected", scores_rejected)
 
     results_grouped = {}
     results_grouped["model"] = args.model
@@ -186,33 +202,18 @@ def main():
     ############################
     # Upload results to hub
     ############################
-    # Save results locally (results/results.json)\
-    dumped = json.dumps(results_grouped, indent=4, sort_keys=True, default=str)
-    logger.info(f"Stored local JSON data {dumped}.")
-    path = "results/metrics.json"
-    dirname = os.path.dirname(path)
-
-    if dirname != "":
-        os.makedirs(dirname, exist_ok=True)
-
-    # remove old data
-    if os.path.isfile(path):
-        os.remove(path)
-
-    with open(path, "w") as f:
-        f.write(dumped)
-
-    # Upload results as json
+    sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
+    results_url = save_to_hub(results_grouped, args.model, sub_path, args.debug, local_only=args.do_not_save)
     if not args.do_not_save:
-        sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
-        scores_url = api.upload_file(
-            path_or_fileobj=path,
-            path_in_repo=sub_path + f"{args.model}.json",
-            repo_id=EVAL_REPO,  # push to correct results repo
-            repo_type="dataset",
-            commit_message=f"Add reward model scores for  model {args.model}",
-        )
-        logger.info(f"Uploaded reward model scores to {scores_url}")
+        logger.info(f"Uploaded reward model results to {results_url}")
+
+    # upload chosen-rejected with scores
+    # create new json with scores and upload
+    scores_dict = out_dataset.to_dict()
+    sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
+
+    scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug)
+    logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
 
 
 if __name__ == "__main__":
