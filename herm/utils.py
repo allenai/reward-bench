@@ -12,15 +12,55 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
+import os
 from typing import Any, Dict, List
 
 from datasets import Dataset, concatenate_datasets, load_dataset
 from fastchat.conversation import Conversation
+from huggingface_hub import HfApi
 from transformers import PreTrainedTokenizer
 
 CORE_EVAL_SET = "ai2-adapt-dev/rm-benchmark-dev"
 EXTRA_PREF_SETS = "allenai/pref-test-sets"
+
+# data repo to upload results
+EVAL_REPO = "ai2-adapt-dev/HERM-Results"
+
+# get token from HF_TOKEN env variable, but if it doesn't exist pass none
+HF_TOKEN = os.getenv("HF_TOKEN", None)
+api = HfApi(token=HF_TOKEN)
+
+
+def save_to_hub(results_dict: Dict, model_name: str, target_path: str, debug: bool = False, local_only: bool = False):
+    dumped = json.dumps(results_dict, indent=4, sort_keys=True, default=str)
+    if "scores" in target_path:
+        scores_path = f"results/scores/{model_name}.json"
+    else:
+        scores_path = f"results/metrics/{model_name}.json"
+
+    dirname = os.path.dirname(scores_path)
+    os.makedirs(dirname, exist_ok=True)
+
+    # remove old data
+    if os.path.isfile(scores_path):
+        os.remove(scores_path)
+
+    with open(scores_path, "w") as f:
+        f.write(dumped)
+
+    if not local_only:
+        scores_url = api.upload_file(
+            path_or_fileobj=scores_path,
+            path_in_repo=target_path + f"{model_name}.json",
+            repo_id=EVAL_REPO if not debug else "ai2-adapt-dev/herm-debug",  # push to correct results repo
+            repo_type="dataset",
+            commit_message=f"Add chosen-rejected text with scores for  model {model_name}",
+        )
+        return scores_url
+    else:
+        return None
 
 
 def map_conversations_testsets(example):

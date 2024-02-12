@@ -14,6 +14,11 @@
 
 __version__ = "0.1.0.dev"
 from .dpo import DPOInference
-from .utils import load_eval_dataset, prepare_dialogue, prepare_dialogue_from_tokenizer
+from .utils import (
+    load_eval_dataset,
+    prepare_dialogue,
+    prepare_dialogue_from_tokenizer,
+    save_to_hub,
+)
 
-__all__ = [DPOInference, prepare_dialogue, prepare_dialogue_from_tokenizer, load_eval_dataset]
+__all__ = [DPOInference, prepare_dialogue, prepare_dialogue_from_tokenizer, load_eval_dataset, save_to_hub]

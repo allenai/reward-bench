@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import argparse
-import json
 import logging
 import os
 import sys
@@ -24,7 +23,6 @@ import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from fastchat.conversation import get_conv_template
-from huggingface_hub import HfApi
 from tqdm import tqdm
 from transformers import (
     AutoModelForSequenceClassification,
@@ -33,20 +31,15 @@ from transformers import (
     pipeline,
 )
 
-from herm import load_eval_dataset
+from herm import load_eval_dataset, save_to_hub
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
-api = HfApi(token=HF_TOKEN)
-
 # this is necessary to automatically log in when running this script in docker/batch beaker jobs
 if HF_TOKEN is not None:
     from huggingface_hub._login import _login
 
     _login(token=HF_TOKEN, add_to_git_credential=False)
-
-# data repo to upload results
-EVAL_REPO = "ai2-adapt-dev/HERM-Results"
 
 
 def get_args():
@@ -324,62 +317,21 @@ def main():
     ############################
     # Upload results to hub
     ############################
-    # Save results locally (results/results.json)\
-    dumped = json.dumps(results_grouped, indent=4, sort_keys=True, default=str)
-    logger.info(f"Stored local JSON data {dumped}.")
-    path = f"results/metrics/{args.model}.json"
-    dirname = os.path.dirname(path)
-    os.makedirs(dirname, exist_ok=True)
-
-    # remove old data
-    if os.path.isfile(path):
-        os.remove(path)
-
-    with open(path, "w") as f:
-        f.write(dumped)
-
-    # Upload results as json
+    sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
+    results_url = save_to_hub(results_grouped, args.model, sub_path, args.debug, local_only=args.do_not_save)
     if not args.do_not_save:
-        # upload core results
-        sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
-        scores_url = api.upload_file(
-            path_or_fileobj=path,
-            path_in_repo=sub_path + f"{args.model}.json",
-            repo_id=EVAL_REPO if not args.debug else "ai2-adapt-dev/herm-debug",  # push to correct results repo
-            repo_type="dataset",
-            commit_message=f"Add reward model scores for  model {args.model}",
-        )
-        logger.info(f"Uploaded reward model scores to {scores_url}")
+        logger.info(f"Uploaded reward model results to {results_url}")
 
-        # upload chosen-rejected with scores
-        if not ("PairRM" in args.model or "SteamSHP" in args.model):
-            # create new json with scores and upload
-            scores_dict = out_dataset.to_dict()
-            dumped = json.dumps(scores_dict, indent=4, sort_keys=True, default=str)
-            scores_path = f"results/scores/{args.model}.json"
-            dirname = os.path.dirname(scores_path)
-            os.makedirs(dirname, exist_ok=True)
+    # upload chosen-rejected with scores
+    if not ("PairRM" in args.model or "SteamSHP" in args.model):
+        # create new json with scores and upload
+        scores_dict = out_dataset.to_dict()
+        sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
 
-            # remove old data
-            if os.path.isfile(scores_path):
-                os.remove(scores_path)
-
-            with open(scores_path, "w") as f:
-                f.write(dumped)
-
-            sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
-
-            scores_url = api.upload_file(
-                path_or_fileobj=scores_path,
-                path_in_repo=sub_path_scores + f"{args.model}.json",
-                repo_id=EVAL_REPO if not args.debug else "ai2-adapt-dev/herm-debug",  # push to correct results repo
-                repo_type="dataset",
-                commit_message=f"Add chosen-rejected text with scores for  model {args.model}",
-            )
-
-            logger.info("Uploading chosen-rejected text with scores")
-        else:
-            logger.info("Not uploading chosen-rejected text with scores due to model compatibility")
+        scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug)
+        logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
+    else:
+        logger.info("Not uploading chosen-rejected text with scores due to model compatibility")
 
 
 if __name__ == "__main__":
