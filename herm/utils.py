@@ -40,8 +40,10 @@ def save_to_hub(results_dict: Dict, model_name: str, target_path: str, debug: bo
     dumped = json.dumps(results_dict, indent=4, sort_keys=True, default=str)
     if "scores" in target_path:
         scores_path = f"results/scores/{model_name}.json"
+        beaker_path = None
     else:
         scores_path = f"results/metrics/{model_name}.json"
+        beaker_path = "results/metrics.json"  # save format for AI2 beaker to show results
 
     dirname = os.path.dirname(scores_path)
     os.makedirs(dirname, exist_ok=True)
@@ -52,6 +54,11 @@ def save_to_hub(results_dict: Dict, model_name: str, target_path: str, debug: bo
 
     with open(scores_path, "w") as f:
         f.write(dumped)
+
+    # ai2 internal visualization, not needed external
+    if beaker_path:
+        with open(beaker_path, "w") as f:
+            f.write(dumped)
 
     if not local_only:
         scores_url = api.upload_file(
