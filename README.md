@@ -7,7 +7,7 @@ Two primary scripts need to be created:
 
 ## Links
 Dataset, space, etc coming soon.
-For contributors, it can be found in this [HuggingFace org](https://huggingface.co/ai2-rlhf-collab).
+For contributors, it can be found in this [HuggingFace org](https://huggingface.co/ai2-adapt-dev).
 
 ## Installation
 Please install `torch`` on your system, and then install the following requirements.
@@ -45,6 +45,9 @@ python scripts/run_rm.py --model=weqweasdas/hh_rlhf_rm_open_llama_3b --chat_temp
 python scripts/run_rm.py --model=llm-blender/PairRM-hf --direct_load
 python scripts/run_rm.py --model=berkeley-nest/Starling-RM-7B-alpha --tokenizer=meta-llama/Llama-2-7b-chat-hf --chat_template=llama-2 --direct_load --batch_size=16
 python scripts/run_rm.py --model=stanfordnlp/SteamSHP-flan-t5-xl --direct_load --batch_size=32
+python scripts/run_rm.py --model=PKU-Alignment/beaver-7b-v1.0-reward --chat_template=pku-align --direct_load --batch_size=16
+python scripts/run_rm.py --model=PKU-Alignment/beaver-7b-v1.0-cost --chat_template=pku-align --direct_load --batch_size=16
+python scripts/run_rm.py --model=IDEA-CCNL/Ziya-LLaMA-7B-Reward --batch_size=32 --direct_load --trust_remote_code --chat_template=Ziya # custom code causing cuda issues
 ```
 
 And for DPO:
