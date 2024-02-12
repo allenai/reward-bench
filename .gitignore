@@ -165,6 +165,9 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# generated beaker configs
+beaker_configs/auto_created
+
 # image / plot outputs
 *.png
 
