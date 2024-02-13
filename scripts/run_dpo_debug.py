@@ -66,7 +66,9 @@ def main():
     ###############
     accelerator = Accelerator()
     current_device = accelerator.process_index
-
+    print(current_device)
+    print('teeest')
+    sys.exit(0)
     logger = get_logger(__name__)
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -123,6 +125,12 @@ def main():
         args.model,
         **model_kwargs,
     )
+    model_kwargs_ref = {
+        "load_in_8bit": True,
+        "device_map": {"": current_device},
+        "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
+        "trust_remote_code": True,
+    }
     ref_model = AutoModelForCausalLM.from_pretrained(
         args.ref_model,
         **model_kwargs,
