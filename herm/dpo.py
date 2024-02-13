@@ -36,6 +36,7 @@ class DPOInference:
             label_pad_token_id  for the prompt tokens.
         """
         batch = {}
+        print(feature)
         prompt = feature["prompt"]
         chosen = feature["text_chosen"]  # modified from source
         rejected = feature["text_rejected"]  # modified from source
