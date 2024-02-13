@@ -44,6 +44,8 @@ from trl import (
     # get_quantization_config
 )
 
+from reproduce_ultrafeedback_data import get_all_datasets
+
 
 logger = logging.getLogger(__name__)
 
@@ -249,6 +251,9 @@ def main():
             raw_data = load_dataset('json', data_files='training_data/alpaca_human_preference.json')
             train_dataset = Dataset.from_dict(raw_data['train'][:len(raw_data) - 1001])
             eval_dataset = Dataset.from_dict(raw_data['train'][len(raw_data) - 1001:])
+
+        elif data_args.dataset_name == 'ultrafeedback':
+            train_dataset = get_all_datasets()
 
         # anthropic hh rlhf, etc
         else:
@@ -526,12 +531,42 @@ def main():
             new_examples["input_ids_rejected"].append(tokenized_rejected["input_ids"])
             new_examples["attention_mask_rejected"].append(tokenized_rejected["attention_mask"])
         return new_examples
+    
+    def preprocess_ultrafeedback(examples):
+        new_examples = {
+            "input_ids_chosen": [],
+            "attention_mask_chosen": [],
+            "input_ids_rejected": [],
+            "attention_mask_rejected": [],
+        }
+        for chosen, rejected in zip(
+                examples["chosen"],
+                examples["rejected"],
+            ):
+            tokenized_chosen = tokenizer(
+                chosen,
+                max_length=data_args.max_seq_length,
+                truncation=True,
+                # padding='max_length',
+            )
+            tokenized_rejected = tokenizer(
+                rejected,
+                max_length=data_args.max_seq_length,
+                truncation=True,
+                # padding='max_length',
+            )
+            new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
+            new_examples["attention_mask_chosen"].append(tokenized_chosen["attention_mask"])
+            new_examples["input_ids_rejected"].append(tokenized_rejected["input_ids"])
+            new_examples["attention_mask_rejected"].append(tokenized_rejected["attention_mask"])
+        return new_examples
 
 
     # preprocess the dataset and filter out QAs that are longer than script_args.max_length
     train_dataset = train_dataset.map(
         # preprocess_instruct_gptj_synthetic,
-        preprocess_alpaca_farm if data_args.dataset_name == 'alpaca_farm_human_preferences' else preprocess_instruct_gptj_synthetic,
+        # preprocess_alpaca_farm if data_args.dataset_name == 'alpaca_farm_human_preferences' else preprocess_instruct_gptj_synthetic,
+        preprocess_ultrafeedback
         batched=True,
         # TODO: reenable for non-streaming datasets
         # num_proc=data_args.preprocessing_num_workers,
