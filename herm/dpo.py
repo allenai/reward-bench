@@ -37,6 +37,8 @@ class DPOInference:
         """
         batch = {}
         print(feature)
+        print('teeest')
+        sys.exit(0)
         prompt = feature["prompt"]
         chosen = feature["text_chosen"]  # modified from source
         rejected = feature["text_rejected"]  # modified from source
