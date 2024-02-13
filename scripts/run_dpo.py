@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import argparse
-import json
 import logging
 import os
 import sys
@@ -29,7 +28,7 @@ from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from trl.trainer.utils import DPODataCollatorWithPadding
 
-from herm import DPOInference, load_eval_dataset
+from herm import DPOInference, load_eval_dataset, save_to_hub
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -46,11 +45,8 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, default="natolambert/gpt2-dummy-rm", help="path to model")
     parser.add_argument("--ref_model", type=str, default="natolambert/gpt2-dummy-rm", help="path to model")
-    parser.add_argument(
-        "--tokenizer", type=str, default=None, help="path to non-matching tokenizer, requires --direct_load"
-    )
+    parser.add_argument("--tokenizer", type=str, default=None, help="path to non-matching tokenizer")
     parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
-    parser.add_argument("--direct_load", action="store_true", help="directly load model instead of pipeline")
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
     parser.add_argument("--batch_size", type=int, default=64, help="batch size for inference")
     parser.add_argument(
@@ -98,8 +94,18 @@ def main():
         conv=conv,
         tokenizer=tokenizer,
         logger=logger,
-        keep_columns=["text_chosen", "text_rejected"],
+        keep_columns=["text_chosen", "text_rejected", "id"],
     )
+
+    # copy id for saving, then remove
+    ids = dataset["id"]
+    dataset = dataset.remove_columns("id")
+
+    # debug: use only 10 examples
+    if args.debug:
+        dataset = dataset.select(range(10))
+        subsets = subsets[:10]
+        ids = ids[:10]
 
     ############################
     # Load reward model pipeline
@@ -146,6 +152,8 @@ def main():
     )
 
     results = []
+    scores_chosen = []
+    scores_rejected = []
     for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
         logger.info(f"RM inference step {step}/{len(dataloader)}")
 
@@ -154,16 +162,16 @@ def main():
         # extra score from dict within batched results (e.g. logits)
         # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
         if isinstance(rewards_chosen[0], dict):
-            score_chosen = [result["score"] for result in rewards_chosen]
-            score_rejected = [result["score"] for result in rewards_rejected]
+            scores_chosen_batch = [result["score"] for result in rewards_chosen]
+            scores_rejected_batch = [result["score"] for result in rewards_rejected]
         # for classes that directly output scores (custom code)
         else:
-            score_chosen = rewards_chosen.cpu().numpy().tolist()
-            score_rejected = rewards_rejected.cpu().numpy().tolist()
+            scores_chosen_batch = rewards_chosen.cpu().numpy().tolist()
+            scores_rejected_batch = rewards_rejected.cpu().numpy().tolist()
 
         [
             results.append(1) if chosen > rejected else results.append(0)
-            for chosen, rejected in zip(score_chosen, score_rejected)
+            for chosen, rejected in zip(scores_chosen_batch, scores_rejected_batch)
         ]
 
     ############################
@@ -172,48 +180,40 @@ def main():
     # add column for results for easy printing
     out_dataset = dataset.add_column("results", results)
 
-    results = {}
-    results["model"] = args.model
-    results["chat_template"] = args.chat_template
-    # print per subset and log into results file
+    # add subsets back (removed so it's not handled by cuda)
+    out_dataset = out_dataset.add_column("subset", subsets)
+
+    # add scores_chosen and scores_rejected to the dataset
+    out_dataset = out_dataset.add_column("scores_chosen", scores_chosen)
+    out_dataset = out_dataset.add_column("scores_rejected", scores_rejected)
+
+    results_grouped = {}
+    results_grouped["model"] = args.model
+    results_grouped["chat_template"] = args.chat_template
+    # print per subset and log into results_grouped file
     present_subsets = np.unique(subsets)
     for subset in present_subsets:
         subset_dataset = out_dataset.filter(lambda example: example["subset"] == subset)
         num_correct = sum(subset_dataset["results"])
         num_total = len(subset_dataset["results"])
         print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
-        results[subset] = num_correct / num_total
+        results_grouped[subset] = num_correct / num_total
 
     ############################
     # Upload results to hub
     ############################
-    # Save results locally (results/results.json)\
-    dumped = json.dumps(results, indent=4, sort_keys=True, default=str)
-    logger.info(f"Stored local JSON data {dumped}.")
-    path = f"results/{args.model}.json"
-    dirname = os.path.dirname(path)
-
-    if dirname != "":
-        os.makedirs(dirname, exist_ok=True)
-
-    # remove old data
-    if os.path.isfile(path):
-        os.remove(path)
-
-    with open(path, "w") as f:
-        f.write(dumped)
-
-    # Upload results as json
+    sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
+    results_url = save_to_hub(results_grouped, args.model, sub_path, args.debug, local_only=args.do_not_save)
     if not args.do_not_save:
-        sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
-        scores_url = api.upload_file(
-            path_or_fileobj=path,
-            path_in_repo=sub_path + f"{args.model}.json",
-            repo_id=EVAL_REPO,  # push to correct results repo
-            repo_type="dataset",
-            commit_message=f"Add reward model scores for  model {args.model}",
-        )
-        logger.info(f"Uploaded reward model scores to {scores_url}")
+        logger.info(f"Uploaded reward model results to {results_url}")
+
+    # upload chosen-rejected with scores
+    # create new json with scores and upload
+    scores_dict = out_dataset.to_dict()
+    sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
+
+    scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug)
+    logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
 
 
 if __name__ == "__main__":

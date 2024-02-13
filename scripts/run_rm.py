@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import argparse
-import json
 import logging
 import os
 import sys
@@ -24,7 +23,6 @@ import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from fastchat.conversation import get_conv_template
-from huggingface_hub import HfApi
 from tqdm import tqdm
 from transformers import (
     AutoModelForSequenceClassification,
@@ -33,20 +31,15 @@ from transformers import (
     pipeline,
 )
 
-from herm import load_eval_dataset
+from herm import load_eval_dataset, save_to_hub
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
-api = HfApi(token=HF_TOKEN)
-
 # this is necessary to automatically log in when running this script in docker/batch beaker jobs
 if HF_TOKEN is not None:
     from huggingface_hub._login import _login
 
     _login(token=HF_TOKEN, add_to_git_credential=False)
-
-# data repo to upload results
-EVAL_REPO = "ai2-adapt-dev/HERM-Results"
 
 
 def get_args():
@@ -55,13 +48,8 @@ def get_args():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, default="natolambert/gpt2-dummy-rm", help="path to model")
-    parser.add_argument(
-        "--tokenizer", type=str, default=None, help="path to non-matching tokenizer, requires --direct_load"
-    )
+    parser.add_argument("--tokenizer", type=str, default=None, help="path to non-matching tokenizer to model")
     parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
-    parser.add_argument(
-        "--direct_load", action="store_true", default=False, help="directly load model instead of pipeline"
-    )
     parser.add_argument(
         "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
     )
@@ -69,6 +57,9 @@ def get_args():
     parser.add_argument("--batch_size", type=int, default=64, help="batch size for inference")
     parser.add_argument(
         "--pref_sets", action="store_true", help="run on common preference sets instead of our custom eval set"
+    )
+    parser.add_argument(
+        "--debug", action="store_true", help="run on common preference sets instead of our custom eval set"
     )
     args = parser.parse_args()
     return args
@@ -101,7 +92,7 @@ def main():
         custom_dialogue = True
         model_builder = DebertaV2PairRM.from_pretrained
         pipeline_builder = PairRMPipeline
-    elif "SHP" in args.model or "SHP" in args.chat_template:
+    elif "SteamSHP" in args.model or "SteamSHP" in args.chat_template:
         from herm.models.shp import SHPPipeline
 
         custom_dialogue = True
@@ -160,8 +151,18 @@ def main():
         custom_dialogue_formatting=custom_dialogue,
         tokenizer=tokenizer,
         logger=logger,
-        keep_columns=["text_chosen", "text_rejected"],
+        keep_columns=["text_chosen", "text_rejected", "id"],
     )
+
+    # copy id for saving, then remove
+    ids = dataset["id"]
+    dataset = dataset.remove_columns("id")
+
+    # debug: use only 10 examples
+    if args.debug:
+        dataset = dataset.select(range(10))
+        subsets = subsets[:10]
+        ids = ids[:10]
 
     ############################
     # Load reward model pipeline
@@ -184,25 +185,13 @@ def main():
         }
     else:
         model_kwargs = {"device_map": {"": current_device}}
-    # TODO remove direct load logic
-    # if pipeline_builder is pipeline, use built in pipeline, else custom
-    if args.direct_load or not pipeline_builder == pipeline:
-        model = model_builder(args.model, **model_kwargs, trust_remote_code=trust_remote_code)
-        tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-        reward_pipe = pipeline_builder(
-            "text-classification",
-            model=model,
-            tokenizer=tokenizer,
-        )
-    else:
-        reward_pipe = pipeline(
-            "text-classification",
-            model=args.model,
-            tokenizer=tokenizer,
-            revision="main",
-            model_kwargs=model_kwargs,
-            trust_remote_code=trust_remote_code,
-        )
+
+    model = model_builder(args.model, **model_kwargs, trust_remote_code=trust_remote_code)
+    reward_pipe = pipeline_builder(
+        "text-classification",
+        model=model,
+        tokenizer=tokenizer,
+    )
 
     ############################
     # Tokenization settings & dataset preparation
@@ -217,7 +206,7 @@ def main():
     ############################
     # if using HF pipeline, can pass entire dataset and get results
     # first, handle custom pipelines that we must batch normally
-    if not args.direct_load or pipeline_builder == pipeline:
+    if pipeline_builder == pipeline:
         logger.info("*** Running forward pass via built in pipeline abstraction ***")
         # this setup can be optimized slightly with one pipeline call
         # prepare for inference
@@ -227,11 +216,11 @@ def main():
         results_cho = reward_pipe(dataset["text_chosen"], **reward_pipeline_kwargs)
 
         # extract scores from results which is list of dicts, e.g. [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
-        score_chosen = [result["score"] for result in results_cho]
-        score_rejected = [result["score"] for result in results_rej]
+        scores_chosen = [result["score"] for result in results_cho]
+        scores_rejected = [result["score"] for result in results_rej]
 
         # pairwise comparison list comprehension
-        results = [1 if chosen > rejected else 0 for chosen, rejected in zip(score_chosen, score_rejected)]
+        results = [1 if chosen > rejected else 0 for chosen, rejected in zip(scores_chosen, scores_rejected)]
 
     ############################
     # Run inference [2/2] custom pipelines
@@ -262,19 +251,18 @@ def main():
         reward_pipe.model = model
 
         results = []
+        scores_chosen = []
+        scores_rejected = []
         for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
             logger.info(f"RM inference step {step}/{len(dataloader)}")
 
-            if (
-                "PairRM" in args.model
-                or "PairRM" in args.chat_template
-                or "SHP" in args.model
-                or "SHP" in args.chat_template
-            ):
+            if "PairRM" in args.model or "SteamSHP" in args.model:
                 text_rejected = [b["text_rejected"] for b in batch]
                 text_chosen = [b["text_chosen"] for b in batch]
                 results_sub = reward_pipe(text_chosen, text_rejected, **reward_pipeline_kwargs)
                 [results.append(1) if result else results.append(0) for result in results_sub.cpu().numpy().tolist()]
+                scores_chosen.extend(None * len(results_sub))
+                scores_rejected.extend(None * len(results_sub))
             else:
                 rewards_chosen = reward_pipe(batch["text_chosen"], **reward_pipeline_kwargs)
                 rewards_rejected = reward_pipe(batch["text_rejected"], **reward_pipeline_kwargs)
@@ -283,68 +271,67 @@ def main():
                 # extra score from dict within batched results (e.g. logits)
                 # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
                 if isinstance(rewards_chosen[0], dict):
-                    score_chosen = [result["score"] for result in rewards_chosen]
-                    score_rejected = [result["score"] for result in rewards_rejected]
+                    score_chosen_batch = [result["score"] for result in rewards_chosen]
+                    score_rejected_batch = [result["score"] for result in rewards_rejected]
                 # for classes that directly output scores (custom code)
                 else:
-                    score_chosen = rewards_chosen.cpu().numpy().tolist()
-                    score_rejected = rewards_rejected.cpu().numpy().tolist()
+                    score_chosen_batch = rewards_chosen.cpu().numpy().tolist()
+                    score_rejected_batch = rewards_rejected.cpu().numpy().tolist()
 
+                # log results
                 [
                     results.append(1) if chosen > rejected else results.append(0)
-                    for chosen, rejected in zip(score_chosen, score_rejected)
+                    for chosen, rejected in zip(score_chosen_batch, score_rejected_batch)
                 ]
+                scores_chosen.extend(score_chosen_batch)
+                scores_rejected.extend(score_rejected_batch)
 
     ############################
     # Print & process results
     ############################
     # add column for results for easy printing
     out_dataset = dataset.add_column("results", results)
+
     # add subsets back (removed so it's not handled by cuda)
     out_dataset = out_dataset.add_column("subset", subsets)
+    out_dataset = out_dataset.add_column("id", ids)
 
-    results = {}
-    results["model"] = args.model
-    results["chat_template"] = args.chat_template
-    # print per subset and log into results file
+    # add scores_chosen and scores_rejected to the dataset
+    out_dataset = out_dataset.add_column("scores_chosen", scores_chosen)
+    out_dataset = out_dataset.add_column("scores_rejected", scores_rejected)
+
+    # get core dataset
+    results_grouped = {}
+    results_grouped["model"] = args.model
+    results_grouped["chat_template"] = args.chat_template
+
+    # print per subset and log into results_grouped file
     present_subsets = np.unique(subsets)
     for subset in present_subsets:
         subset_dataset = out_dataset.filter(lambda example: example["subset"] == subset)
         num_correct = sum(subset_dataset["results"])
         num_total = len(subset_dataset["results"])
         print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
-        results[subset] = num_correct / num_total
+        results_grouped[subset] = num_correct / num_total
 
     ############################
     # Upload results to hub
     ############################
-    # Save results locally (results/results.json)\
-    dumped = json.dumps(results, indent=4, sort_keys=True, default=str)
-    logger.info(f"Stored local JSON data {dumped}.")
-    path = "results/metrics.json"
-    dirname = os.path.dirname(path)
-
-    if dirname != "":
-        os.makedirs(dirname, exist_ok=True)
-
-    # remove old data
-    if os.path.isfile(path):
-        os.remove(path)
-
-    with open(path, "w") as f:
-        f.write(dumped)
-
-    # Upload results as json
+    sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
+    results_url = save_to_hub(results_grouped, args.model, sub_path, args.debug, local_only=args.do_not_save)
     if not args.do_not_save:
-        sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
-        scores_url = api.upload_file(
-            path_or_fileobj=path,
-            path_in_repo=sub_path + f"{args.model}.json",
-            repo_id=EVAL_REPO,  # push to correct results repo
-            repo_type="dataset",
-            commit_message=f"Add reward model scores for  model {args.model}",
-        )
-        logger.info(f"Uploaded reward model scores to {scores_url}")
+        logger.info(f"Uploaded reward model results to {results_url}")
+
+    # upload chosen-rejected with scores
+    if not ("PairRM" in args.model or "SteamSHP" in args.model):
+        # create new json with scores and upload
+        scores_dict = out_dataset.to_dict()
+        sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
+
+        scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug)
+        logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
+    else:
+        logger.info("Not uploading chosen-rejected text with scores due to model compatibility")
 
 
 if __name__ == "__main__":
