@@ -253,8 +253,8 @@ def main():
             eval_dataset = Dataset.from_dict(raw_data['train'][len(raw_data) - 1001:])
 
         elif data_args.dataset_name == 'ultrafeedback':
-            train_dataset = Dataset.from_dict(get_all_datasets()[:1024])
-            # train_dataset = get_all_datasets()
+            # train_dataset = Dataset.from_dict(get_all_datasets()[:1024])
+            train_dataset = get_all_datasets()
 
         # anthropic hh rlhf, etc
         else:
