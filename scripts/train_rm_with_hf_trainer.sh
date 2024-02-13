@@ -2,14 +2,13 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 
 MODEL_SIZE=7B
 NUM_GPUS=8
-BATCH_SIZE_PER_GPU=1
-# TOTAL_BATCH_SIZE=8
+BATCH_SIZE_PER_GPU=2
 TOTAL_BATCH_SIZE=512
 GRADIENT_ACC_STEPS=$(($TOTAL_BATCH_SIZE/$NUM_GPUS/$BATCH_SIZE_PER_GPU))
 # MODEL_PATH=TinyLlama/TinyLlama-1.1B-Chat-v1.0
 # OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/test-tinyllama-ultrafeedback-repro-uf-settings
 MODEL_PATH=allenai/tulu-2-7b
-OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/test-tulu-2-7b-ultrafeedback-repro-tulu-settings
+OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/debug-tulu-2-7b-ultrafeedback-repro-tulu-settings
 # MODEL_PATH=/net/nfs.cirrascale/allennlp/yizhongw/hf_llama2_models/7B
 # MODEL_PATH=mistralai/Mixtral-8x7B-v0.1
 TRAIN_DATASET=ultrafeedback
@@ -25,7 +24,7 @@ deepspeed --include localhost:0,1,2,3,4,5,6,7 scripts/train_rm_trainer.py \
     --model_name_or_path $MODEL_PATH \
     --tokenizer_name $MODEL_PATH \
     --dataset_name $TRAIN_DATASET \
-    --max_seq_length 2048 \
+    --max_seq_length 1024 \
     --preprocessing_num_workers 16 \
     --do_train \
     --use_flash_attn \

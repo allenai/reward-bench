@@ -253,8 +253,8 @@ def main():
             eval_dataset = Dataset.from_dict(raw_data['train'][len(raw_data) - 1001:])
 
         elif data_args.dataset_name == 'ultrafeedback':
-            # train_dataset = Dataset.from_dict(get_all_datasets()[:1024])
-            train_dataset = get_all_datasets()
+            train_dataset = Dataset.from_dict(get_all_datasets()[:10240])
+            # train_dataset = get_all_datasets()
 
         # anthropic hh rlhf, etc
         else:
@@ -325,10 +325,9 @@ def main():
             use_flash_attention_2=True if model_args.use_flash_attn else False,
         )
     else:
-        logger.warning("No pretrained model_name_or_path is given. Training new model from scratch.")
-        model = AutoModelForSequenceClassification.from_config(config, trust_remote_code=model_args.trust_remote_code)
-        n_params = sum({p.data_ptr(): p.numel() for p in model.parameters()}.values())
-        logger.info(f"Training new model from scratch - Total size={n_params/2**20:.2f}M params")
+        raise ValueError(
+            "You are instantiating a new model from scratch. This is not supported by this finetuning script."
+        )
 
     if 'gpt2' in model_args.model_name_or_path:
         print('Adding padding token for GPT2 models')
