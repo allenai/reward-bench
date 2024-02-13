@@ -43,8 +43,8 @@ def get_args():
     Parse arguments strings model and chat_template
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, default="natolambert/gpt2-dummy-rm", help="path to model")
-    parser.add_argument("--ref_model", type=str, default="natolambert/gpt2-dummy-rm", help="path to model")
+    parser.add_argument("--model", type=str, required=True, help="path to model")
+    parser.add_argument("--ref_model", type=str, default=None, help="path to model")
     parser.add_argument("--tokenizer", type=str, default=None, help="path to non-matching tokenizer")
     parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
