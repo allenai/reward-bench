@@ -52,6 +52,8 @@ def get_args():
     parser.add_argument(
         "--pref_sets", action="store_true", help="run on common preference sets instead of our custom eval set"
     )
+    parser.add_argument("--debug", type=boolean, default=False, help="use only 10 examples")
+
     args = parser.parse_args()
     return args
 
