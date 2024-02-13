@@ -20,7 +20,7 @@ TRAIN_DATASET=ultrafeedback
 # TRAIN_DATASET=Dahoas/synthetic-instruct-gptj-pairwise
 # OUTPUT_DIR=models/llama-2-7b-gptj-pairwise-5-epochs
 # OUTPUT_DIR=net/nfs.cirrascale/allennlp/jacobm/modular_adaptation/checkpoints/${DATASET}_${MODEL_SIZE}/
-OUTPUT_DIR=models/test-tinyllama-ultrafeedback-repro-uf-settings
+OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/test-tinyllama-ultrafeedback-repro-uf-settings
 echo "Training model ${MODEL_PATH} using $NUM_GPUS GPUs, $BATCH_SIZE_PER_GPU batch size per GPU, $GRADIENT_ACC_STEPS gradient accumulation steps"
 
 deepspeed --include localhost:0,1,2,3,4,5,6,7 scripts/train_rm_trainer.py \
