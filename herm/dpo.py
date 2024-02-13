@@ -37,7 +37,7 @@ class DPOInference:
         """
         batch = {}
         print(feature)
-        print(feature.keys())
+        print(dict(feature).keys())
         print('teeest')
         sys.exit(0)
         prompt = feature["prompt"]
