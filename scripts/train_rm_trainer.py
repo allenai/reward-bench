@@ -566,7 +566,7 @@ def main():
     train_dataset = train_dataset.map(
         # preprocess_instruct_gptj_synthetic,
         # preprocess_alpaca_farm if data_args.dataset_name == 'alpaca_farm_human_preferences' else preprocess_instruct_gptj_synthetic,
-        preprocess_ultrafeedback
+        preprocess_ultrafeedback,
         batched=True,
         # TODO: reenable for non-streaming datasets
         # num_proc=data_args.preprocessing_num_workers,
