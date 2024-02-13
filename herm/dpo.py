@@ -210,11 +210,6 @@ class DPOInference:
                 _,  # ref_chosen_logits,
                 _,  # ref_rejected_logits,
             ) = self.concatenated_forward(self.ref_model, batch)
-            print(policy_chosen_logps)
-            print(ref_chosen_logps)
-            print(policy_rejected_logps)
-            print(ref_rejected_logps)
-            sys.exit(0)
             chosen_logratios = policy_chosen_logps - ref_chosen_logps
             rejected_logratios = policy_rejected_logps - ref_rejected_logps
 
