@@ -135,11 +135,9 @@ def main():
         tokenizer=tokenizer,
         accelerator=accelerator,
     )
-    print(dataset)
     # tokenize dataset
     column_names = list(dataset.features)
-    print(column_names)
-    sys.exit(0)
+    
     tokenized_dataset = dataset.map(dpo.tokenize_row, remove_columns=column_names)
 
     dataloader = torch.utils.data.DataLoader(
