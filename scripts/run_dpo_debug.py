@@ -135,7 +135,7 @@ def main():
         tokenizer=tokenizer,
         accelerator=accelerator,
     )
-
+    print(dataset)
     # tokenize dataset
     column_names = list(dataset.features)
     print(column_names)
