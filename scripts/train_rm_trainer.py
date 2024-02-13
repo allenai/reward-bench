@@ -532,34 +532,27 @@ def main():
             new_examples["attention_mask_rejected"].append(tokenized_rejected["attention_mask"])
         return new_examples
     
-    def preprocess_ultrafeedback(examples):
-        new_examples = {
-            "input_ids_chosen": [],
-            "attention_mask_chosen": [],
-            "input_ids_rejected": [],
-            "attention_mask_rejected": [],
+    def preprocess_ultrafeedback(example):
+        chosen = example["chosen"]
+        rejected = example["rejected"]
+        tokenized_chosen = tokenizer(
+            chosen,
+            max_length=data_args.max_seq_length,
+            truncation=True,
+            # padding='max_length',
+        )
+        tokenized_rejected = tokenizer(
+            rejected,
+            max_length=data_args.max_seq_length,
+            truncation=True,
+            # padding='max_length',
+        )
+        return {
+            "input_ids_chosen": tokenized_chosen["input_ids"],
+            "attention_mask_chosen": tokenized_chosen["attention_mask"],
+            "input_ids_rejected": tokenized_rejected["input_ids"],
+            "attention_mask_rejected": tokenized_rejected["attention_mask"],
         }
-        for chosen, rejected in zip(
-                examples["chosen"],
-                examples["rejected"],
-            ):
-            tokenized_chosen = tokenizer(
-                chosen,
-                max_length=data_args.max_seq_length,
-                truncation=True,
-                # padding='max_length',
-            )
-            tokenized_rejected = tokenizer(
-                rejected,
-                max_length=data_args.max_seq_length,
-                truncation=True,
-                # padding='max_length',
-            )
-            new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
-            new_examples["attention_mask_chosen"].append(tokenized_chosen["attention_mask"])
-            new_examples["input_ids_rejected"].append(tokenized_rejected["input_ids"])
-            new_examples["attention_mask_rejected"].append(tokenized_rejected["attention_mask"])
-        return new_examples
 
 
     # preprocess the dataset and filter out QAs that are longer than script_args.max_length
@@ -567,9 +560,7 @@ def main():
         # preprocess_instruct_gptj_synthetic,
         # preprocess_alpaca_farm if data_args.dataset_name == 'alpaca_farm_human_preferences' else preprocess_instruct_gptj_synthetic,
         preprocess_ultrafeedback,
-        batched=True,
-        # TODO: reenable for non-streaming datasets
-        # num_proc=data_args.preprocessing_num_workers,
+        num_proc=data_args.preprocessing_num_workers,
         remove_columns=original_columns,
     )
     train_dataset = train_dataset.filter(
