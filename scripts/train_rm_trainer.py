@@ -334,18 +334,19 @@ def main():
         tokenizer.add_special_tokens({'pad_token': tokenizer.eos_token})
         config.pad_token_id = config.eos_token_id
 
-    print(f'model config: {config}')
 
     # no default pad token for llama!
     # here we add all special tokens again, because the default ones are not in the special_tokens_map
     if isinstance(tokenizer, LlamaTokenizer) or isinstance(tokenizer, LlamaTokenizerFast) or 'llama' in model_args.model_name_or_path.lower() or 'tulu' in model_args.model_name_or_path.lower():
-        print('adding pad token')
+        print('Adding pad token for Llama/Tulu models')
         num_added_tokens = tokenizer.add_special_tokens({
             "bos_token": "<s>",
             "eos_token": "</s>",
             "unk_token": "<unk>",
             "pad_token": "<pad>",
         })
+        config.pad_token_id = 32000
+        model.config.pad_token_id = 32000
         assert num_added_tokens in [0, 1], "LlamaTokenizer should only add one special token - the pad_token, or no tokens if pad token present."
     elif isinstance(tokenizer, GPTNeoXTokenizerFast):
         num_added_tokens = tokenizer.add_special_tokens({
@@ -354,7 +355,9 @@ def main():
         assert num_added_tokens == 1, "GPTNeoXTokenizer should only add one special token - the pad_token."
     elif isinstance(tokenizer, GPT2Tokenizer) and isinstance(model, OPTForCausalLM):
         num_added_tokens = tokenizer.add_special_tokens({'unk_token': '<unk>'})
-    print('not adding any tokens')
+        print('not adding any tokens')
+
+    print(f'model config: {config}')
 
     # resize embeddings if needed (e.g. for LlamaTokenizer)
     embedding_size = model.get_input_embeddings().weight.shape[0]
