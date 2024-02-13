@@ -253,7 +253,7 @@ def main():
             eval_dataset = Dataset.from_dict(raw_data['train'][len(raw_data) - 1001:])
 
         elif data_args.dataset_name == 'ultrafeedback':
-            train_dataset = get_all_datasets()
+            train_dataset = get_all_datasets()[:1024]
 
         # anthropic hh rlhf, etc
         else:
@@ -338,7 +338,7 @@ def main():
 
     # no default pad token for llama!
     # here we add all special tokens again, because the default ones are not in the special_tokens_map
-    if isinstance(tokenizer, LlamaTokenizer) or isinstance(tokenizer, LlamaTokenizerFast):
+    if isinstance(tokenizer, LlamaTokenizer) or isinstance(tokenizer, LlamaTokenizerFast) or 'llama' in model_args.model_name_or_path.lower():
         num_added_tokens = tokenizer.add_special_tokens({
             "bos_token": "<s>",
             "eos_token": "</s>",
