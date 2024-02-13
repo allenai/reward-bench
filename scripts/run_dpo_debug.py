@@ -137,7 +137,7 @@ def main():
     )
     # tokenize dataset
     column_names = list(dataset.features)
-    
+
     tokenized_dataset = dataset.map(dpo.tokenize_row, remove_columns=column_names)
 
     dataloader = torch.utils.data.DataLoader(
