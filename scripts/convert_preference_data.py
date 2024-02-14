@@ -57,10 +57,10 @@ elif args.input_dataset == 'berkeley-nest/Nectar':
         prompt = sample['prompt'].replace("Human: ", "").replace("Assistant: ", "").strip()
         answers = sorted(sample['answers'], key=lambda x: x['rank'])
         pairs = [
+            (0,5),
+            (1,5),
             (0,6),
-            (1,6),
-            (0,7),
-            (1,7)
+            (1,6)
         ]
         for (i, j) in pairs:
             chosen = answers[i]['answer']
