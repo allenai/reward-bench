@@ -352,6 +352,7 @@ def main():
         )
         model = AutoModelForSequenceClassification.from_pretrained(
             model_args.model_name_or_path,
+            num_labels=1,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
             config=config,
             cache_dir=model_args.cache_dir,
@@ -601,10 +602,10 @@ def main():
         }
 
 
-    # train_dataset = train_dataset.filter(
-    #     lambda x: x["chosen"] != x["rejected"],
-    #     num_proc=data_args.preprocessing_num_workers,
-    # )
+    train_dataset = train_dataset.filter(
+        lambda x: x["chosen"] != x["rejected"],
+        num_proc=data_args.preprocessing_num_workers,
+    )
     # preprocess the dataset and filter out QAs that are longer than script_args.max_length
     train_dataset = train_dataset.map(
         # preprocess_instruct_gptj_synthetic,
