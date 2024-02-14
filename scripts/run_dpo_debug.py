@@ -191,9 +191,6 @@ def main():
 
     # add subsets back (removed so it's not handled by cuda)
     out_dataset = out_dataset.add_column("subset", subsets)
-    print(len(subsets))
-    print(len(scores_chosen))
-    sys.exit(0)
     # add scores_chosen and scores_rejected to the dataset
     out_dataset = out_dataset.add_column("scores_chosen", scores_chosen)
     out_dataset = out_dataset.add_column("scores_rejected", scores_rejected)
