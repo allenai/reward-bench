@@ -116,7 +116,7 @@ def main():
     BATCH_SIZE = args.batch_size
     model_kwargs = {
         "load_in_8bit": True,
-        "device_map": {"": current_device},
+        "device_map": {"": current_device,1},
         "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
         "trust_remote_code": True,
     }
@@ -126,7 +126,7 @@ def main():
     )
     model_kwargs_ref = {
         "load_in_8bit": True,
-        "device_map": {"": 1},
+        "device_map": {"": 2,3},
         "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
         "trust_remote_code": True,
     }
