@@ -352,7 +352,6 @@ def main():
         )
         model = AutoModelForSequenceClassification.from_pretrained(
             model_args.model_name_or_path,
-            num_labels=1,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),
             config=config,
             cache_dir=model_args.cache_dir,
@@ -362,6 +361,7 @@ def main():
             torch_dtype=torch_dtype,
             low_cpu_mem_usage=model_args.low_cpu_mem_usage,
             use_flash_attention_2=True if model_args.use_flash_attn else False,
+            num_labels=1,
         )
     else:
         raise ValueError(
