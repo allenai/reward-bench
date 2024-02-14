@@ -266,7 +266,9 @@ def main():
                 data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl",
                 features=context_feat
             )
+            print(train_dataset)
             train_dataset = train_dataset["train"]
+            print(train_dataset)
 
         # anthropic hh rlhf, etc
         else:
