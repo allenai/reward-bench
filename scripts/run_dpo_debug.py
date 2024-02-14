@@ -180,6 +180,8 @@ def main():
             results.append(1) if chosen > rejected else results.append(0)
             for chosen, rejected in zip(scores_chosen_batch, scores_rejected_batch)
         ]
+        scores_chosen += scores_chosen_batch
+        scores_rejected += scores_rejected_batch
 
     ############################
     # Print & process results
