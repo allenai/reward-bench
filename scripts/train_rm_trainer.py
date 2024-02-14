@@ -273,7 +273,7 @@ def main():
                 "chosen": Value("string"),
                 "rejected": Value("string")
             })
-            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/nectar/processed.jsonl", features=dataset_schema)["train"]
+            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar/processed.jsonl", features=dataset_schema)["train"]
             # train_dataset = Dataset.from_dict(load_dataset(
             #     "json",
             #     data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/nectar/processed.jsonl",
@@ -287,7 +287,7 @@ def main():
                 "chosen": Value("string"),
                 "rejected": Value("string")
             })
-            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/nectar/processed-full.jsonl", features=dataset_schema)["train"]
+            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar/processed-full.jsonl", features=dataset_schema)["train"]
             # train_dataset = Dataset.from_dict(load_dataset(
             #     "json",
             #     data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/nectar/processed-full.jsonl",
