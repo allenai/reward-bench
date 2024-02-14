@@ -266,6 +266,34 @@ def main():
                 features=dataset_schema)["train"][:256]
             )
 
+        elif data_args.dataset_name == 'nectar':
+            # train_dataset = Dataset.from_dict(get_all_datasets()[:10240])
+            # train_dataset = get_all_datasets()
+            dataset_schema = Features({
+                "chosen": Value("string"),
+                "rejected": Value("string")
+            })
+            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/nectar/processed.jsonl", features=dataset_schema)["train"]
+            # train_dataset = Dataset.from_dict(load_dataset(
+            #     "json",
+            #     data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/nectar/processed.jsonl",
+            #     features=dataset_schema)["train"][:256]
+            # )
+
+        elif data_args.dataset_name == 'nectar-full':
+            # train_dataset = Dataset.from_dict(get_all_datasets()[:10240])
+            # train_dataset = get_all_datasets()
+            dataset_schema = Features({
+                "chosen": Value("string"),
+                "rejected": Value("string")
+            })
+            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/nectar/processed-full.jsonl", features=dataset_schema)["train"]
+            # train_dataset = Dataset.from_dict(load_dataset(
+            #     "json",
+            #     data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/nectar/processed-full.jsonl",
+            #     features=dataset_schema)["train"][:256]
+            # )
+
         # anthropic hh rlhf, etc
         else:
             raw_data = load_dataset(data_args.dataset_name)

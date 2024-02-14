@@ -2,17 +2,18 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 
 MODEL_SIZE=7B
 NUM_GPUS=8
-BATCH_SIZE_PER_GPU=1
-# BATCH_SIZE_PER_GPU=2
+# BATCH_SIZE_PER_GPU=1
+BATCH_SIZE_PER_GPU=2
 TOTAL_BATCH_SIZE=128
 # TOTAL_BATCH_SIZE=32 # try smaller batch for 13b
 GRADIENT_ACC_STEPS=$(($TOTAL_BATCH_SIZE/$NUM_GPUS/$BATCH_SIZE_PER_GPU))
 # MODEL_PATH=TinyLlama/TinyLlama-1.1B-Chat-v1.0
 # OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/test-tinyllama-ultrafeedback-repro-uf-settings
-# MODEL_PATH=allenai/tulu-2-7b
-# OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/tulu-2-7b-ultrafeedback-repro-tulu-settings
-MODEL_PATH=allenai/tulu-2-13b
-OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/debug-tulu-2-13b-ultrafeedback-repro-tulu-settings
+MODEL_PATH=allenai/tulu-2-7b
+OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/tulu-2-7b-ultrafeedback-repro-1e-5-linear
+# MODEL_PATH=allenai/tulu-2-13b
+# OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/debug-tulu-2-13b-ultrafeedback-repro-tulu-settings
+
 # MODEL_PATH=/net/nfs.cirrascale/allennlp/yizhongw/hf_llama2_models/7B
 # MODEL_PATH=mistralai/Mixtral-8x7B-v0.1
 TRAIN_DATASET=ultrafeedback
@@ -35,7 +36,7 @@ deepspeed --include localhost:0,1,2,3,4,5,6,7 scripts/train_rm_trainer.py \
     --bf16 \
     --per_device_train_batch_size $BATCH_SIZE_PER_GPU \
     --gradient_accumulation_steps $GRADIENT_ACC_STEPS \
-    --learning_rate 2e-5 \
+    --learning_rate 1e-5 \
     --lr_scheduler_type linear \
     --warmup_ratio 0.03 \
     --weight_decay 0. \
@@ -46,8 +47,10 @@ deepspeed --include localhost:0,1,2,3,4,5,6,7 scripts/train_rm_trainer.py \
     --num_train_epochs 1 \
     --output_dir $OUTPUT_DIR \
     --use_slow_tokenizer \
-    --overwrite_output_dir \
-    --gradient_checkpointing
+    --overwrite_output_dir 
+    # \
+    # --gradient_checkpointing
+
     # --bf16_full_eval \
     # --torch_dtype bfloat16 \
     # --do_eval \
