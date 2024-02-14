@@ -204,7 +204,7 @@ def _concat_messages(messages):
         elif message["role"] == "user":
             message_text += "<|user|>\n" + message["content"].strip() + "\n"
         elif message["role"] == "assistant":
-            message_text += "<|assistant|>\n" + message["content"].strip() + tokenizer.eos_token + "\n"
+            message_text += "<|assistant|>\n" + message["content"].strip() + "</s>" + "\n"
         else:
             raise ValueError("Invalid role: {}".format(message["role"]))
     return message_text

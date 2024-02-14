@@ -48,9 +48,9 @@ def map_to_tulu_format(ex):
     chosen = ""
     rejected = ""
     for message in ex['chosen']:
-        chosen += f"<|{message['role']}|>\n{message['content']}\n"
+        chosen += f"<|{message['role']}|>\n{message['content']}</s>\n"
     for message in ex['rejected']:
-        rejected += f"<|{message['role']}|>\n{message['content']}\n"
+        rejected += f"<|{message['role']}|>\n{message['content']}</s>\n"
 
     return {
         'chosen': chosen.strip(),
@@ -313,8 +313,8 @@ def get_shp_choices():
 def get_anthropic_hh():
     def reformat_examples(ex):
         return {
-            'chosen': ex['chosen'].replace('\n\nHuman:', '\n<|user|>\n').replace('\n\nAssistant:', "\n<|assistant|>\n").strip(),
-            'rejected': ex['rejected'].replace('\n\nHuman:', '\n<|user|>\n').replace('\n\nAssistant:', "\n<|assistant|>\n").strip(),
+            'chosen': ex['chosen'].replace('\n\nHuman:', '\n<|user|>\n').replace('\n\nAssistant:', "\n<|assistant|>\n").strip() + "</s>\n",
+            'rejected': ex['rejected'].replace('\n\nHuman:', '\n<|user|>\n').replace('\n\nAssistant:', "\n<|assistant|>\n").strip() + "</s>\n",
         }
 
     helpful = concatenate_datasets(
@@ -386,7 +386,7 @@ def get_all_datasets():
         ]
     )
 
-# with open('/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl', 'w') as f_out:
-#     import json
-#     for elem in get_all_datasets():
-#         f_out.write(json.dumps(elem) + '\n')
+with open('/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl', 'w') as f_out:
+    import json
+    for elem in get_all_datasets():
+        f_out.write(json.dumps(elem) + '\n')
