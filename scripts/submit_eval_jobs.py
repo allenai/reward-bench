@@ -21,9 +21,9 @@ import yaml
 
 today = date.today().strftime("%m%d%Y")
 
-with open("beaker_configs/default_eval.yaml", "r") as f:
+with open("scripts/configs/beaker_eval.yaml", "r") as f:
     d1 = yaml.load(f.read(), Loader=yaml.FullLoader)
-with open("scripts/default_eval_configs.yaml", "r") as f:
+with open("scripts/configs/eval_configs.yaml", "r") as f:
     configs = yaml.load(f.read(), Loader=yaml.FullLoader)
 print(configs)
 
