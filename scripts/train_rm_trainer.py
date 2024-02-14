@@ -255,17 +255,11 @@ def main():
         elif data_args.dataset_name == 'ultrafeedback':
             # train_dataset = Dataset.from_dict(get_all_datasets()[:10240])
             # train_dataset = get_all_datasets()
-            context_feat = Features(
-                {
-                    'chosen': Value(dtype='string', id=None),
-                    'rejected': Value(dtype='string', id=None),
-                }
-            )
-            train_dataset = load_dataset(
-                "json",
-                data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl",
-                features=context_feat
-            )
+            dataset_schema = Features({
+                "chosen": Value("string"),
+                "rejected": Value("string")
+            })
+            train_dataset = load_dataset("json",data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl", features=dataset_schema)
             print(train_dataset)
             train_dataset = train_dataset["train"]
             print(train_dataset)
