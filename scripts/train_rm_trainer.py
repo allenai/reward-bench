@@ -259,10 +259,12 @@ def main():
                 "chosen": Value("string"),
                 "rejected": Value("string")
             })
-            train_dataset = load_dataset("json",data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl", features=dataset_schema)
-            print(train_dataset)
-            train_dataset = train_dataset["train"]
-            print(train_dataset)
+            # train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl", features=dataset_schema)["train"]
+            train_dataset = Dataset.from_dict(load_dataset(
+                "json",
+                data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl",
+                features=dataset_schema)["train"][:10240]
+            )
 
         # anthropic hh rlhf, etc
         else:
