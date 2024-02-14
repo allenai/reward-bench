@@ -326,6 +326,8 @@ def main():
         raise ValueError(
             "You are instantiating a new config instance from scratch. This is not supported by this finetuning script."
         )
+    
+    config.num_labels = 1
 
     tokenizer_kwargs = {
         "cache_dir": model_args.cache_dir,
@@ -361,7 +363,6 @@ def main():
             torch_dtype=torch_dtype,
             low_cpu_mem_usage=model_args.low_cpu_mem_usage,
             use_flash_attention_2=True if model_args.use_flash_attn else False,
-            num_labels=1,
         )
     else:
         raise ValueError(
