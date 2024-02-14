@@ -10,7 +10,7 @@ GRADIENT_ACC_STEPS=$(($TOTAL_BATCH_SIZE/$NUM_GPUS/$BATCH_SIZE_PER_GPU))
 # MODEL_PATH=TinyLlama/TinyLlama-1.1B-Chat-v1.0
 # OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/test-tinyllama-ultrafeedback-repro-uf-settings
 MODEL_PATH=allenai/tulu-2-7b
-OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/tulu-2-7b-ultrafeedback-repro-1e-5-linear
+OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/debug-tulu-2-7b-ultrafeedback-repro-1e-5-linear
 # MODEL_PATH=allenai/tulu-2-13b
 # OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/debug-tulu-2-13b-ultrafeedback-repro-tulu-settings
 

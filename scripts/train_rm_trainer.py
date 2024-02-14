@@ -259,12 +259,12 @@ def main():
                 "chosen": Value("string"),
                 "rejected": Value("string")
             })
-            # train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl", features=dataset_schema)["train"]
-            train_dataset = Dataset.from_dict(load_dataset(
-                "json",
-                data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl",
-                features=dataset_schema)["train"][:256]
-            )
+            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl", features=dataset_schema)["train"]
+            # train_dataset = Dataset.from_dict(load_dataset(
+            #     "json",
+            #     data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl",
+            #     features=dataset_schema)["train"][:256]
+            # )
 
         elif data_args.dataset_name == 'nectar':
             # train_dataset = Dataset.from_dict(get_all_datasets()[:10240])
