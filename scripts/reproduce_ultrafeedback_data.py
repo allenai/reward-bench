@@ -389,4 +389,4 @@ def get_all_datasets():
 with open('/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl', 'w') as f_out:
     import json
     for elem in get_all_datasets():
-        f_out.write(json.domps(elem))
+        f_out.write(json.dumps(elem))
