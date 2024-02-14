@@ -56,23 +56,28 @@ elif args.input_dataset == 'berkeley-nest/Nectar':
     for sample in dataset:
         prompt = sample['prompt'].replace("Human: ", "").replace("Assistant: ", "").strip()
         answers = sorted(sample['answers'], key=lambda x: x['rank'])
-        for i in range(len(answers) - 1):
-            for j in range(i + 1, len(answers)):
-                chosen = answers[i]['answer']
-                rejected = answers[j]['answer']
-                chosen =  [
-                    {'role': 'user', 'content': prompt},
-                    {'role': 'assistant', 'content': chosen},
-                ]
-                rejected =  [
-                    {'role': 'user', 'content': prompt},
-                    {'role': 'assistant', 'content': rejected},
-                ]
-                new_data.append({
-                    'chosen': chosen,
-                    'rejected': rejected,
-                    'source': 'nectar'
-                })
+        pairs = [
+            (0,6),
+            (1,6),
+            (0,7),
+            (1,7)
+        ]
+        for (i, j) in pairs:
+            chosen = answers[i]['answer']
+            rejected = answers[j]['answer']
+            chosen =  [
+                {'role': 'user', 'content': prompt},
+                {'role': 'assistant', 'content': chosen},
+            ]
+            rejected =  [
+                {'role': 'user', 'content': prompt},
+                {'role': 'assistant', 'content': rejected},
+            ]
+            new_data.append({
+                'chosen': chosen,
+                'rejected': rejected,
+                'source': 'nectar'
+            })
 elif args.input_dataset == 'argilla/ultrafeedback-binarized-preferences-cleaned':
     for sample in dataset:
         chosen = sample['chosen']
