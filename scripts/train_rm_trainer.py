@@ -369,8 +369,8 @@ def main():
             "You are instantiating a new model from scratch. This is not supported by this finetuning script."
         )
     
-    # TODO: test this
-    torch.nn.init.zeros_(model.score.weight)
+    # # TODO: test this
+    # torch.nn.init.zeros_(model.score.weight)
 
     if 'gpt2' in model_args.model_name_or_path:
         print('Adding padding token for GPT2 models')
