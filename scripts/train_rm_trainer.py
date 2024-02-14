@@ -14,7 +14,7 @@ from typing import Optional
 from functools import partial
 import datasets
 import torch
-from datasets import load_dataset, Dataset
+from datasets import load_dataset, Dataset, Features, Value
 
 import transformers
 from transformers import (
@@ -255,7 +255,17 @@ def main():
         elif data_args.dataset_name == 'ultrafeedback':
             # train_dataset = Dataset.from_dict(get_all_datasets()[:10240])
             # train_dataset = get_all_datasets()
-            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl")
+            context_feat = Features(
+                {
+                    'chosen': Value(dtype='string', id=None),
+                    'rejected': Value(dtype='string', id=None),
+                }
+            )
+            train_dataset = load_dataset(
+                "json",
+                data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl",
+                features=context_feat
+            )
             train_dataset = train_dataset["train"]
 
         # anthropic hh rlhf, etc
