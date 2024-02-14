@@ -263,7 +263,7 @@ def main():
             train_dataset = Dataset.from_dict(load_dataset(
                 "json",
                 data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl",
-                features=dataset_schema)["train"][:10240]
+                features=dataset_schema)["train"][:256]
             )
 
         # anthropic hh rlhf, etc
