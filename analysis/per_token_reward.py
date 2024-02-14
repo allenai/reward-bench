@@ -37,15 +37,36 @@ def get_args():
     Parse arguments strings model and chat_template
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, default="natolambert/gpt2-dummy-rm", help="path to model")
     parser.add_argument(
-        "--tokenizer", type=str, default=None, help="path to non-matching tokenizer, requires --direct_load"
+        "--model",
+        type=str,
+        default="natolambert/gpt2-dummy-rm",
+        help="path to model",
     )
-    parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
     parser.add_argument(
-        "--batch_size", type=int, default=64, help="batch size for inference (if above number of tokens)"
+        "--tokenizer",
+        type=str,
+        default=None,
+        help="path to non-matching tokenizer, requires --direct_load",
     )
-    parser.add_argument("--text", type=str, default="I love to drink coffee at work.", help="text to evaluate")
+    parser.add_argument(
+        "--chat_template",
+        type=str,
+        default="tulu",
+        help="path to chat template",
+    )
+    parser.add_argument(
+        "--batch_size",
+        type=int,
+        default=64,
+        help="batch size for inference (if above number of tokens)",
+    )
+    parser.add_argument(
+        "--text",
+        type=str,
+        default="I love to drink coffee at work.",
+        help="text to evaluate",
+    )
     args = parser.parse_args()
 
     if "PairRM" in args.model or "PairRM" in args.chat_template or "SHP" in args.model or "SHP" in args.chat_template:
