@@ -1,7 +1,9 @@
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+# export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+# NUM_GPUS=8
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+NUM_GPUS=4
 
 MODEL_SIZE=7B
-NUM_GPUS=8
 # BATCH_SIZE_PER_GPU=1
 BATCH_SIZE_PER_GPU=2
 TOTAL_BATCH_SIZE=128
@@ -11,14 +13,12 @@ GRADIENT_ACC_STEPS=$(($TOTAL_BATCH_SIZE/$NUM_GPUS/$BATCH_SIZE_PER_GPU))
 # OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/test-tinyllama-ultrafeedback-repro-uf-settings
 MODEL_PATH=allenai/tulu-2-7b
 # OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/tulu-2-7b-ultrafeedback-repro-1e-5-linear
-OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/nectar/tulu-2-7b-nectar-1e-5-linear
+OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/nectar/tulu-2-7b-nectar-binarized-filtered-1e-5-linear
 # MODEL_PATH=allenai/tulu-2-13b
 # OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/debug-tulu-2-13b-ultrafeedback-repro-tulu-settings
-
-# MODEL_PATH=/net/nfs.cirrascale/allennlp/yizhongw/hf_llama2_models/7B
-# MODEL_PATH=mistralai/Mixtral-8x7B-v0.1
 # TRAIN_DATASET=ultrafeedback
-TRAIN_DATASET=nectar
+# TRAIN_DATASET=nectar
+TRAIN_DATASET=nectar-binarized-filtered
 # EVAL_DATASET=alpaca_farm_human_preferences
 # TRAIN_DATASET=Anthropic/hh-rlhf
 # TRAIN_DATASET=Dahoas/synthetic-instruct-gptj-pairwise
@@ -26,7 +26,7 @@ TRAIN_DATASET=nectar
 # OUTPUT_DIR=net/nfs.cirrascale/allennlp/jacobm/modular_adaptation/checkpoints/${DATASET}_${MODEL_SIZE}/
 echo "Training model ${MODEL_PATH} using $NUM_GPUS GPUs, $BATCH_SIZE_PER_GPU batch size per GPU, $GRADIENT_ACC_STEPS gradient accumulation steps"
 
-deepspeed --include localhost:0,1,2,3,4,5,6,7 scripts/train_rm_trainer.py \
+deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --deepspeed ds_configs/stage3_no_offloading.conf \
     --model_name_or_path $MODEL_PATH \
     --tokenizer_name $MODEL_PATH \
