@@ -30,13 +30,13 @@ deepspeed --include localhost:0,1,2,3,4,5,6,7 scripts/train_rm_trainer.py \
     --tokenizer_name $MODEL_PATH \
     --dataset_name $TRAIN_DATASET \
     --max_seq_length 1024 \
-    --preprocessing_num_workers 16 \
+    --preprocessing_num_workers 64 \
     --do_train \
     --use_flash_attn \
     --bf16 \
     --per_device_train_batch_size $BATCH_SIZE_PER_GPU \
     --gradient_accumulation_steps $GRADIENT_ACC_STEPS \
-    --learning_rate 1e-5 \
+    --learning_rate 1e-6 \
     --lr_scheduler_type linear \
     --warmup_ratio 0.03 \
     --weight_decay 0. \
