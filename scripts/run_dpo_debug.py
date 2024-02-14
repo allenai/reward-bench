@@ -118,9 +118,11 @@ def main():
         0: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,],
         1: [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
     }
+    os.environ["CUDA_VISIBLE_DEVICES"]="0,1"
+
     model_kwargs = {
         "load_in_8bit": True,
-        "device_map": device_map,
+        "device_map": "auto",
         "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
         "trust_remote_code": True,
     }
@@ -128,13 +130,11 @@ def main():
         args.model,
         **model_kwargs,
     )
-    device_map = {
-        2: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,],
-        3: [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
-    }
+    os.environ["CUDA_VISIBLE_DEVICES"]="2,3"
+
     model_kwargs_ref = {
         "load_in_8bit": True,
-        "device_map": device_map,
+        "device_map": "auto",
         "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
         "trust_remote_code": True,
     }
