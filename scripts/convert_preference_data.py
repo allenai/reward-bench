@@ -196,6 +196,27 @@ new_data = [x for x in new_data if not contains_empty(x)]
 new_data = [x for x in new_data if ends_with_assistant(x)]
 print("After filtering:", len(new_data))
 
+def _concat_messages(messages):
+    message_text = ""
+    for message in messages:
+        if message["role"] == "system":
+            message_text += "<|system|>\n" + message["content"].strip() + "\n"
+        elif message["role"] == "user":
+            message_text += "<|user|>\n" + message["content"].strip() + "\n"
+        elif message["role"] == "assistant":
+            message_text += "<|assistant|>\n" + message["content"].strip() + tokenizer.eos_token + "\n"
+        else:
+            raise ValueError("Invalid role: {}".format(message["role"]))
+    return message_text
+
+def convert_examples(ex):
+    return {
+        'chosen': _concat_messages(ex['chosen']),
+        'rejected': _concat_messages(ex['rejected']),
+    }
+
+new_data = [convert_examples(x) for x in new_data]
+
 # save it
 with open(args.output, 'w') as f:
     for sample in new_data:
