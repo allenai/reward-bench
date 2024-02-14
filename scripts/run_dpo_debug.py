@@ -114,9 +114,13 @@ def main():
     # Load reward model pipeline
     ############################
     BATCH_SIZE = args.batch_size
+    device_map = {
+        0: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,],
+        1: [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+    }
     model_kwargs = {
         "load_in_8bit": True,
-        "device_map": "auto",
+        "device_map": device_map,
         "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
         "trust_remote_code": True,
     }
@@ -124,9 +128,13 @@ def main():
         args.model,
         **model_kwargs,
     )
+    device_map = {
+        2: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,],
+        3: [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+    }
     model_kwargs_ref = {
         "load_in_8bit": True,
-        "device_map": "auto",
+        "device_map": device_map,
         "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
         "trust_remote_code": True,
     }
