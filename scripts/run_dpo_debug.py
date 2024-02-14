@@ -90,6 +90,8 @@ def main():
     logger.info("*** Load dataset ***")
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+    tokenizer.pad_token = tokenizer.eos_token
+
     dataset, subsets = load_eval_dataset(
         core_set=not args.pref_sets,
         conv=conv,
@@ -144,7 +146,6 @@ def main():
     column_names = list(dataset.features)
 
     tokenized_dataset = dataset.map(dpo.tokenize_row, remove_columns=column_names)
-    tokenizer.pad_token = tokenizer.eos_token
     dataloader = torch.utils.data.DataLoader(
         tokenized_dataset,
         batch_size=BATCH_SIZE,
