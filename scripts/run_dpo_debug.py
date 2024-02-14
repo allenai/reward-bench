@@ -107,6 +107,7 @@ def main():
         dataset = dataset.select(range(10))
         subsets = subsets[:10]
         print(subsets)
+        sys.exit(0)
         ids = ids[:10]
 
     ############################
