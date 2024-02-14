@@ -106,6 +106,7 @@ def main():
     if args.debug:
         dataset = dataset.select(range(10))
         subsets = subsets[:10]
+        print(subsets)
         ids = ids[:10]
 
     ############################
