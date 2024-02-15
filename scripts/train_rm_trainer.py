@@ -459,7 +459,7 @@ def main():
             r=model_args.lora_rank, 
             lora_alpha=model_args.lora_alpha, 
             lora_dropout=model_args.lora_dropout,
-            target_modules=["q_proj", "o_proj", "v_proj", "k_proj", "gate_proj", "up_proj", "down_proj"]
+            # target_modules=["q_proj", "o_proj", "v_proj", "k_proj", "gate_proj", "up_proj", "down_proj"]
         )
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()
