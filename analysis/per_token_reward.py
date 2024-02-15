@@ -101,9 +101,6 @@ def main():
     custom_dialogue = False
     
     models = args.model
-    # print (models)
-    # exit(1)
-    models = ["OpenAssistant/reward-model-deberta-v3-large-v2", "PKU-Alignment/beaver-7b-v1.0-cost", "IDEA-CCNL/Ziya-LLaMA-7B-Reward"]
 
     ###############
     # Setup logging
