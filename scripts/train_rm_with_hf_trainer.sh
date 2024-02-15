@@ -45,8 +45,10 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --weight_decay 0. \
     --evaluation_strategy no \
     --logging_steps 1 \
-    --save_strategy epoch \
-    --save_total_limit 1 \
+    --save_strategy steps \
+    --save_steps 0.1 \
+    --save_total_limit 11 \
+    --seed 13034431 \
     --num_train_epochs 1 \
     --output_dir $OUTPUT_DIR \
     --use_slow_tokenizer \
