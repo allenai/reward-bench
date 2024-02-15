@@ -44,7 +44,7 @@ from trl import (
     # get_quantization_config
 )
 
-# from reproduce_ultrafeedback_data import get_all_datasets
+from peft import LoraConfig, TaskType, get_peft_model
 
 
 logger = logging.getLogger(__name__)
@@ -136,6 +136,38 @@ class ModelArguments:
             "help": (
                 "use slow tokenizer or not."
             )
+        },
+    )
+    use_lora: bool = field(
+        default=False,
+        metadata={
+            "help": (
+                "If passed, will use LoRA (low-rank parameter-efficient training) to train the model."
+            )
+        },
+    )
+    lora_rank: Optional[int] = field(
+        default=64,
+        metadata={
+            "help": (
+                "The rank of lora."
+            ),
+        },
+    )
+    lora_alpha: Optional[float] = field(
+        default=16,
+        metadata={
+            "help": (
+                "The alpha parameter of lora."
+            ),
+        },
+    )
+    lora_dropout: Optional[float] = field(
+        default=0.1,
+        metadata={
+            "help": (
+                "The dropout rate of lora modules."
+            ),
         },
     )
 
@@ -418,6 +450,19 @@ def main():
     embedding_size = model.get_input_embeddings().weight.shape[0]
     if len(tokenizer) > embedding_size:
         model.resize_token_embeddings(len(tokenizer))
+
+    if model_args.use_lora:
+        logger.info("Initializing LoRA model...")
+        peft_config = LoraConfig(
+            task_type=TaskType.SEQ_CLS, 
+            inference_mode=False, 
+            r=model_args.lora_rank, 
+            lora_alpha=model_args.lora_alpha, 
+            lora_dropout=model_args.lora_dropout,
+            target_modules=["q_proj", "o_proj", "v_proj", "k_proj", "gate_proj", "up_proj", "down_proj"]
+        )
+        model = get_peft_model(model, peft_config)
+        model.print_trainable_parameters()
 
     original_columns = train_dataset.column_names
     

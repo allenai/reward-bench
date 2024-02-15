@@ -100,18 +100,6 @@ def get_uf_choices():
                 pairs.append((chosen, rejected))
         return pairs
 
-        chosen = max(scores_and_completions, key=lambda x: x[0])
-        rejected = random.choice(scores_and_completions)
-        while rejected == chosen:
-            end = time.time()
-            if end - start > 3:
-                print("Timeout")
-                print(chosen, rejected)
-                break
-            rejected = random.choice(scores_and_completions)
-        return chosen, rejected
-
-
     # def format_prompt(x):
     #     prompt = x["instruction"]
     #     # chosen, rejected = get_pairwise_completions(x["completions"])
@@ -183,19 +171,6 @@ def get_uf_choices():
                     {"role": "user", "content": prompt},
                     {"role": "assistant", "content": rejected[1] if rejected is not None else "N/A"},
                 ]
-                if isinstance(prompt, list):
-                    print("prompt is list?")
-                    print(len(prompt))
-                    continue
-                # to_return.append( {
-                #     "prompt": prompt,
-                #     "prompt_id": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
-                #     "chosen": chosen_messages,
-                #     "rejected": rejected_messages,
-                #     "messages": chosen_messages, # Use best-ranked example for SFT
-                #     "score_chosen": chosen[0] if chosen is not None else -100.0,
-                #     "score_rejected": rejected[0] if rejected is not None else -100.0,
-                # })
                 to_return["prompt"].append(prompt)
                 to_return["prompt_id"].append(hashlib.sha256(prompt.encode("utf-8")).hexdigest())
                 to_return["chosen"].append(chosen_messages)
@@ -210,8 +185,8 @@ def get_uf_choices():
     ds = ds.map(format_prompts, num_proc=1, remove_columns=ds.column_names, batched=True)
 
 
-    # filter out margin = -100
-    ds = ds.filter(lambda x: x["score_chosen"] != -100 or x["score_rejected"] != -100, num_proc=8)
+    # # filter out margin = -100
+    # ds = ds.filter(lambda x: x["score_chosen"] != -100 or x["score_rejected"] != -100, num_proc=8)
 
 
 
@@ -220,53 +195,48 @@ def get_uf_choices():
         return example
 
 
-    all_ds = DatasetDict()
+    # all_ds = DatasetDict()
 
-    split_dataset = ds.train_test_split(test_size=2000, seed=42, shuffle=True)
-    test_datasets = split_dataset["test"].train_test_split(0.5, seed=42, shuffle=True)
+    # split_dataset = ds.train_test_split(test_size=2000, seed=42, shuffle=True)
+    # test_datasets = split_dataset["test"].train_test_split(0.5, seed=42, shuffle=True)
 
-    all_ds["train_prefs"] = split_dataset["train"]
-    all_ds["train_sft"] = split_dataset["train"]
-    # Keep more examples for test accuracy
-    all_ds["test_prefs"] = concatenate_datasets([test_datasets["train"], test_datasets["test"]])
-    all_ds["test_sft"] = test_datasets["train"]
-
-
-    # remove empty last turns
-    def filter_empty_messages(example):
-        if example["messages"][-1]["role"] == "user":
-            example["messages"] = example["messages"][:-1]
-        if example["chosen"][-1]["role"] == "user":
-            example["chosen"] = example["chosen"][:-1]
-        if example["rejected"][-1]["role"] == "user":
-            example["rejected"] = example["rejected"][:-1]
-        return example
+    # all_ds["train_prefs"] = split_dataset["train"]
+    # all_ds["train_sft"] = split_dataset["train"]
+    # # Keep more examples for test accuracy
+    # all_ds["test_prefs"] = concatenate_datasets([test_datasets["train"], test_datasets["test"]])
+    # all_ds["test_sft"] = test_datasets["train"]
 
 
-    all_ds = all_ds.map(filter_empty_messages)
+    # # remove empty last turns
+    # def filter_empty_messages(example):
+    #     if example["messages"][-1]["role"] == "user":
+    #         example["messages"] = example["messages"][:-1]
+    #     if example["chosen"][-1]["role"] == "user":
+    #         example["chosen"] = example["chosen"][:-1]
+    #     if example["rejected"][-1]["role"] == "user":
+    #         example["rejected"] = example["rejected"][:-1]
+    #     return example
 
-    all_ds["train_gen"] = all_ds["train_sft"].map(remove_last_step_for_rl)
-    all_ds["test_gen"] = all_ds["test_sft"].map(remove_last_step_for_rl)
 
-    assistant_rows = []
+    # all_ds = all_ds.map(filter_empty_messages)
 
-    # check that gen split does not end with `assistant`, should print 0
-    for idx, row in enumerate(all_ds["train_gen"]):
-        if row["messages"][-1]["role"] == "assistant":
-            assistant_rows.append(row)
-    for row in all_ds["test_gen"]:
-        if row["messages"][-1]["role"] == "assistant":
-            assistant_rows.append(row)
+    # all_ds["train_gen"] = all_ds["train_sft"].map(remove_last_step_for_rl)
+    # all_ds["test_gen"] = all_ds["test_sft"].map(remove_last_step_for_rl)
 
-    assert len(assistant_rows) == 0
+    # assistant_rows = []
 
-    print(all_ds)
+    # # check that gen split does not end with `assistant`, should print 0
+    # for idx, row in enumerate(all_ds["train_gen"]):
+    #     if row["messages"][-1]["role"] == "assistant":
+    #         assistant_rows.append(row)
+    # for row in all_ds["test_gen"]:
+    #     if row["messages"][-1]["role"] == "assistant":
+    #         assistant_rows.append(row)
 
-    print(len(all_ds))
+    # assert len(assistant_rows) == 0
 
-    print(all_ds['train_prefs'][0])
-
-    return all_ds["train_prefs"].map(map_to_tulu_format, remove_columns=all_ds["train_prefs"].column_names)
+    # return all_ds["train_prefs"].map(map_to_tulu_format, remove_columns=all_ds["train_prefs"].column_names)
+    return ds.map(map_to_tulu_format, remove_columns=ds.column_names)
 
 def get_shp_choices():
     shp = load_dataset("stanfordnlp/SHP", split="train")
@@ -386,7 +356,9 @@ def get_all_datasets():
         ]
     )
 
-with open('/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl', 'w') as f_out:
-    import json
-    for elem in get_all_datasets():
-        f_out.write(json.dumps(elem) + '\n')
+print(len(get_uf_choices()))
+
+# with open('/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl', 'w') as f_out:
+#     import json
+#     for elem in get_all_datasets():
+#         f_out.write(json.dumps(elem) + '\n')
