@@ -245,7 +245,7 @@ def load_bon_dataset(
     # create huggingface dataset through pandas
     unrolled_dataset = Dataset.from_pandas(pd.DataFrame(data=new_dataset))
     # rename output_new to text
-    unrolled_dataset = unrolled_dataset.rename_column("output_new", "text")
+    unrolled_dataset = unrolled_dataset.rename_column("output_new", "input")
 
     # Apply chat template
     if not custom_dialogue_formatting:
@@ -300,7 +300,8 @@ def load_bon_dataset(
 
 def prepare_dialogue_from_tokenizer(
     example: Dict[str, Any],
-    tokenizer,
+    tokenizer: PreTrainedTokenizer,
+    ift: bool = False,
 ) -> Dict[str, Any]:
     if all(k in example.keys() for k in ("chosen", "rejected")):
         # multi turn
@@ -347,6 +348,15 @@ def prepare_dialogue_from_tokenizer(
                 messages,
                 tokenize=False,
             )
+    elif ift:
+        messages = [
+            {"role": "user", "content": example["prompt"]},
+            {"role": "assistant", "content": example["input"]},
+        ]
+        example["text"] = tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+        )
     else:
         raise ValueError(
             "Could not format example as dialogue for `rm` task!"
@@ -402,9 +412,9 @@ def prepare_dialogue(
             example["prompt"] = example["prompt"][0]
         dialogue_template.messages = [
             [dialogue_template.roles[0], example["prompt"]],
-            [dialogue_template.roles[1], example["text"]],
+            [dialogue_template.roles[1], example["input"]],
         ]
-        example["text_chosen"] = dialogue_template.get_prompt()
+        example["text"] = dialogue_template.get_prompt()
 
     else:
         raise ValueError(
