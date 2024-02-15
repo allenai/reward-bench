@@ -189,6 +189,8 @@ def main():
 
     results_grouped = {}
     results_grouped["model"] = args.model
+    results_grouped["ref_model"] = args.ref_model
+    results_grouped["model_type"] = "DPO" # TODO add options for references free, DPO-ref-free, or DPO-normalized
     results_grouped["chat_template"] = args.chat_template
     # print per subset and log into results_grouped file
     present_subsets = np.unique(subsets)
