@@ -53,6 +53,14 @@ if args.input_dataset == 'nvidia/HelpSteer':
             'source': 'helpsteer'
         })
 elif args.input_dataset == 'berkeley-nest/Nectar':
+    tqa_a = load_dataset("truthful_qa", "generation", split="validation")
+    tqa_b = load_dataset("truthful_qa", "multiple_choice", split="validation")
+
+    contaminated_prompts = list(set(tqa_a["question"] + tqa_b["question"]))
+    dataset = dataset.filter(lambda x: x["prompt"].replace("Human: ", "").replace("Assistant: ", "").strip() not in contaminated_prompts, num_proc=4)
+    total_rows = dataset.num_rows
+    print(f"Remaining samples after removing the contaminated prompts [{dataset.num_rows} / {total_rows}]")
+
     for sample in dataset:
         prompt = sample['prompt'].replace("Human: ", "").replace("Assistant: ", "").strip()
         answers = sorted(sample['answers'], key=lambda x: x['rank'])
