@@ -16,7 +16,7 @@ RUN pip install torch torchvision torchaudio --index-url https://download.pytorc
 
 # TODO: Install flash attention when training code is complete, and consider using built in flash attn
 # RUN pip install flash-attn==2.2.2 --no-build-isolation
-# TODO: install deepspeed
+# TODO: install deepspeed accelerate einops peft
 RUN pip install -r requirements.txt
 RUN pip install "fschat[model_worker,webui]"
 

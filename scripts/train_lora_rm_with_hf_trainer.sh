@@ -13,7 +13,8 @@ GRADIENT_ACC_STEPS=$(($TOTAL_BATCH_SIZE/$NUM_GPUS/$BATCH_SIZE_PER_GPU))
 # OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/test-tinyllama-ultrafeedback-repro-uf-settings
 MODEL_PATH=allenai/tulu-2-7b
 # OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/tulu-2-7b-ultrafeedback-repro-1e-5-linear
-OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/nectar/tulu-2-7b-nectar-binarized-filtered-1e-5-linear-lora
+# OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/nectar/tulu-2-7b-nectar-binarized-filtered-1e-5-linear-lora
+OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/nectar/lora-tulu-2-7b-nectar-binarized-filtered-debug
 # MODEL_PATH=allenai/tulu-2-13b
 # OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/debug-tulu-2-13b-ultrafeedback-repro-tulu-settings
 # TRAIN_DATASET=ultrafeedback
@@ -70,8 +71,9 @@ deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     # --report_to "tensorboard" \
     # --max_steps 10 
 
-python scripts/merge_lora.py \
-    --base_model_name_or_path $MODEL_PATH \
-    --lora_model_name_or_path $OUTPUT_DIR \
-    --output_dir {$OUTPUT_DIR}_merged \
-    --save_tokenizer
+# enable after debugging
+# python scripts/merge_lora.py \
+#     --base_model_name_or_path $MODEL_PATH \
+#     --lora_model_name_or_path $OUTPUT_DIR \
+#     --output_dir {$OUTPUT_DIR}_merged \
+#     --save_tokenizer
