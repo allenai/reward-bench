@@ -1,7 +1,7 @@
-# export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-# NUM_GPUS=8
-export CUDA_VISIBLE_DEVICES=0,1,2,3
-NUM_GPUS=4
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+NUM_GPUS=8
+# export CUDA_VISIBLE_DEVICES=0,1,2,3
+# NUM_GPUS=4
 
 MODEL_SIZE=7B
 # BATCH_SIZE_PER_GPU=1
@@ -13,12 +13,13 @@ GRADIENT_ACC_STEPS=$(($TOTAL_BATCH_SIZE/$NUM_GPUS/$BATCH_SIZE_PER_GPU))
 # OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/test-tinyllama-ultrafeedback-repro-uf-settings
 MODEL_PATH=allenai/tulu-2-7b
 # OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/tulu-2-7b-ultrafeedback-repro-1e-5-linear
-OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/nectar/tulu-2-7b-nectar-binarized-filtered-1e-5-linear
+OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/nectar/tulu-2-7b-nectar-full-3_8m-1e-5-linear
 # MODEL_PATH=allenai/tulu-2-13b
 # OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/debug-tulu-2-13b-ultrafeedback-repro-tulu-settings
 # TRAIN_DATASET=ultrafeedback
 # TRAIN_DATASET=nectar
-TRAIN_DATASET=nectar-binarized-filtered
+# TRAIN_DATASET=nectar-binarized-filtered
+TRAIN_DATASET=nectar-full
 # EVAL_DATASET=alpaca_farm_human_preferences
 # TRAIN_DATASET=Anthropic/hh-rlhf
 # TRAIN_DATASET=Dahoas/synthetic-instruct-gptj-pairwise

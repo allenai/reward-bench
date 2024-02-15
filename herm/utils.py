@@ -45,6 +45,8 @@ def save_to_hub(results_dict: Dict, model_name: str, target_path: str, debug: bo
         scores_path = f"results/metrics/{model_name}.json"
         beaker_path = "results/metrics.json"  # save format for AI2 beaker to show results
 
+    print(f"Stored local JSON data {dumped}.")
+
     dirname = os.path.dirname(scores_path)
     os.makedirs(dirname, exist_ok=True)
 
