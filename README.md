@@ -1,9 +1,9 @@
 # Holistic Evaluation of Reward Models (HERM)
 
 This will hold scripts for generating scores and uploading results.
-Two primary scripts need to be created:
-1. `run_rm.py`: Run evaluations for reward models.
-2. `run_dpo.py`: Run evaluations for direct preference optimization (DPO) models.
+Two primary to generate results (more in `scripts/`):
+1. `scripts/run_rm.py`: Run evaluations for reward models.
+2. `scripts/run_dpo.py`: Run evaluations for direct preference optimization (DPO) models.
 
 ## Links
 Dataset, space, etc coming soon.
@@ -21,7 +21,7 @@ export HF_TOKEN="{your_token}"
 
 # Evaluating Models
 
-For reference configs, see `scripts/default_eval_configs.yaml`.
+For reference configs, see `scripts/configs/eval_configs.yaml`.
 For reference on Chat Templates, many models follow the base / sft model terminology [here](https://github.com/lm-sys/FastChat/blob/main/fastchat/conversation.py).
 A small model for debugging is available at `natolambert/gpt2-dummy-rm`.
 
