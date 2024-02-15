@@ -327,7 +327,7 @@ def main():
         logger.info(f"Uploaded reward model results to {results_url}")
 
     # upload chosen-rejected with scores
-    if not model_type == "Custom Classifier": # custom classifiers do not return scores
+    if not model_type == "Custom Classifier":  # custom classifiers do not return scores
         # create new json with scores and upload
         scores_dict = out_dataset.to_dict()
         sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
