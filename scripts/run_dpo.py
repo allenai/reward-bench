@@ -189,6 +189,8 @@ def main():
 
     results_grouped = {}
     results_grouped["model"] = args.model
+    results_grouped["ref_model"] = args.ref_model
+    results_grouped["model_type"] = "DPO"  # TODO add options for references free, DPO-ref-free, or DPO-normalized
     results_grouped["chat_template"] = args.chat_template
     # print per subset and log into results_grouped file
     present_subsets = np.unique(subsets)
@@ -210,6 +212,9 @@ def main():
     # upload chosen-rejected with scores
     # create new json with scores and upload
     scores_dict = out_dataset.to_dict()
+    scores_dict["model"] = args.model
+    scores_dict["model_type"] = "DPO"
+    scores_dict["chat_template"] = args.chat_template
     sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
 
     scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug)
