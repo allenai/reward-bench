@@ -48,7 +48,7 @@ deepspeed --include localhost:0,1,2,3,4,5,6,7 scripts/train_rm_trainer.py \
     --save_strategy steps \
     --save_steps 0.1 \
     --save_total_limit 11 \
-    --seed 13034431 \
+    --seed 12349876 \
     --num_train_epochs 1 \
     --output_dir $OUTPUT_DIR \
     --use_slow_tokenizer \
