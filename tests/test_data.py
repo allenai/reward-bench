@@ -26,13 +26,12 @@ class PrepareDialoguesTest(unittest.TestCase):
         self.conv = get_conv_template("tulu")
 
     def test_prepare_dialogue_from_tokenizer(self):
-        tokenizer = self.tokenizer #AutoTokenizer.from_pretrained("allenai/rlhf-test-tokenizer")
         example = {}
         example["prompt"] = "What are different drawers I should have for clothes?"
         example["chosen"] = "Utensils!"
         example["rejected"] = "Hmm."
 
-        prepared = prepare_dialogue_from_tokenizer(example, tokenizer)
+        prepared = prepare_dialogue_from_tokenizer(example, self.tokenizer)
         desired_chosen = "<|user|>\nWhat are different drawers I should have for clothes?<|endoftext|>\n<|assistant|>\nUtensils!<|endoftext|>\n"  # noqa
         desired_rejected = "<|user|>\nWhat are different drawers I should have for clothes?<|endoftext|>\n<|assistant|>\nHmm.<|endoftext|>\n"  # noqa
         assert prepared["text_chosen"] == desired_chosen
@@ -67,7 +66,7 @@ class PrepareDialoguesTest(unittest.TestCase):
         example["input"] = "Utensils!"
 
         prepared = prepare_dialogue_from_tokenizer(example, self.tokenizer, ift=True)
-        desired_text = '<|user|>\nWhat are different drawers I should have for clothes?<|endoftext|>\n<|assistant|>\nUtensils!<|endoftext|>\n'
+        desired_text = "<|user|>\nWhat are different drawers I should have for clothes?<|endoftext|>\n<|assistant|>\nUtensils!<|endoftext|>\n"  # noqa
         assert prepared["text"] == desired_text
 
     def test_prepare_dialogue_single_turn(self):
@@ -110,7 +109,7 @@ class PrepareDialoguesTest(unittest.TestCase):
         example["input"] = "Utensils!"
 
         prepared = prepare_dialogue(example, self.conv, ift=True)
-        desired_text = '<|user|>\nWhat are different drawers I should have for clothes?\n<|assistant|>\nUtensils!\n'
+        desired_text = "<|user|>\nWhat are different drawers I should have for clothes?\n<|assistant|>\nUtensils!\n"
         assert prepared["text"] == desired_text
 
 

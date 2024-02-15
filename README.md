@@ -49,6 +49,13 @@ And for DPO:
 python scripts/run_dpo.py --model=stabilityai/stablelm-zephyr-3b --ref_model=stabilityai/stablelm-3b-4e1t --batch_size=32
 ```
 
+## Creating Best of N (BoN) rankings
+
+To create the ranking across the dataset, run (best_of 8 being placeholder, 16 should be fine as eval logic will handle lower best of N numbers):
+```
+python scripts/run_bon.py --model=OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5 --chat_template=oasst_pythia --best_of=8 --debug
+```
+
 ## Repository structure
 
 ```

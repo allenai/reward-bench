@@ -180,6 +180,7 @@ def load_eval_dataset(
 
 
 def load_bon_dataset(
+    best_of: int = 16,
     custom_dialogue_formatting: bool = False,
     conv: Conversation = None,
     tokenizer: PreTrainedTokenizer = None,
@@ -225,11 +226,12 @@ def load_bon_dataset(
 
     # unroll every row in ['output'] to a new row, all other columns are copied,
     # index is changed to tuple (index, output_index)
-    def unroll_output(row):
+    def unroll_output(row, n):
         rows = []
         outputs = row["output"]
         id = row["id"]
-        for i, output in enumerate(outputs):
+
+        for i, output in enumerate(outputs[:n]):
             new_row = row.copy()
             new_row["output_new"] = output
             new_row["index"] = [id, i]
@@ -240,12 +242,13 @@ def load_bon_dataset(
 
     new_dataset = []
     for row in raw_dataset:
-        new_dataset.append(unroll_output(row))
+        new_dataset.extend([r for r in unroll_output(row, n=best_of)])
 
     # create huggingface dataset through pandas
     unrolled_dataset = Dataset.from_pandas(pd.DataFrame(data=new_dataset))
     # rename output_new to text
     unrolled_dataset = unrolled_dataset.rename_column("output_new", "input")
+    unrolled_dataset = unrolled_dataset.rename_column("index", "id")
 
     # Apply chat template
     if not custom_dialogue_formatting:
@@ -256,42 +259,33 @@ def load_bon_dataset(
             if logger is not None:
                 logger.info("*** Preparing dataset with HF Transformers ***")
             # docs https://huggingface.co/docs/transformers/main/en/chat_templating
-            dataset = raw_dataset.map(
+            dataset = unrolled_dataset.map(
                 prepare_dialogue_from_tokenizer,
-                fn_kwargs={"tokenizer": tokenizer},
+                fn_kwargs={"tokenizer": tokenizer, "ift": True},
             )
 
         # else use FastChat to get chat template
         else:
             if logger is not None:
                 logger.info("*** Preparing dataset with FastChat ***")
-            dataset = raw_dataset.map(
+            dataset = unrolled_dataset.map(
                 prepare_dialogue,
-                fn_kwargs={"dialogue_template": conv},
+                fn_kwargs={"dialogue_template": conv, "ift": True},
                 num_proc=8,
             )
     else:
         if logger is not None:
             logger.info("*** Preparing dataset with custom formatting ***")
 
-        def map_conversations(example, core_set=True):
-            if core_set:
-                example["text_chosen"] = [
-                    {"role": "user", "content": example["prompt"]},
-                    {"role": "assistant", "content": example["chosen"]},
-                ]
-                example["text_rejected"] = [
-                    {"role": "user", "content": example["prompt"]},
-                    {"role": "assistant", "content": example["rejected"]},
-                ]
-            else:
-                prompt = example["prompt"]
-                example["text_chosen"] = prompt + [{"role": "assistant", "content": example["chosen"]}]
-                example["text_rejected"] = prompt + [{"role": "assistant", "content": example["rejected"]}]
+        def map_conversations_ift(example):
+            example["text"] = [
+                {"role": "user", "content": example["prompt"]},
+                {"role": "assistant", "content": example["input"]},
+            ]
             return example
 
         dataset = raw_dataset.map(
-            map_conversations,
+            map_conversations_ift,
             # fn_kwargs={"core_set": core_set},
             num_proc=8,
         )

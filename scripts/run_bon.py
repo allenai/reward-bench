@@ -20,7 +20,6 @@ import logging
 import os
 import sys
 
-import numpy as np
 import torch
 import transformers
 from accelerate import Accelerator
@@ -58,6 +57,7 @@ def get_args():
     )
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
     parser.add_argument("--batch_size", type=int, default=64, help="batch size for inference")
+    parser.add_argument("--best_of", type=int, default=16, help="number of best of n to select from")
     parser.add_argument(
         "--debug", action="store_true", help="run on common preference sets instead of our custom eval set"
     )
@@ -145,12 +145,12 @@ def main():
     logger.info("*** Load dataset ***")
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-    dataset, subsets = load_bon_dataset(
+    dataset = load_bon_dataset(
+        best_of=args.best_of,
         conv=conv,
         custom_dialogue_formatting=custom_dialogue,
         tokenizer=tokenizer,
         logger=logger,
-        keep_columns=["text", "id"],
     )
 
     # copy id for saving, then remove
@@ -160,7 +160,6 @@ def main():
     # debug: use only 10 examples
     if args.debug:
         dataset = dataset.select(range(10))
-        subsets = subsets[:10]
         ids = ids[:10]
 
     ############################
@@ -211,15 +210,10 @@ def main():
         # prepare for inference
         reward_pipe = accelerator.prepare(reward_pipe)
 
-        results_rej = reward_pipe(dataset["text_rejected"], **reward_pipeline_kwargs)
-        results_cho = reward_pipe(dataset["text_chosen"], **reward_pipeline_kwargs)
+        results = reward_pipe(dataset["text"], **reward_pipeline_kwargs)
 
         # extract scores from results which is list of dicts, e.g. [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
-        scores_chosen = [result["score"] for result in results_cho]
-        scores_rejected = [result["score"] for result in results_rej]
-
-        # pairwise comparison list comprehension
-        results = [1 if chosen > rejected else 0 for chosen, rejected in zip(scores_chosen, scores_rejected)]
+        scores = [r["score"] for r in results]
 
     ############################
     # Run inference [2/2] custom pipelines
@@ -249,88 +243,59 @@ def main():
         dataloader, model = accelerator.prepare(dataloader, reward_pipe.model)
         reward_pipe.model = model
 
-        results = []
-        scores_chosen = []
-        scores_rejected = []
+        scores = []
         for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
             logger.info(f"RM inference step {step}/{len(dataloader)}")
 
             if "PairRM" in args.model or "SteamSHP" in args.model:
-                text_rejected = [b["text_rejected"] for b in batch]
-                text_chosen = [b["text_chosen"] for b in batch]
-                results_sub = reward_pipe(text_chosen, text_rejected, **reward_pipeline_kwargs)
-                [results.append(1) if result else results.append(0) for result in results_sub.cpu().numpy().tolist()]
-                scores_chosen.extend(None * len(results_sub))
-                scores_rejected.extend(None * len(results_sub))
+                raise NotImplementedError("PairRM and SteamSHP are not yet supported for batched inference")
+                # text_rejected = [b["text_rejected"] for b in batch]
+                # text_chosen = [b["text_chosen"] for b in batch]
+                # results_sub = reward_pipe(text_chosen, text_rejected, **reward_pipeline_kwargs)
+                # [results.append(1) if result else results.append(0) for result in results_sub.cpu().numpy().tolist()]
+                # scores_chosen.extend(None * len(results_sub))
+                # scores_rejected.extend(None * len(results_sub))
             else:
-                rewards_chosen = reward_pipe(batch["text_chosen"], **reward_pipeline_kwargs)
-                rewards_rejected = reward_pipe(batch["text_rejected"], **reward_pipeline_kwargs)
+                rewards = reward_pipe(batch["text_chosen"], **reward_pipeline_kwargs)
 
                 # for each item in batch, record 1 if chosen > rejected
                 # extra score from dict within batched results (e.g. logits)
                 # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
-                if isinstance(rewards_chosen[0], dict):
-                    score_chosen_batch = [result["score"] for result in rewards_chosen]
-                    score_rejected_batch = [result["score"] for result in rewards_rejected]
+                if isinstance(rewards[0], dict):
+                    scores_batch = [result["score"] for result in rewards]
                 # for classes that directly output scores (custom code)
                 else:
-                    score_chosen_batch = rewards_chosen.cpu().numpy().tolist()
-                    score_rejected_batch = rewards_rejected.cpu().numpy().tolist()
+                    scores_batch = rewards.cpu().numpy().tolist()
 
-                # log results
-                [
-                    results.append(1) if chosen > rejected else results.append(0)
-                    for chosen, rejected in zip(score_chosen_batch, score_rejected_batch)
-                ]
-                scores_chosen.extend(score_chosen_batch)
-                scores_rejected.extend(score_rejected_batch)
+                scores.extend(scores_batch)
 
+    import ipdb
+
+    ipdb.set_trace()
     ############################
     # Print & process results
     ############################
     # add column for results for easy printing
-    out_dataset = dataset.add_column("results", results)
+    out_dataset = dataset.add_column("scores", scores)
 
     # add subsets back (removed so it's not handled by cuda)
-    out_dataset = out_dataset.add_column("subset", subsets)
     out_dataset = out_dataset.add_column("id", ids)
 
-    # add scores_chosen and scores_rejected to the dataset
-    out_dataset = out_dataset.add_column("scores_chosen", scores_chosen)
-    out_dataset = out_dataset.add_column("scores_rejected", scores_rejected)
-
-    # get core dataset
-    results_grouped = {}
-    results_grouped["model"] = args.model
-    results_grouped["chat_template"] = args.chat_template
-
-    # print per subset and log into results_grouped file
-    present_subsets = np.unique(subsets)
-    for subset in present_subsets:
-        subset_dataset = out_dataset.filter(lambda example: example["subset"] == subset)
-        num_correct = sum(subset_dataset["results"])
-        num_total = len(subset_dataset["results"])
-        print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
-        results_grouped[subset] = num_correct / num_total
+    alpaca_eval = out_dataset.filter(lambda x: x["subset"] == "alpaca_eval")
+    mt_bench = out_dataset.filter(lambda x: x["subset"] == "mt_bench")
 
     ############################
     # Upload results to hub
     ############################
-    sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
-    results_url = save_to_hub(results_grouped, args.model, sub_path, args.debug, local_only=args.do_not_save)
+    sub_path = "best-of-n/"
+    results_url = save_to_hub(
+        alpaca_eval.to_dict(), args.model, sub_path + "alpaca_eval/", args.debug, local_only=args.do_not_save
+    )
+    results_url_2 = save_to_hub(
+        mt_bench.to_dict(), args.model, sub_path + "mt_bench/", args.debug, local_only=args.do_not_save
+    )
     if not args.do_not_save:
-        logger.info(f"Uploaded reward model results to {results_url}")
-
-    # upload chosen-rejected with scores
-    if not ("PairRM" in args.model or "SteamSHP" in args.model):
-        # create new json with scores and upload
-        scores_dict = out_dataset.to_dict()
-        sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
-
-        scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug)
-        logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
-    else:
-        logger.info("Not uploading chosen-rejected text with scores due to model compatibility")
+        logger.info(f"Uploaded reward model results to {results_url}, {results_url_2}")
 
 
 if __name__ == "__main__":
