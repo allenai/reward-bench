@@ -212,6 +212,9 @@ def main():
     # upload chosen-rejected with scores
     # create new json with scores and upload
     scores_dict = out_dataset.to_dict()
+    scores_dict["model"] = args.model
+    scores_dict["model_type"] = "DPO"
+    scores_dict["chat_template"] = args.chat_template
     sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
 
     scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug)
