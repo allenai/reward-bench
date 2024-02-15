@@ -269,9 +269,6 @@ def main():
 
                 scores.extend(scores_batch)
 
-    import ipdb
-
-    ipdb.set_trace()
     ############################
     # Print & process results
     ############################
