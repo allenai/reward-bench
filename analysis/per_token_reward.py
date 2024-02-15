@@ -269,7 +269,7 @@ def main():
         for i, substring in enumerate(substrings):
             reward_so_far = round(results[i], 3)
             print(f"Reward: {reward_so_far} | Substring: {substring}")
-            tokens_per_model.append( substring)
+            tokens_per_model.append(substring)
             rewards_per_model.append(reward_so_far)
         tokens_list_all.append(tokens_per_model)
         rewards_list_all.append(rewards_per_model)
