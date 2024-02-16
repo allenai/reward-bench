@@ -322,6 +322,7 @@ def main():
     # Upload results to hub
     ############################
     sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
+    print(f"Stored local JSON data {results_grouped}.")
     results_url = save_to_hub(results_grouped, args.model, sub_path, args.debug, local_only=args.do_not_save)
     if not args.do_not_save:
         logger.info(f"Uploaded reward model results to {results_url}")
