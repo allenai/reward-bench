@@ -289,6 +289,10 @@ def load_bon_dataset(
             # fn_kwargs={"core_set": core_set},
             num_proc=8,
         )
+
+    # remove column input
+    dataset = dataset.remove_columns("input")
+
     return dataset
 
 

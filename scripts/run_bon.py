@@ -281,18 +281,61 @@ def main():
     alpaca_eval = out_dataset.filter(lambda x: x["subset"] == "alpaca_eval")
     mt_bench = out_dataset.filter(lambda x: x["subset"] == "mt_bench")
 
+    # remove subset column from both
+    alpaca_eval = alpaca_eval.remove_columns("subset")
+    mt_bench = mt_bench.remove_columns("subset")
+
+    # remove model_input
+    alpaca_eval = alpaca_eval.remove_columns("model_input")
+    mt_bench = mt_bench.remove_columns("model_input")
+
+    # split into per-model
+    alpaca_eval_zephyr = alpaca_eval.filter(lambda x: x["model"] == "HuggingFaceH4/zephyr-7b-beta")
+    alpaca_eval_tulu = alpaca_eval.filter(lambda x: x["model"] == "allenai/tulu-2-dpo-13b")
+    mt_bench_zephyr = mt_bench.filter(lambda x: x["model"] == "HuggingFaceH4/zephyr-7b-beta")
+    mt_bench_tulu = mt_bench.filter(lambda x: x["model"] == "allenai/tulu-2-dpo-13b")
+
+    # def flatten and to dict
+    def flatten_data(dataset):
+        dictionary = dataset.to_dict()
+        return [dict(zip(dictionary.keys(), values)) for values in zip(*dictionary.values())]
+
     ############################
     # Upload results to hub
     ############################
     sub_path = "best-of-n/"
     results_url = save_to_hub(
-        alpaca_eval.to_dict(), args.model, sub_path + "alpaca_eval/", args.debug, local_only=args.do_not_save
+        flatten_data(alpaca_eval_zephyr),
+        args.model,
+        sub_path + "alpaca_eval/zephyr-7b/",
+        args.debug,
+        local_only=args.do_not_save,
     )
     results_url_2 = save_to_hub(
-        mt_bench.to_dict(), args.model, sub_path + "mt_bench/", args.debug, local_only=args.do_not_save
+        flatten_data(alpaca_eval_tulu),
+        args.model,
+        sub_path + "alpaca_eval/tulu-13b",
+        args.debug,
+        local_only=args.do_not_save,
+    )
+    results_url_3 = save_to_hub(
+        flatten_data(mt_bench_zephyr),
+        args.model,
+        sub_path + "mt_bench/zephyr-7b/",
+        args.debug,
+        local_only=args.do_not_save,
+    )
+    results_url_4 = save_to_hub(
+        flatten_data(mt_bench_tulu),
+        args.model,
+        sub_path + "mt_bench/tulu-13/",
+        args.debug,
+        local_only=args.do_not_save,
     )
     if not args.do_not_save:
-        logger.info(f"Uploaded reward model results to {results_url}, {results_url_2}")
+        logger.info(
+            f"Uploaded reward model results to {results_url}, {results_url_2}, {results_url_3}, {results_url_4}"
+        )
 
 
 if __name__ == "__main__":
