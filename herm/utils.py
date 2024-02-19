@@ -15,7 +15,7 @@
 import json
 import logging
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import pandas as pd
 from datasets import Dataset, Value, concatenate_datasets, load_dataset
@@ -34,11 +34,12 @@ HF_TOKEN = os.getenv("HF_TOKEN", None)
 api = HfApi(token=HF_TOKEN)
 
 
-def save_to_hub(results_dict: Dict, model_name: str, target_path: str, debug: bool = False, local_only: bool = False):
+def save_to_hub(
+    results_dict: Union[Dict, List], model_name: str, target_path: str, debug: bool = False, local_only: bool = False
+):
     """
     Utility for saving results in dict to the hub in programatic organization.
     """
-    dumped = json.dumps(results_dict, indent=4, sort_keys=True, default=str)
     if "scores" in target_path:
         scores_path = f"results/scores/{model_name}.json"
         beaker_path = None
@@ -54,10 +55,17 @@ def save_to_hub(results_dict: Dict, model_name: str, target_path: str, debug: bo
         os.remove(scores_path)
 
     with open(scores_path, "w") as f:
-        f.write(dumped)
+        if isinstance(results_dict, Dict):
+            dumped = json.dumps(results_dict, indent=4, sort_keys=True)  # nol removed , default=str
+            f.write(dumped)
+        # else, dump each row in list
+        else:
+            for record in results_dict:
+                dumped = json.dumps(record, indent=4, sort_keys=True) + "\n"
+                f.write(dumped)
 
-    # ai2 internal visualization, not needed external
-    if beaker_path:
+    # ai2 internal visualization, not needed external, only for dict results (doesn't make sense for others)
+    if beaker_path and isinstance(results_dict, Dict):
         with open(beaker_path, "w") as f:
             f.write(dumped)
 

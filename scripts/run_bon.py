@@ -314,7 +314,7 @@ def main():
     results_url_2 = save_to_hub(
         flatten_data(alpaca_eval_tulu),
         args.model,
-        sub_path + "alpaca_eval/tulu-13b",
+        sub_path + "alpaca_eval/tulu-13b/",
         args.debug,
         local_only=args.do_not_save,
     )

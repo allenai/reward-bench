@@ -17,12 +17,9 @@
 import argparse
 import os
 from pathlib import Path
-from typing import List, Literal, Optional, Union
 
-import numpy as np
-import pandas as pd
 from datasets import load_dataset
-from huggingface_hub import snapshot_download
+from huggingface_hub import hf_hub_download
 
 LOCAL_DIR = "hf_snapshot_evals"
 
@@ -69,16 +66,14 @@ def main():
     args = get_args()
 
     # Download the evaluation results
-    base_dir = "https://huggingface.co/datasets/ai2-adapt-dev/HERM-Results/raw/main/best-of-n/alpaca_eval/"
-    d_file = base_dir + f"{args.generation_model[0]}" + f"/{args.reward_model}.json"
+    # base_dir = "https://huggingface.co/datasets/ai2-adapt-dev/herm-debug/raw/main/best-of-n/alpaca_eval/"
+    # d_file = base_dir + f"{args.generation_model[0]}" + f"/{args.reward_model}.json"
+    # load dataset directly doesn't work with our schema for some reason
+    # eval_data = load_dataset("json", data_files=d_file, split="train")
 
-    import ipdb
-
-    ipdb.set_trace()
-    eval_data = load_dataset("json", data_files=d_file, split="train")
-
-    # extract flattened data
-    eval_data = eval_data[0]
+    hub_file = "best-of-n/alpaca_eval/" + f"{args.generation_model[0]}" + f"/{args.reward_model}.json"
+    f = hf_hub_download(args.hf_evals_repo, hub_file, repo_type="dataset")
+    eval_data = load_dataset("json", data_files=f, split="train")
 
     def split_dict_lists(input_dict, chunk_size=16):
         # List to hold the resulting dictionaries
@@ -94,10 +89,22 @@ def main():
 
         return result
 
-    grouped_data = split_dict_lists(eval_data)
-    import ipdb
+    # rename column prompt to 'instruction'
+    eval_data = eval_data.rename_columns({"prompt": "instruction"})
 
-    ipdb.set_trace()
+    # add empty column input
+    input_col = [""] * len(eval_data)
+    eval_data = eval_data.add_column("input", input_col)
+    # rename text to output
+    eval_data = eval_data.rename_columns({"text": "output"})
+    # rename model to generator
+    eval_data = eval_data.rename_columns({"model": "generator"})
+
+    # save locally to json for sending to AlpacaEval
+    # create dir if needed
+    out_dir = os.path.dirname(f"results/AlpacaEval/{args.generation_model[0]}-{args.reward_model}.json")
+    os.makedirs(os.path.dirname(out_dir), exist_ok=True)
+    eval_data.to_json(out_dir)
 
 
 if __name__ == "__main__":
