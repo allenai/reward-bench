@@ -90,7 +90,7 @@ def get_args():
     )
     # optional arguments
     parser.add_argument(
-        "--models",
+        "--model",
         type=str,
         default="natolambert/gpt2-dummy-rm",
         help="Path to the model or HuggingFace link.",
@@ -334,10 +334,6 @@ def save_results(
     # Assumes the model output is a pointer to a HuggingFace repository
     with open(output_file, "w") as f:
         json.dump(reward_info, f)
-
-
-def visualize_rewards():
-    pass
 
 
 if __name__ == "__main__":
