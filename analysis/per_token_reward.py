@@ -15,8 +15,11 @@
 # Script to output the per-token reward across a piece of text given a reward model
 
 import argparse
+import base64
+import json
 import logging
 import sys
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import torch
@@ -87,7 +90,7 @@ def get_args():
     )
     # optional arguments
     parser.add_argument(
-        "--model",
+        "--models",
         type=str,
         default="natolambert/gpt2-dummy-rm",
         help="Path to the model or HuggingFace link.",
@@ -103,6 +106,12 @@ def get_args():
         type=str,
         default="tulu",
         help="Path to the chat template.",
+    )
+    parser.add_argument(
+        "--output_dir",
+        type=Path,
+        default="per-token-reward",
+        help="Directory to store the hashes and token information.",
     )
     parser.add_argument(
         "--batch_size",
@@ -279,6 +288,25 @@ def get_per_token_reward(
         results = reward_pipeline(dataset["text"], reward_pipeline_kwargs)
 
     return results
+
+
+def save_results(
+    output_dir: Path,
+    text: str,
+    model: str,
+    chat_template: str,
+    substrings: List[str],
+    rewards: List[str],
+):
+    # Hash the text first using base16
+    hash = base64.b16encode(text.encode())
+    text_dir = output_dir / str(hash)
+    text_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Saving results to {text_dir}")
+
+
+def visualize_rewards():
+    pass
 
 
 if __name__ == "__main__":
