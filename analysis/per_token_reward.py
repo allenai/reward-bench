@@ -110,6 +110,7 @@ def get_args():
         default=64,
         help="Batch size for inference (if above number of tokens).",
     )
+    parser.add_argument("--random_seed", type=int, default=None, help="Random seed for reproducibility.")
     args = parser.parse_args()
 
     # Input validation
@@ -127,6 +128,10 @@ def main():
     args = get_args()
     model_name = args.model if args.model in REWARD_MODEL_CONFIG.keys() else "default"
     config = REWARD_MODEL_CONFIG.get(model_name)
+
+    if args.random_seed:
+        print(f"Setting random seed to {args.random_seed}")
+        torch.manual_seed(args.random_seed)
 
     if config["custom_dialogue"]:
         raise ValueError("Custom dialogue formatting not yet supported in this script")
