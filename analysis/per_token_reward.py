@@ -79,6 +79,13 @@ def get_args():
     Parse arguments strings model and chat_template
     """
     parser = argparse.ArgumentParser()
+    # positional arguments
+    parser.add_argument(
+        "text",
+        type=str,
+        help="Text to evaluate.",
+    )
+    # optional arguments
     parser.add_argument(
         "--model",
         type=str,
@@ -102,12 +109,6 @@ def get_args():
         type=int,
         default=64,
         help="Batch size for inference (if above number of tokens).",
-    )
-    parser.add_argument(
-        "--text",
-        type=str,
-        default="I love to drink coffee at work.",
-        help="Text to evaluate.",
     )
     args = parser.parse_args()
 
