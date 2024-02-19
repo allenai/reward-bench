@@ -15,8 +15,11 @@
 # Script to output the per-token reward across a piece of text given a reward model
 
 import argparse
+import hashlib
+import json
 import logging
 import sys
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import torch
@@ -79,6 +82,13 @@ def get_args():
     Parse arguments strings model and chat_template
     """
     parser = argparse.ArgumentParser()
+    # positional arguments
+    parser.add_argument(
+        "text",
+        type=str,
+        help="Text to evaluate.",
+    )
+    # optional arguments
     parser.add_argument(
         "--model",
         type=str,
@@ -98,17 +108,18 @@ def get_args():
         help="Path to the chat template.",
     )
     parser.add_argument(
+        "--output_dir",
+        type=Path,
+        default="per-token-reward",
+        help="Directory to store the hashes and token information.",
+    )
+    parser.add_argument(
         "--batch_size",
         type=int,
         default=64,
         help="Batch size for inference (if above number of tokens).",
     )
-    parser.add_argument(
-        "--text",
-        type=str,
-        default="I love to drink coffee at work.",
-        help="Text to evaluate.",
-    )
+    parser.add_argument("--random_seed", type=int, default=None, help="Random seed for reproducibility.")
     args = parser.parse_args()
 
     # Input validation
@@ -127,6 +138,10 @@ def main():
     model_name = args.model if args.model in REWARD_MODEL_CONFIG.keys() else "default"
     config = REWARD_MODEL_CONFIG.get(model_name)
 
+    if args.random_seed:
+        print(f"Setting random seed to {args.random_seed}")
+        torch.manual_seed(args.random_seed)
+
     if config["custom_dialogue"]:
         raise ValueError("Custom dialogue formatting not yet supported in this script")
 
@@ -143,11 +158,12 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer or args.model)
 
     def _tokenify_string(string):
-        tokens = tokenizer.tokenize(string)
-        cumulative_texts = [tokenizer.convert_tokens_to_string(tokens[: i + 1]) for i, _ in enumerate(tokens)]
-        return cumulative_texts
+        _tokens = tokenizer.tokenize(string)
+        cumulative_texts = [tokenizer.convert_tokens_to_string(_tokens[: i + 1]) for i, _ in enumerate(_tokens)]
+        tokens = tokenizer.convert_tokens_to_string(_tokens).split(" ")
+        return cumulative_texts, tokens
 
-    substrings = _tokenify_string(args.text)
+    substrings, tokens = _tokenify_string(args.text)
     dataset = Dataset.from_list([{"text": substring} for substring in substrings])
 
     # Load reward model pipeline
@@ -179,8 +195,19 @@ def main():
     )
 
     # Report the results
-    for reward, token in zip(per_token_rewards, substrings):
-        print(f"Reward: {round(reward, 3)} | Substring: {token}")
+    for reward, span in zip(per_token_rewards, substrings):
+        print(f"Reward: {round(reward, 3)} | Substring: {span}")
+
+    # Save the results
+    save_results(
+        output_dir=args.output_dir,
+        text=args.text,
+        model=args.model,
+        chat_template=args.chat_template,
+        substrings=substrings,
+        tokens=tokens,
+        rewards=per_token_rewards,
+    )
 
 
 def setup_logging(name: Optional[str] = None) -> logging.Logger:
@@ -273,6 +300,45 @@ def get_per_token_reward(
         results = reward_pipeline(dataset["text"], reward_pipeline_kwargs)
 
     return results
+
+
+def save_results(
+    output_dir: Path,
+    text: str,
+    model: str,
+    chat_template: str,
+    substrings: List[str],
+    tokens: List[str],
+    rewards: List[str],
+):
+    # Hash the text first using base16
+    text_hash = hashlib.shake_256(text.encode()).hexdigest(5)
+    text_dir = output_dir / text_hash
+    text_dir.mkdir(parents=True, exist_ok=True)
+
+    # Hash the model and chat_template combination
+    MODEL_CHAT_DELIMITER = "___"
+    model_chat_text = model + MODEL_CHAT_DELIMITER + chat_template
+    model_chat_hash = hashlib.shake_256(model_chat_text.encode()).hexdigest(5)
+
+    # Output file will be the model_chat_hash
+    output_file = text_dir / f"{model_chat_hash}.json"
+    print(f"Saving results to {text_dir}")
+
+    reward_info = {
+        "text": text,
+        "text_hash": text_hash,
+        "model": model,
+        "chat_template": chat_template,
+        "model_chat_hash": model_chat_hash,
+        "substrings": substrings,
+        "tokens": tokens,
+        "rewards": rewards,
+    }
+
+    # Assumes the model output is a pointer to a HuggingFace repository
+    with open(output_file, "w") as f:
+        json.dump(reward_info, f, indent=4)
 
 
 if __name__ == "__main__":
