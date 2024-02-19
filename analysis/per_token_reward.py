@@ -197,6 +197,16 @@ def main():
     for reward, token in zip(per_token_rewards, substrings):
         print(f"Reward: {round(reward, 3)} | Substring: {token}")
 
+    # Save the results
+    save_results(
+        output_dir=args.output_dir,
+        text=args.text,
+        model=args.model,
+        chat_template=args.chat_template,
+        substrings=substrings,
+        rewards=per_token_rewards,
+    )
+
 
 def setup_logging(name: Optional[str] = None) -> logging.Logger:
     logger = get_logger(name or __name__)
