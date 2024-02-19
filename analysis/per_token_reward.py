@@ -49,30 +49,50 @@ REWARD_MODEL_CONFIG = {
         "pipeline_builder": pipeline,
         "quantized": True,
         "custom_dialogue": False,
+        "models": [
+            "OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1",
+            "OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5",
+            "OpenAssistant/reward-model-deberta-v3-base",
+            "OpenAssistant/reward-model-deberta-v3-large",
+            "OpenAssistant/reward-model-deberta-v3-large-v2",
+            "OpenAssistant/reward-model-electra-large-discriminator",
+        ],
     },
     "Starling": {
         "model_builder": models.starling.build_starling_rm,
         "pipeline_builder": models.starling.StarlingPipeline,
         "quantized": False,
         "custom_dialogue": False,
+        "models": [
+            "berkeley-nest/Starling-RM-7B-alpha",
+        ],
     },
     "openbmb": {
         "model_builder": models.openbmb.LlamaRewardModel.from_pretrained,
         "pipeline_builder": models.openbmb.OpenBMBPipeline,
         "quantized": True,
         "custom_dialogue": False,
+        "models": ["openbmb/UltraRM-13b"],
     },
     "PairRM": {
         "model_builder": models.pairrm.DebertaV2Model.from_pretrained,
         "pipeline_builder": models.pairrm.PairRMPipeline,
         "quantized": True,
         "custom_dialogue": True,
+        "models": [
+            "llm-blender/PairRM",
+            "llm-blender/PairRM-hf",
+        ],
     },
     "SHP": {
         "model_builder": T5ForConditionalGeneration.from_pretrained,
         "pipeline_builder": models.shp.SHPPipeline,
         "quantized": True,
         "custom_dialogue": True,
+        "models": [
+            "stanfordnlp/SteamSHP-flan-t5-large",
+            "stanfordnlp/SteamSHP-flan-t5-xl",
+        ],
     },
 }
 
@@ -119,13 +139,18 @@ def get_args():
         default=64,
         help="Batch size for inference (if above number of tokens).",
     )
-    parser.add_argument("--random_seed", type=int, default=None, help="Random seed for reproducibility.")
+    parser.add_argument(
+        "--random_seed",
+        type=int,
+        default=None,
+        help="Random seed for reproducibility.",
+    )
     args = parser.parse_args()
 
     # Input validation
     def _validate_require_pairwise_inputs(models):
         for model in models:
-            if args.model == model or args.chat_template == model:
+            if args.model in model or args.chat_template in model:
                 raise ValueError(f"{model} require pairwise inputs, not supported")
 
     _validate_require_pairwise_inputs(models=["PairRM", "SHP"])
@@ -136,6 +161,7 @@ def get_args():
 def main():
     args = get_args()
     model_name = args.model if args.model in REWARD_MODEL_CONFIG.keys() else "default"
+
     config = REWARD_MODEL_CONFIG.get(model_name)
 
     if args.random_seed:
@@ -155,7 +181,9 @@ def main():
     logger.info(f"Running reward model on {args.model} with chat template {args.chat_template}")
 
     # Prepare dataset and tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer or args.model)
+    tokenizer_path = args.tokenizer if args.tokenizer else args.model
+    print(f"Loading tokenizer from {tokenizer_path}")
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
 
     def _tokenify_string(string):
         _tokens = tokenizer.tokenize(string)
@@ -212,7 +240,35 @@ def main():
     )
 
 
+def get_config(model_name: str, default_if_missing: bool = True) -> Dict[str, Any]:
+    """Get the appropriate loading configuration given a model name
+
+    We only do minimal string matching here, basically checking if a substring, say,
+    oasst or others exist in REWARD_MODEL_CONFIG.keys().
+
+    model_name (str): the HuggingFace link or pointer to the model.
+    default_if_missing (bool): if True, will return the default configuration if
+        model is missing from our config templates. If False, then it raises
+        a ValueError.
+    RETURNS (Dict[str, Any]): the loading configuration for a given model.
+    """
+    for tpl, config in REWARD_MODEL_CONFIG.items():
+        available_models = config["models"]
+        if model_name in available_models:
+            config = config.pop("models")
+            print(f"Returning configuration from {tpl}. Config={config}")
+            return config
+
+    # If model_name is not found anywhere
+    if default_if_missing:
+        print("Model {model_name} not found in available models. Returning default configuration")
+        return REWARD_MODEL_CONFIG.get("default")
+    else:
+        raise ValueError(f"Model {model_name} not found in available models!")
+
+
 def setup_logging(name: Optional[str] = None) -> logging.Logger:
+    """Create a logger"""
     logger = get_logger(name or __name__)
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -233,7 +289,15 @@ def load_reward_pipeline(
     config: Dict[str, Any],
     tokenizer: "transformers.PreTrainedTokenizer",
     process_index: int,
-):
+) -> transformers.Pipeline:
+    """Load a reward model pipeline given a model configuration and its tokenizer.
+
+    model_name (str): the HuggingFace link or pointer to the model.
+    config (Dict[str, Any]): the model configuration.
+    tokenizer (transformers.PreTrainedTokenizer): the tokenizer to use with the model.
+    process_index (int): the machine to run the process.
+    RETURNS (transformers.Pipeline) the reward model pipeline
+    """
     model_kwargs = {"device_map": {"": process_index}}
     if config["quantized"]:
         model_kwargs.update(
@@ -245,9 +309,10 @@ def load_reward_pipeline(
     model_builder = config["model_builder"]
     pipeline_builder = config["pipeline_builder"]
     if not pipeline == pipeline_builder:
+        model = model_builder(model_name, **model_kwargs)
         reward_pipeline = pipeline_builder(
             "text-classification",
-            model=model_builder(model_name, **model_kwargs),
+            model=model,
             tokenizer=tokenizer,
         )
     else:
@@ -276,6 +341,16 @@ def get_per_token_reward(
     logger: "logging.Logger",
     dataloader_batch_size: int,
 ) -> List[float]:
+    """Get the reward per subtoken
+
+    dataset (datasets.Dataset): the HuggingFace dataset to source the text from.
+    reward_pipeline (transformers.Pipeline): the reward pipeline that will provide the scores.
+    accelerator (Accelerator): accelerator class for training performance.
+    is_custom_pipeline (bool): flag to check if we need to run a data loader to collate the results.
+    logger (logging.Logger): logger class.
+    dataloader_batch_size (int): control the batch size passed to the data loader.
+    RETURNS (List[float]): list of computed rewards for each token.
+    """
     if is_custom_pipeline:
         logger.info("Running dataloader to collect results")
         dataloader = torch.utils.data.DataLoader(
@@ -313,6 +388,18 @@ def save_results(
     tokens: List[str],
     rewards: List[str],
 ):
+    """Save results to disk
+
+    This function will first hash the prompt, and then the model with the chat template.
+    Then, it will save the model result in a JSON file on disk.
+
+    output_dir (Path): directory to save the files.
+    text (str): the text used to hash. The hashed string will be the name of the subdirectory.
+    model (str): the name of the model
+    chat_template (str): the name of the chat template.
+    tokens (List[str]): the tokens extracted by the reward pipeline's tokenizer.
+    rewards (List[str]): the rewards computed by the reward pipeline.
+    """
     # Hash the text first using base16
     text_hash = hashlib.shake_256(text.encode()).hexdigest(5)
     text_dir = output_dir / text_hash
