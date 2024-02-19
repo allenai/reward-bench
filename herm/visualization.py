@@ -14,14 +14,20 @@
 
 # Module for visualizing datasets and post-hoc analyses.
 
+from pathlib import Path
 from collections import Counter
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import datasets
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
+
+def draw_per_token_reward(tokens: List[str], rewards: Dict[str, List[float]]) -> "matplotlib.axes.Axes":
+    """Draw a heatmap that combines the rewards"""
+    breakpoint()
 
 
 def print_model_statistics(
