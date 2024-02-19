@@ -160,7 +160,9 @@ def main():
     def _tokenify_string(string):
         _tokens = tokenizer.tokenize(string)
         cumulative_texts = [tokenizer.convert_tokens_to_string(_tokens[: i + 1]) for i, _ in enumerate(_tokens)]
-        tokens = tokenizer.convert_tokens_to_string(_tokens).split(" ")
+        # Hacky approach. Ideally we can do a str.split(" ") but we want to
+        # preserve the subword tokenization by the tokenizer.
+        tokens = [tokenizer.convert_tokens_to_string([t]) for t in _tokens]
         return cumulative_texts, tokens
 
     substrings, tokens = _tokenify_string(args.text)
