@@ -299,10 +299,31 @@ def save_results(
     rewards: List[str],
 ):
     # Hash the text first using base16
-    hash = base64.b16encode(text.encode())
-    text_dir = output_dir / str(hash)
+    text_hash = base64.b16encode(text.encode())
+    text_dir = output_dir / str(text_hash)
     text_dir.mkdir(parents=True, exist_ok=True)
+
+    # Hash the model and chat_template combination
+    model_chat_text = model + "___" + chat_template
+    model_chat_hash = base64.b16encode(model_chat_text)
+
+    # Output file will be the model_chat_hash
+    output_file = text_dir / f"{str(model_chat_hash)}.json"
     print(f"Saving results to {text_dir}")
+
+    reward_info = {
+        "text": text,
+        "text_hash": str(text_hash),
+        "model": model,
+        "chat_template": chat_template,
+        "model_chat_hash": model_chat_hash,
+        "substrings": substrings,
+        "rewards": rewards,
+    }
+
+    # Assumes the model output is a pointer to a HuggingFace repository
+    with open(output_file, "w") as f:
+        json.dump(reward_info, f)
 
 
 def visualize_rewards():
