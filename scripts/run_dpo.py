@@ -80,6 +80,7 @@ def main():
 
     logger.info(f"Running reward model on {args.model} with chat template {args.chat_template}")
 
+    assert args.model != args.ref_model, "policy and reference model should be different"
     # load chat template
     chat_template = args.chat_template
     conv = get_conv_template(chat_template)
@@ -169,8 +170,7 @@ def main():
         logger.info(f"RM inference step {step}/{len(dataloader)}")
 
         rewards_chosen, rewards_rejected = dpo.inference_step(batch)
-        print(rewards_chosen)
-        print(rewards_rejected)
+
         # for each item in batch, record 1 if chosen > rejected
         # extra score from dict within batched results (e.g. logits)
         # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
