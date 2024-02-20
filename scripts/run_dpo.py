@@ -204,6 +204,7 @@ def main():
     results_grouped["chat_template"] = args.chat_template
     # print per subset and log into results_grouped file
     present_subsets = np.unique(subsets)
+    print(present_subsets)
     for subset in present_subsets:
         subset_dataset = out_dataset.filter(lambda example: example["subset"] == subset)
         num_correct = sum(subset_dataset["results"])
