@@ -210,8 +210,9 @@ class DPOInference:
                 _,  # ref_chosen_logits,
                 _,  # ref_rejected_logits,
             ) = self.concatenated_forward(self.ref_model, batch)
-            chosen_logratios = policy_chosen_logps - ref_chosen_logps
-            rejected_logratios = policy_rejected_logps - ref_rejected_logps
+            with torch.no_grad():
+                chosen_logratios = policy_chosen_logps - ref_chosen_logps
+                rejected_logratios = policy_rejected_logps - ref_rejected_logps
         else:
             chosen_logratios = policy_chosen_logps
             rejected_logratios = policy_rejected_logps
