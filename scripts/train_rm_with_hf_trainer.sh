@@ -53,14 +53,17 @@ deepspeed --include localhost:0,1,2,3,4,5,6,7 scripts/train_rm_trainer.py \
     --weight_decay 0. \
     --evaluation_strategy no \
     --logging_steps 1 \
-    --save_strategy steps \
-    --save_steps 0.1 \
-    --save_total_limit 11 \
+    --save_strategy epoch \
     --seed 12349876 \
     --num_train_epochs 1 \
     --output_dir $OUTPUT_DIR \
     --use_slow_tokenizer \
     --overwrite_output_dir 
+
+    # --save_strategy steps \
+    # --save_steps 0.1 \
+    # --save_total_limit 11 \
+
     # \
     # --gradient_checkpointing
 
