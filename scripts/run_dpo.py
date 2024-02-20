@@ -169,6 +169,8 @@ def main():
         logger.info(f"RM inference step {step}/{len(dataloader)}")
 
         rewards_chosen, rewards_rejected = dpo.inference_step(batch)
+        print(rewards_chosen)
+        print(rewards_rejected)
         # for each item in batch, record 1 if chosen > rejected
         # extra score from dict within batched results (e.g. logits)
         # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
@@ -186,7 +188,8 @@ def main():
         ]
         scores_chosen += scores_chosen_batch
         scores_rejected += scores_rejected_batch
-
+    print(scores_chosen)
+    print(scores_rejected)
     ############################
     # Print & process results
     ############################
