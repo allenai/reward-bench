@@ -17,12 +17,13 @@
 import argparse
 import os
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List
 
 import numpy as np
 import pandas as pd
-from datasets import load_dataset
 from huggingface_hub import snapshot_download
+
+from analysis.utils import load_results
 
 LOCAL_DIR = "hf_snapshot_evals"
 
@@ -33,14 +34,8 @@ def get_args():
     parser.add_argument(
         "--hf_evals_repo",
         type=str,
-        default="ai2-adapt-dev/rm-benchmark-results",
+        default="ai2-adapt-dev/HERM-Results",
         help="HuggingFace repository containing the evaluation results.",
-    )
-    parser.add_argument(
-        "--hf_prefs_repo",
-        type=str,
-        default="ai2-adapt-dev/rm-testset-results",
-        help="HuggingFace repository containing the test set results.",
     )
     parser.add_argument(
         "--output_dir",
@@ -61,57 +56,6 @@ def get_args():
     )
     args = parser.parse_args()
     return args
-
-
-def load_results(repo_dir_path: Union[str, Path], ignore_columns: Optional[List[str]] = None) -> pd.DataFrame:
-    """Load results into a pandas DataFrame"""
-    data_dir = Path(repo_dir_path) / "data"
-    orgs_dir = {d.name: d for d in data_dir.iterdir() if d.is_dir()}
-    # Get all files within the subfolder orgs
-    model_result_files = {d: list(path.glob("*.json")) for d, path in orgs_dir.items()}
-
-    _results: List[pd.DataFrame] = []  # will merge later
-    for org, filepaths in model_result_files.items():
-        for filepath in filepaths:
-            _results.append(pd.DataFrame(load_dataset("json", data_files=str(filepath), split="train")))
-    results_df = pd.concat(_results)
-
-    # Cleanup the dataframe for presentation
-    def _cleanup(df: pd.DataFrame) -> pd.DataFrame:
-        # remove chat_template comlumn
-        df = df.drop(columns=["chat_template"])
-
-        # move column "model" to the front
-        cols = list(df.columns)
-        cols.insert(0, cols.pop(cols.index("model")))
-        df = df.loc[:, cols]
-
-        # select all columns except "model"
-        cols = df.columns.tolist()
-        cols.remove("model")
-        # round
-        df[cols] = df[cols].round(2)
-        avg = np.nanmean(df[cols].values, axis=1).round(2)
-        # add average column
-        df["average"] = avg
-
-        # move average column to the second
-        cols = list(df.columns)
-        cols.insert(1, cols.pop(cols.index("average")))
-        df = df.loc[:, cols]
-
-        # remove columns
-        if ignore_columns:
-            # Get columns from df that exist in ignore_columns
-            _ignore_columns = [col for col in ignore_columns if col in df.columns]
-            if len(_ignore_columns) > 0:
-                print(f"Dropping columns: {', '.join(_ignore_columns)}")
-                df = df.drop(_ignore_columns, axis=1)
-
-        return df
-
-    results_df = _cleanup(results_df)
-    return results_df
 
 
 def get_average_over_herm(
@@ -145,9 +89,9 @@ def get_average_over_herm(
 def main():
     args = get_args()
 
-    api_token = os.getenv("HF_COLLAB_TOKEN")
+    api_token = os.environ.get("HF_TOKEN")
     if not api_token:
-        raise ValueError("HF_COLLAB_TOKEN not found!")
+        raise ValueError("HF_TOKEN not found!")
 
     print(f"Downloading repository snapshots into '{LOCAL_DIR}' directory")
     # Load the remote repository using the HF API
@@ -159,16 +103,8 @@ def main():
         etag_timeout=30,
         repo_type="dataset",
     )
-    hf_evals_df = load_results(hf_evals_repo, args.ignore_columns)
-    hf_prefs_repo = snapshot_download(
-        local_dir=Path(LOCAL_DIR) / "prefs",
-        repo_id=args.hf_prefs_repo,
-        use_auth_token=api_token,
-        tqdm_class=None,
-        etag_timeout=30,
-        repo_type="dataset",
-    )
-    hf_prefs_df = load_results(hf_prefs_repo, args.ignore_columns)
+    hf_evals_df = load_results(hf_evals_repo, subdir="eval-set/", ignore_columns=args.ignore_columns)
+    hf_prefs_df = load_results(hf_evals_repo, subdir="pref-sets/", ignore_columns=args.ignore_columns)
 
     all_results = {
         "HERM - Overview": get_average_over_herm(hf_evals_df),

@@ -24,7 +24,10 @@ Below is a snippet of the output for the HERM - General results:
 | weqweasdas/hh_rlhf_rm_open_llama_3b              |      0.54 |         0.79 |       0.72 |     0.41 |       0.22 |     |
 | stanfordnlp/SteamSHP-flan-t5-xl                  |      0.48 |         0.85 |       0.7  |     0.38 |       0.01 |   0.48 |
 
-
+Also, these can be visualized as a distribution with
+```
+python analysis/plot_per_subset_dist.py
+```
 
 
 ### Per token uterrance reward
