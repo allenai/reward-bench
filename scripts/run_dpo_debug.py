@@ -114,11 +114,8 @@ def main():
     # Load reward model pipeline
     ############################
     BATCH_SIZE = args.batch_size
-    device_map = {
-        0: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,],
-        1: [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
-    }
-    os.environ["CUDA_VISIBLE_DEVICES"]="0,1,2,3"
+
+    #os.environ["CUDA_VISIBLE_DEVICES"]="0,1,2,3, "
 
     model_kwargs = {
         "load_in_8bit": True,
@@ -130,7 +127,7 @@ def main():
         args.model,
         **model_kwargs,
     )
-    os.environ["CUDA_VISIBLE_DEVICES"]="4,5,6,7"
+    #os.environ["CUDA_VISIBLE_DEVICES"]="4,5,6,7"
 
     model_kwargs_ref = {
         "load_in_8bit": True,
