@@ -16,7 +16,7 @@
 
 from pathlib import Path
 from collections import Counter
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import datasets
 import matplotlib
@@ -58,7 +58,7 @@ def draw_per_token_reward(
         vmax=np.max(rewards),
         vmin=np.min(rewards),
     )
-    cbar = fig.colorbar(im, ax=ax, orientation="horizontal", aspect=20, location="bottom")
+    fig.colorbar(im, ax=ax, orientation="horizontal", aspect=20, location="bottom")
     ax.set_xticks(np.arange(len(tokens)), [f'"{token}"' for token in tokens])
     ax.set_yticks(np.arange(len(model_names)), model_names)
 
@@ -67,7 +67,7 @@ def draw_per_token_reward(
     for i in range(len(model_names)):
         for j in range(len(tokens)):
             color = "k" if rewards[i, j] >= avg else "w"
-            text = ax.text(
+            ax.text(
                 j,
                 i,
                 round(rewards[i, j], 4),

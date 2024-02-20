@@ -82,7 +82,7 @@ def main():
     # Get reference alignment
     first_key = next(iter(rewards))  # should be the same all throughout
     text = rewards[first_key]["text"]
-    whitespace_tokenizer = lambda x: x.split(" ")
+    whitespace_tokenizer = lambda x: x.split(" ")  # noqa
     reference_tokens = whitespace_tokenizer(text)
 
     for _, results in rewards.items():
