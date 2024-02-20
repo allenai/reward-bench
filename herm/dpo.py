@@ -215,6 +215,8 @@ class DPOInference:
             with torch.no_grad():
                 chosen_logratios = policy_chosen_logps.detach().cpu() - ref_chosen_logps.detach().cpu()
                 rejected_logratios = policy_rejected_logps.detach().cpu() - ref_rejected_logps.detach().cpu()
+                print(chosen_logratios)
+                print(rejected_logratios)
         else:
             chosen_logratios = policy_chosen_logps
             rejected_logratios = policy_rejected_logps
