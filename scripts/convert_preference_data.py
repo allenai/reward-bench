@@ -72,22 +72,24 @@ elif args.input_dataset == 'berkeley-nest/Nectar':
         #     (0,5),
         #     (0,6),
         # ]
-        for (i, j) in pairs:
-            chosen = answers[i]['answer']
-            rejected = answers[j]['answer']
-            chosen =  [
-                {'role': 'user', 'content': prompt},
-                {'role': 'assistant', 'content': chosen},
-            ]
-            rejected =  [
-                {'role': 'user', 'content': prompt},
-                {'role': 'assistant', 'content': rejected},
-            ]
-            new_data.append({
-                'chosen': chosen,
-                'rejected': rejected,
-                'source': 'nectar'
-            })
+        # for (i, j) in pairs:
+        for i in range(len(answers) - 1):
+            for j in range(i + 1, len(answers)):
+                chosen = answers[i]['answer']
+                rejected = answers[j]['answer']
+                chosen =  [
+                    {'role': 'user', 'content': prompt},
+                    {'role': 'assistant', 'content': chosen},
+                ]
+                rejected =  [
+                    {'role': 'user', 'content': prompt},
+                    {'role': 'assistant', 'content': rejected},
+                ]
+                new_data.append({
+                    'chosen': chosen,
+                    'rejected': rejected,
+                    'source': 'nectar'
+                })
 elif args.input_dataset == 'argilla/ultrafeedback-binarized-preferences-cleaned':
     for sample in dataset:
         chosen = sample['chosen']
