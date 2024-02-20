@@ -34,14 +34,8 @@ def get_args():
     parser.add_argument(
         "--hf_evals_repo",
         type=str,
-        default="ai2-adapt-dev/rm-benchmark-results",
+        default="ai2-adapt-dev/HERM-Results",
         help="HuggingFace repository containing the evaluation results.",
-    )
-    parser.add_argument(
-        "--hf_prefs_repo",
-        type=str,
-        default="ai2-adapt-dev/rm-testset-results",
-        help="HuggingFace repository containing the test set results.",
     )
     parser.add_argument(
         "--output_dir",
@@ -62,6 +56,7 @@ def get_args():
     )
     args = parser.parse_args()
     return args
+
 
 def get_average_over_herm(
     df: pd.DataFrame,
@@ -108,16 +103,8 @@ def main():
         etag_timeout=30,
         repo_type="dataset",
     )
-    hf_evals_df = load_results(hf_evals_repo, args.ignore_columns)
-    hf_prefs_repo = snapshot_download(
-        local_dir=Path(LOCAL_DIR) / "prefs",
-        repo_id=args.hf_prefs_repo,
-        use_auth_token=api_token,
-        tqdm_class=None,
-        etag_timeout=30,
-        repo_type="dataset",
-    )
-    hf_prefs_df = load_results(hf_prefs_repo, args.ignore_columns)
+    hf_evals_df = load_results(hf_evals_repo, subdir="eval-set/", ignore_columns=args.ignore_columns)
+    hf_prefs_df = load_results(hf_evals_repo, subdir="pref-sets/", ignore_columns=args.ignore_columns)
 
     all_results = {
         "HERM - Overview": get_average_over_herm(hf_evals_df),
