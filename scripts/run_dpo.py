@@ -48,7 +48,7 @@ def get_args():
     parser.add_argument("--tokenizer", type=str, default=None, help="path to non-matching tokenizer")
     parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
-    parser.add_argument("--batch_size", type=int, default=12, help="batch size for inference")
+    parser.add_argument("--batch_size", type=int, default=6, help="batch size for inference")
     parser.add_argument(
         "--pref_sets", action="store_true", help="run on common preference sets instead of our custom eval set"
     )
