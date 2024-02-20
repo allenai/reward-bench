@@ -14,10 +14,10 @@
 
 # Draw the per token reward
 
+import argparse
 import json
 from pathlib import Path
 from typing import List
-import argparse
 
 import numpy as np
 import spacy_alignments as tokenizations
@@ -44,6 +44,11 @@ def get_args():
         nargs=2,
         default=[8, 8],
         help="Control the figure size when plotting.",
+    )
+    parser.add_argument(
+        "--line_chart",
+        action="store_true",
+        help="Draw a line chart instead of a heatmap.",
     )
     args = parser.parse_args()
     return args
@@ -98,6 +103,7 @@ def main():
         model_names=[model_name for model_name, _ in rewards.items()],
         output_path=args.output_path,
         figsize=args.figsize,
+        line_chart=args.line_chart,
     )
 
 
