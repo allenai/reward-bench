@@ -21,7 +21,13 @@ OUTPUT_DIR=net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/llama-2-7b-
 # TRAIN_DATASET=ultrafeedback
 # TRAIN_DATASET=nectar
 # TRAIN_DATASET=nectar-binarized-filtered
-TRAIN_DATASET=nectar-full
+
+# TODO: update these + the datasets internally
+TRAIN_DATASET=ultrafeedback # 60k
+# TRAIN_DATASET=nectar-binarized # 180k
+# TRAIN_DATASET=nectar # 700k
+# TRAIN_DATASET=nectar-full # 3.8m
+
 # EVAL_DATASET=alpaca_farm_human_preferences
 # TRAIN_DATASET=Anthropic/hh-rlhf
 # TRAIN_DATASET=Dahoas/synthetic-instruct-gptj-pairwise

@@ -291,7 +291,7 @@ def main():
                 "chosen": Value("string"),
                 "rejected": Value("string")
             })
-            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl", features=dataset_schema)["train"]
+            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf/uf-binarized-llama-2-chat.jsonl", features=dataset_schema)["train"]
             # train_dataset = Dataset.from_dict(load_dataset(
             #     "json",
             #     data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl",
@@ -305,7 +305,7 @@ def main():
                 "chosen": Value("string"),
                 "rejected": Value("string")
             })
-            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar/processed.jsonl", features=dataset_schema)["train"]
+            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar/binarized-700k-llama-2-chat.jsonl", features=dataset_schema)["train"]
             # train_dataset = Dataset.from_dict(load_dataset(
             #     "json",
             #     data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/nectar/processed.jsonl",
@@ -319,19 +319,19 @@ def main():
                 "chosen": Value("string"),
                 "rejected": Value("string")
             })
-            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar/processed-full.jsonl", features=dataset_schema)["train"]
+            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar/binarized-full-llama-2-chat.jsonl", features=dataset_schema)["train"]
             # train_dataset = Dataset.from_dict(load_dataset(
             #     "json",
             #     data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/nectar/processed-full.jsonl",
             #     features=dataset_schema)["train"][:256]
             # )
 
-        elif data_args.dataset_name == 'nectar-binarized-filtered':
+        elif data_args.dataset_name == 'nectar-binarized':
             dataset_schema = Features({
                 "chosen": Value("string"),
                 "rejected": Value("string")
             })
-            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar/binarized-filtered.jsonl", features=dataset_schema)["train"]
+            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar/binarized-180k-llama-2-chat.jsonl", features=dataset_schema)["train"]
             # train_dataset = Dataset.from_dict(load_dataset(
             #     "json",
             #     data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/nectar/processed-full.jsonl",
