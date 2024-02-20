@@ -43,8 +43,8 @@ def get_args():
     Parse arguments strings model and chat_template
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, default="natolambert/gpt2-dummy-rm", help="path to model")
-    parser.add_argument("--ref_model", type=str, default="natolambert/gpt2-dummy-rm", help="path to model")
+    parser.add_argument("--model", type=str, required=True, help="path to model")
+    parser.add_argument("--ref_model", type=str, default=None, help="path to model")
     parser.add_argument("--tokenizer", type=str, default=None, help="path to non-matching tokenizer")
     parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
@@ -203,6 +203,8 @@ def main():
 
     results_grouped = {}
     results_grouped["model"] = args.model
+    results_grouped["ref_model"] = args.ref_model
+    results_grouped["model_type"] = "DPO"  # TODO add options for references free, DPO-ref-free, or DPO-normalized
     results_grouped["chat_template"] = args.chat_template
     # print per subset and log into results_grouped file
     present_subsets = np.unique(subsets)
@@ -224,6 +226,9 @@ def main():
     # upload chosen-rejected with scores
     # create new json with scores and upload
     scores_dict = out_dataset.to_dict()
+    scores_dict["model"] = args.model
+    scores_dict["model_type"] = "DPO"
+    scores_dict["chat_template"] = args.chat_template
     sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
 
     scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug)

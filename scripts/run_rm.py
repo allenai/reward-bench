@@ -47,7 +47,7 @@ def get_args():
     Parse arguments strings model and chat_template
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, default="natolambert/gpt2-dummy-rm", help="path to model")
+    parser.add_argument("--model", type=str, required=True, help="path to model")
     parser.add_argument("--tokenizer", type=str, default=None, help="path to non-matching tokenizer to model")
     parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
     parser.add_argument(
@@ -69,6 +69,7 @@ def main():
     args = get_args()
     quantized = True  # only Starling isn't quantized for now
     custom_dialogue = False
+    model_type = "Seq. Classifier"
     # some models need custom code to be run
     if "oasst" in args.model or "oasst" in args.chat_template:
         from herm.models import openassistant  # noqa
@@ -92,12 +93,14 @@ def main():
         custom_dialogue = True
         model_builder = DebertaV2PairRM.from_pretrained
         pipeline_builder = PairRMPipeline
+        model_type = "Custom Classifier"
     elif "SteamSHP" in args.model or "SteamSHP" in args.chat_template:
         from herm.models.shp import SHPPipeline
 
         custom_dialogue = True
         model_builder = T5ForConditionalGeneration.from_pretrained
         pipeline_builder = SHPPipeline
+        model_type = "Custom Classifier"
     elif "beaver" in args.model or "pku-align" in args.chat_template:
         from herm.models.beaver import BeaverPipeline, LlamaForScore
 
@@ -256,7 +259,7 @@ def main():
         for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
             logger.info(f"RM inference step {step}/{len(dataloader)}")
 
-            if "PairRM" in args.model or "SteamSHP" in args.model:
+            if model_type == "Custom Classifier":
                 text_rejected = [b["text_rejected"] for b in batch]
                 text_chosen = [b["text_chosen"] for b in batch]
                 results_sub = reward_pipe(text_chosen, text_rejected, **reward_pipeline_kwargs)
@@ -303,6 +306,7 @@ def main():
     # get core dataset
     results_grouped = {}
     results_grouped["model"] = args.model
+    results_grouped["model_type"] = model_type
     results_grouped["chat_template"] = args.chat_template
 
     # print per subset and log into results_grouped file
@@ -323,9 +327,13 @@ def main():
         logger.info(f"Uploaded reward model results to {results_url}")
 
     # upload chosen-rejected with scores
-    if not ("PairRM" in args.model or "SteamSHP" in args.model):
+    if not model_type == "Custom Classifier":  # custom classifiers do not return scores
         # create new json with scores and upload
         scores_dict = out_dataset.to_dict()
+        scores_dict["model"] = args.model
+        scores_dict["model_type"] = model_type
+        scores_dict["chat_template"] = args.chat_template
+
         sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
 
         scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug)
