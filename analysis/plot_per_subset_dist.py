@@ -14,7 +14,6 @@
 
 # Script for getting per subset distributions
 
-
 import argparse
 import os
 from pathlib import Path
@@ -69,6 +68,9 @@ def main():
 
 
 def generate_whisker_plot(df, output_path):
+    # remove the row with random in it from the df
+    df = df[~df["model"].str.contains("random")]
+
     # Exclude 'model' and 'average' from the subsets
     subsets = [col for col in df.columns if col not in ["model", "average", "model_type", "xstest", "anthropic"]]
     n_subsets = len(subsets)
