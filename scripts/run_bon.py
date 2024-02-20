@@ -278,6 +278,11 @@ def main():
     # add subsets back (removed so it's not handled by cuda)
     out_dataset = out_dataset.add_column("id", ids)
 
+    # remove columns prompt, text, and config to save space
+    # will get these from the source dataset when loading
+    out_dataset = out_dataset.remove_columns("prompt")
+    out_dataset = out_dataset.remove_columns("text")
+
     alpaca_eval = out_dataset.filter(lambda x: x["subset"] == "alpaca_eval")
     mt_bench = out_dataset.filter(lambda x: x["subset"] == "mt_bench")
 

@@ -1,6 +1,6 @@
 version: v2
 description: herm-eval-default
-budget: AllenNLP
+budget: ai2/allennlp
 tasks:
   - name: herm-eval-default
     image:

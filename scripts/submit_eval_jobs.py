@@ -33,6 +33,11 @@ image = "jacobm/herm"
 num_gpus = 1
 upload_to_hub = False
 eval_on_pref_sets = False
+eval_on_bon = False
+
+# assert only one of eval_on_pref_sets and eval_on_bon is True
+assert not (eval_on_pref_sets and eval_on_bon), "Only one of eval_on_pref_sets and eval_on_bon can be True"
+
 HF_TOKEN = os.getenv("HF_TOKEN")
 assert HF_TOKEN is not None, "HF Token does not exist -- run `Export HF_TOKEN=<your_write_token_here>'"
 
@@ -60,8 +65,13 @@ for model in models_to_evaluate:
     model_config = configs[model]
     if eval_on_pref_sets:
         experiment_group = "common-preference-sets"
+        script = "run_rm.py"
+    elif eval_on_bon:
+        experiment_group = "bon-preference-sets"
+        script = "run_bon.py"
     else:
         experiment_group = "herm-preference-sets"
+        script = "run_rm.py"
     print(f"Submitting evaluation for model: {model_config['model']} on {experiment_group}")
     d = copy.deepcopy(d1)
 
@@ -70,7 +80,7 @@ for model in models_to_evaluate:
     d["tasks"][0]["name"] = name
 
     d["tasks"][0]["arguments"][0] = (
-        f"python scripts/run_rm.py"
+        f"python scripts/{script}"
         f" --model {model_config['model']}"
         f" --tokenizer {model_config['tokenizer']}"
         f" --chat_template {model_config['chat_template']}"
