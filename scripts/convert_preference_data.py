@@ -53,47 +53,41 @@ if args.input_dataset == 'nvidia/HelpSteer':
             'source': 'helpsteer'
         })
 elif args.input_dataset == 'berkeley-nest/Nectar':
-    tqa_a = load_dataset("truthful_qa", "generation", split="validation")
-    tqa_b = load_dataset("truthful_qa", "multiple_choice", split="validation")
-
-    contaminated_prompts = list(set(tqa_a["question"] + tqa_b["question"]))
-    dataset = dataset.filter(lambda x: x["prompt"].replace("Human: ", "").replace("Assistant: ", "").strip() not in contaminated_prompts, num_proc=4)
-    total_rows = dataset.num_rows
-    print(f"Remaining samples after removing the contaminated prompts [{dataset.num_rows} / {total_rows}]")
-
     for sample in dataset:
         prompt = sample['prompt'].replace("Human: ", "").replace("Assistant: ", "").strip()
         answers = sorted(sample['answers'], key=lambda x: x['rank'])
+        chosen = answers[0]['answer']
+        rejected = random_gen.choice(answers[1:])['answer']
         # pairs = [
         #     (0,5),
         #     (1,5),
         #     (0,6),
         #     (1,6)
         # ]
-        pairs = [
-            (0,1),
-            (0,2),
-            (0,3),
-            (0,4),
-            (0,5),
-            (0,6),
+        # pairs = [
+        #     (0,1),
+        #     (0,2),
+        #     (0,3),
+        #     (0,4),
+        #     (0,5),
+        #     (0,6),
+        # ]
+    # for (i, j) in pairs:
+        # chosen = answers[i]['answer']
+        # rejected = answers[j]['answer']
+        chosen =  [
+            {'role': 'user', 'content': prompt},
+            {'role': 'assistant', 'content': chosen},
         ]
-        for (i, j) in pairs:
-            chosen = answers[i]['answer']
-            rejected = answers[j]['answer']
-            chosen =  [
-                {'role': 'user', 'content': prompt},
-                {'role': 'assistant', 'content': chosen},
-            ]
-            rejected =  [
-                {'role': 'user', 'content': prompt},
-                {'role': 'assistant', 'content': rejected},
-            ]
-            new_data.append({
-                'chosen': chosen,
-                'rejected': rejected,
-                'source': 'nectar'
-            })
+        rejected =  [
+            {'role': 'user', 'content': prompt},
+            {'role': 'assistant', 'content': rejected},
+        ]
+        new_data.append({
+            'chosen': chosen,
+            'rejected': rejected,
+            'source': 'nectar'
+        })
 elif args.input_dataset == 'argilla/ultrafeedback-binarized-preferences-cleaned':
     for sample in dataset:
         chosen = sample['chosen']
