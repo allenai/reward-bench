@@ -42,6 +42,7 @@ setup(
         "isort>=5.12.0",
         "pandas",
         "pytest",
+        "spacy-alignments",  # dependency for aligning tokenizers
         "scipy",
         "tabulate",  # dependency for markdown rendering in pandas
         "tokenizers",
