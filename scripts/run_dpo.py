@@ -52,6 +52,8 @@ def get_args():
     parser.add_argument(
         "--pref_sets", action="store_true", help="run on common preference sets instead of our custom eval set"
     )
+    parser.add_argument("--debug", type=bool, default=False, help="use only 10 examples")
+
     args = parser.parse_args()
     return args
 
@@ -64,7 +66,6 @@ def main():
     ###############
     accelerator = Accelerator()
     current_device = accelerator.process_index
-
     logger = get_logger(__name__)
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -89,12 +90,14 @@ def main():
     logger.info("*** Load dataset ***")
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+    tokenizer.pad_token = tokenizer.eos_token
+
     dataset, subsets = load_eval_dataset(
         core_set=not args.pref_sets,
         conv=conv,
         tokenizer=tokenizer,
         logger=logger,
-        keep_columns=["text_chosen", "text_rejected", "id"],
+        keep_columns=["text_chosen", "text_rejected", "id", "prompt"],
     )
 
     # copy id for saving, then remove
@@ -111,9 +114,11 @@ def main():
     # Load reward model pipeline
     ############################
     BATCH_SIZE = args.batch_size
+
+
     model_kwargs = {
         "load_in_8bit": True,
-        "device_map": {"": current_device},
+        "device_map": "auto",
         "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
         "trust_remote_code": True,
     }
@@ -121,9 +126,16 @@ def main():
         args.model,
         **model_kwargs,
     )
+
+    model_kwargs_ref = {
+        "load_in_8bit": True,
+        "device_map": "auto",
+        "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
+        "trust_remote_code": True,
+    }
     ref_model = AutoModelForCausalLM.from_pretrained(
         args.ref_model,
-        **model_kwargs,
+        **model_kwargs_ref,
     )
 
     # use internal inference functions in DPO trainer
@@ -133,11 +145,10 @@ def main():
         tokenizer=tokenizer,
         accelerator=accelerator,
     )
-
     # tokenize dataset
     column_names = list(dataset.features)
-    tokenized_dataset = dataset.map(dpo.tokenize_row, remove_columns=column_names)
 
+    tokenized_dataset = dataset.map(dpo.tokenize_row, remove_columns=column_names)
     dataloader = torch.utils.data.DataLoader(
         tokenized_dataset,
         batch_size=BATCH_SIZE,
@@ -173,6 +184,8 @@ def main():
             results.append(1) if chosen > rejected else results.append(0)
             for chosen, rejected in zip(scores_chosen_batch, scores_rejected_batch)
         ]
+        scores_chosen += scores_chosen_batch
+        scores_rejected += scores_rejected_batch
 
     ############################
     # Print & process results
@@ -182,7 +195,6 @@ def main():
 
     # add subsets back (removed so it's not handled by cuda)
     out_dataset = out_dataset.add_column("subset", subsets)
-
     # add scores_chosen and scores_rejected to the dataset
     out_dataset = out_dataset.add_column("scores_chosen", scores_chosen)
     out_dataset = out_dataset.add_column("scores_rejected", scores_rejected)

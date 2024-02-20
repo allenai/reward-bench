@@ -115,7 +115,6 @@ def main():
     ############################
     BATCH_SIZE = args.batch_size
 
-    #os.environ["CUDA_VISIBLE_DEVICES"]="0,1,2,3, "
 
     model_kwargs = {
         "load_in_8bit": True,
@@ -127,7 +126,6 @@ def main():
         args.model,
         **model_kwargs,
     )
-    #os.environ["CUDA_VISIBLE_DEVICES"]="4,5,6,7"
 
     model_kwargs_ref = {
         "load_in_8bit": True,
