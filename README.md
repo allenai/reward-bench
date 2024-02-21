@@ -94,4 +94,4 @@ When updating the `Dockerfile`, make sure to see the instructions at the top to 
 
 In development, we have the following docker images
 - `jacobm/herm`: for running `run_rm.py` sweeps (last updated 14 Feb.)
-- `nathanl/herm_bon`: for running `run_bon.py` sweeps (last updated 21 Feb.) 
+- `nathanl/herm_bon_v2`: for running `run_bon.py` sweeps (last updated 21 Feb.) 

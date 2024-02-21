@@ -18,14 +18,7 @@ RUN pip install torch torchvision torchaudio --index-url https://download.pytorc
 # TODO: Install flash attention when training code is complete, and consider using built in flash attn
 # RUN pip install flash-attn==2.2.2 --no-build-isolation
 
-# Or if from requirements (outdated)
-# COPY requirements.txt .
-# RUN pip install -r requirements.txt
-# RUN pip install "fschat[model_worker,webui]"
-
 # TODO: enable these when training code is complete
-# COPY eval eval
-# COPY ds_configs ds_configs
 COPY herm herm
 COPY scripts scripts
 COPY setup.py setup.py

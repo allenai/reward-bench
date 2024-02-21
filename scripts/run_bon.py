@@ -227,7 +227,7 @@ def main():
         def custom_collate_fn(batch):
             # check if ['text_chosen'] is in first batch element
             # Check if the first element of the batch is a dictionary
-            if isinstance(batch[0]["text_chosen"][0], dict):
+            if isinstance(batch[0]["text"][0], dict):
                 return batch  # Return the batch as-is if it's a list of dicts
             else:
                 return default_collate(batch)  # Use the default collate behavior otherwise
@@ -256,7 +256,7 @@ def main():
                 # scores_chosen.extend(None * len(results_sub))
                 # scores_rejected.extend(None * len(results_sub))
             else:
-                rewards = reward_pipe(batch["text_chosen"], **reward_pipeline_kwargs)
+                rewards = reward_pipe(batch["text"], **reward_pipeline_kwargs)
 
                 # for each item in batch, record 1 if chosen > rejected
                 # extra score from dict within batched results (e.g. logits)
