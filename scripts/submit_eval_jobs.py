@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import copy
 import os
 import subprocess
 from datetime import date
-import argparse
 
 import yaml
 
@@ -24,7 +24,9 @@ import yaml
 # String image for Beaker image
 # Bool default true for upload_to_hub
 argparser = argparse.ArgumentParser()
-argparser.add_argument("--eval_on_pref_sets", action="store_true", default=False, help="Evaluate on preference sets rather than core set")
+argparser.add_argument(
+    "--eval_on_pref_sets", action="store_true", default=False, help="Evaluate on preference sets rather than core set"
+)
 argparser.add_argument("--eval_on_bon", action="store_true", default=False, help="Evaluate on BON preference sets")
 argparser.add_argument("--image", type=str, default="jacobm/herm", help="Beaker image to use")
 argparser.add_argument("--cluster", type=str, default="ai2/allennlp-cirrascale", help="Beaker cluster to use")
@@ -59,7 +61,7 @@ assert not (eval_on_pref_sets and eval_on_bon), "Only one of eval_on_pref_sets a
 HF_TOKEN = os.getenv("HF_TOKEN")
 assert HF_TOKEN is not None, "HF Token does not exist -- run `Export HF_TOKEN=<your_write_token_here>'"
 
-d1["tasks"][0]["image"] = image
+d1["tasks"][0]["image"]["beaker"] = image
 d1["tasks"][0]["context"]["cluster"] = cluster
 d1["tasks"][0]["context"]["priority"] = "high"
 d1["tasks"][0]["resources"]["gpuCount"] = num_gpus
@@ -117,7 +119,7 @@ for model in models_to_evaluate:
     # use os to check if beaker_configs/auto_created exists
     if not os.path.exists("beaker_configs/auto_created"):
         os.makedirs("beaker_configs/auto_created")
-    
+
     fn = "beaker_configs/auto_created/{}.yaml".format(name)
     file = open(fn, "w")
     yaml.dump(d, file, default_flow_style=True)
