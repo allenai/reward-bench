@@ -41,6 +41,11 @@ To run these models with AI2 infrastructure, run:
 ```
 python scripts/submit_eval_jobs.py
 ```
+Or for example, the best of N sweep on the non-default image:
+```
+python scripts/submit_eval_jobs.py --eval_on_bon --image=nathanl/herm_bon
+``` 
+
 
 ## Running DPO Models
 
@@ -76,8 +81,17 @@ python scripts/run_bon.py --model=OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2
 
 ### Updating the docker image (consider removing this section when we publicly release HERM)
 When updating this repo, the docker image should be rebuilt to include those changes. 
-For example, if you update `scripts/run_rm.py` and include a new package (or change a package version), you should rebuilt the image and verify it still works on known models.
+For AI2 members, please update the list below with any images you use regularly.
+For example, if you update `scripts/run_rm.py` and include a new package (or change a package version), you should rebuild the image and verify it still works on known models.
 
 To update the image, run these commands in the root directory of this repo:
-1. `docker built -t <local-image-name> . --platform linux/amd64`
-2. `beaker image create -n <local-image-name> <beaker-image-name>`
+1. `docker build -t <local_image_name> . --platform linux/amd64`
+2. `beaker image create <local_image_name> -n <beaker_image_name>`
+
+Notes: Do not use the character - in image names for beaker,
+
+When updating the `Dockerfile`, make sure to see the instructions at the top to update the base cuda version. 
+
+In development, we have the following docker images
+- `jacobm/herm`: for running `run_rm.py` sweeps (last updated 14 Feb.)
+- `nathanl/herm_bon`: for running `run_bon.py` sweeps (last updated 21 Feb.) 

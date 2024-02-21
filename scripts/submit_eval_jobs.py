@@ -16,24 +16,42 @@ import copy
 import os
 import subprocess
 from datetime import date
+import argparse
 
 import yaml
+
+# Create argparse, for store_true variables of eval_on_pref_sets and eval_on_bon
+# String image for Beaker image
+# Bool default true for upload_to_hub
+argparser = argparse.ArgumentParser()
+argparser.add_argument("--eval_on_pref_sets", action="store_true", default=False, help="Evaluate on preference sets rather than core set")
+argparser.add_argument("--eval_on_bon", action="store_true", default=False, help="Evaluate on BON preference sets")
+argparser.add_argument("--image", type=str, default="jacobm/herm", help="Beaker image to use")
+argparser.add_argument("--cluster", type=str, default="ai2/allennlp-cirrascale", help="Beaker cluster to use")
+argparser.add_argument("--upload_to_hub", action="store_false", default=True, help="Upload to results to HF hub")
+args = argparser.parse_args()
 
 today = date.today().strftime("%m%d%Y")
 
 with open("scripts/configs/beaker_eval.yaml", "r") as f:
     d1 = yaml.load(f.read(), Loader=yaml.FullLoader)
-with open("scripts/configs/eval_configs.yaml", "r") as f:
-    configs = yaml.load(f.read(), Loader=yaml.FullLoader)
+
+cluster = args.cluster
+# cluster = "ai2/mosaic-cirrascale"
+image = args.image
+num_gpus = 1
+upload_to_hub = args.upload_to_hub
+eval_on_pref_sets = args.eval_on_pref_sets
+eval_on_bon = args.eval_on_bon
+
+if eval_on_bon:
+    with open("scripts/configs/eval_bon_configs.yaml", "r") as f:
+        configs = yaml.load(f.read(), Loader=yaml.FullLoader)
+else:
+    with open("scripts/configs/eval_configs.yaml", "r") as f:
+        configs = yaml.load(f.read(), Loader=yaml.FullLoader)
 print(configs)
 
-cluster = "ai2/allennlp-cirrascale"
-# cluster = "ai2/mosaic-cirrascale"
-image = "jacobm/herm"
-num_gpus = 1
-upload_to_hub = False
-eval_on_pref_sets = False
-eval_on_bon = False
 
 # assert only one of eval_on_pref_sets and eval_on_bon is True
 assert not (eval_on_pref_sets and eval_on_bon), "Only one of eval_on_pref_sets and eval_on_bon can be True"
@@ -47,19 +65,21 @@ d1["tasks"][0]["context"]["priority"] = "high"
 d1["tasks"][0]["resources"]["gpuCount"] = num_gpus
 d1["tasks"][0]["envVars"][6]["value"] = HF_TOKEN
 
-models_to_evaluate = [
-    "openbmb/UltraRM-13b",
-    "OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5",
-    "OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1",
-    "OpenAssistant/reward-model-deberta-v3-large-v2",
-    "weqweasdas/hh_rlhf_rm_open_llama_3b",
-    "llm-blender/PairRM-hf",
-    "berkeley-nest/Starling-RM-7B-alpha",
-    "stanfordnlp/SteamSHP-flan-t5-xl",
-    "PKU-Alignment/beaver-7b-v1.0-reward",
-    "PKU-Alignment/beaver-7b-v1.0-cost",
-    "IDEA-CCNL/Ziya-LLaMA-7B-Reward",
-]
+# get model from config keys
+models_to_evaluate = list(configs.keys())
+# models_to_evaluate = [
+#     "openbmb/UltraRM-13b",
+#     "OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5",
+#     "OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1",
+#     "OpenAssistant/reward-model-deberta-v3-large-v2",
+#     "weqweasdas/hh_rlhf_rm_open_llama_3b",
+#     "llm-blender/PairRM-hf",
+#     "berkeley-nest/Starling-RM-7B-alpha",
+#     "stanfordnlp/SteamSHP-flan-t5-xl",
+#     "PKU-Alignment/beaver-7b-v1.0-reward",
+#     "PKU-Alignment/beaver-7b-v1.0-cost",
+#     "IDEA-CCNL/Ziya-LLaMA-7B-Reward",
+# ]
 
 for model in models_to_evaluate:
     model_config = configs[model]
@@ -86,9 +106,6 @@ for model in models_to_evaluate:
         f" --chat_template {model_config['chat_template']}"
         f" --batch_size {model_config['batch_size']}"
     )
-
-    if model_config["direct_load"]:
-        d["tasks"][0]["arguments"][0] += " --direct_load"
     if model_config["trust_remote_code"]:
         d["tasks"][0]["arguments"][0] += " --trust_remote_code"
     if not upload_to_hub:
@@ -96,6 +113,11 @@ for model in models_to_evaluate:
     if eval_on_pref_sets:
         d["tasks"][0]["arguments"][0] += " --pref_sets"
 
+    print(d)
+    # use os to check if beaker_configs/auto_created exists
+    if not os.path.exists("beaker_configs/auto_created"):
+        os.makedirs("beaker_configs/auto_created")
+    
     fn = "beaker_configs/auto_created/{}.yaml".format(name)
     file = open(fn, "w")
     yaml.dump(d, file, default_flow_style=True)
