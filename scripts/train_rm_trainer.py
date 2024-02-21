@@ -170,6 +170,14 @@ class ModelArguments:
             ),
         },
     )
+    use_qlora: Optional[float] = field(
+        default=False,
+        metadata={
+            "help": (
+                "The dropout rate of lora modules."
+            ),
+        },
+    )
 
 
 @dataclass
