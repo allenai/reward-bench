@@ -42,8 +42,8 @@ def draw_per_token_reward(
     font_size (int)
     output_path (Optional[Path]): if set, then save the figure in the specified path.
     figsize (Tuple[int, int]): control the figure size when plotting.
-    line_chart (bool): if set, will draw a line chart instead of a heatmap.
-    RETURNS (matplotlib.axes.Axes): an Axes class containing the heatmap.
+    line_chart (bool): if set, will draw a line chart instead of a figure.
+    RETURNS (matplotlib.axes.Axes): an Axes class containing the figure.
     """
     fig, ax = plt.subplots(figsize=figsize)
     matplotlib.rcParams.update(
