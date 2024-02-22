@@ -151,8 +151,9 @@ def main():
         custom_dialogue_formatting=custom_dialogue,
         tokenizer=tokenizer,
         logger=logger,
+        remove_columns=["config", "prompt", "dataset_details", "model_input", "input"], 
+        # remove columns saves spave on GPU when running inference
     )
-
     # copy id for saving, then remove
     ids = dataset["id"]
     dataset = dataset.remove_columns("id")
@@ -249,12 +250,6 @@ def main():
 
             if "PairRM" in args.model or "SteamSHP" in args.model:
                 raise NotImplementedError("PairRM and SteamSHP are not yet supported for batched inference")
-                # text_rejected = [b["text_rejected"] for b in batch]
-                # text_chosen = [b["text_chosen"] for b in batch]
-                # results_sub = reward_pipe(text_chosen, text_rejected, **reward_pipeline_kwargs)
-                # [results.append(1) if result else results.append(0) for result in results_sub.cpu().numpy().tolist()]
-                # scores_chosen.extend(None * len(results_sub))
-                # scores_rejected.extend(None * len(results_sub))
             else:
                 rewards = reward_pipe(batch["text"], **reward_pipeline_kwargs)
 
@@ -280,7 +275,6 @@ def main():
 
     # remove columns prompt, text, and config to save space
     # will get these from the source dataset when loading
-    out_dataset = out_dataset.remove_columns("prompt")
     out_dataset = out_dataset.remove_columns("text")
 
     alpaca_eval = out_dataset.filter(lambda x: x["subset"] == "alpaca_eval")

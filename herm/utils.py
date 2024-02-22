@@ -193,6 +193,7 @@ def load_bon_dataset(
     conv: Conversation = None,
     tokenizer: PreTrainedTokenizer = None,
     logger: logging.Logger = None,
+    remove_columns: List[str] = None,
 ):
     """
     Loads the BON candidates dataset.
@@ -299,7 +300,7 @@ def load_bon_dataset(
         )
 
     # remove column input
-    dataset = dataset.remove_columns("input")
+    dataset = dataset.remove_columns(remove_columns)
 
     return dataset
 
