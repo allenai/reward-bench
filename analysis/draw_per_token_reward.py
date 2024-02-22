@@ -14,10 +14,10 @@
 
 # Draw the per token reward
 
+import argparse
 import json
 from pathlib import Path
 from typing import List
-import argparse
 
 import numpy as np
 import spacy_alignments as tokenizations
@@ -44,6 +44,16 @@ def get_args():
         nargs=2,
         default=[8, 8],
         help="Control the figure size when plotting.",
+    )
+    parser.add_argument(
+        "--line_chart",
+        action="store_true",
+        help="Draw a line chart instead of a heatmap.",
+    )
+    parser.add_argument(
+        "--do_not_align_tokens",
+        action="store_true",
+        help="If set, then tokens will not be aligned. May cause issues in the plot.",
     )
     args = parser.parse_args()
     return args
@@ -85,19 +95,22 @@ def main():
     whitespace_tokenizer = lambda x: x.split(" ")  # noqa
     reference_tokens = whitespace_tokenizer(text)
 
-    for _, results in rewards.items():
-        results["aligned_rewards"] = align_tokens(
-            reference_tokens=reference_tokens,
-            predicted_tokens=results["tokens"],
-            rewards=results["rewards"],
-        )
+    if not args.do_not_align_tokens:
+        for _, results in rewards.items():
+            results["aligned_rewards"] = align_tokens(
+                reference_tokens=reference_tokens,
+                predicted_tokens=results["tokens"],
+                rewards=results["rewards"],
+            )
 
+    reward_key = "rewards" if args.do_not_align_tokens else "aligned_rewards"
     draw_per_token_reward(
         tokens=reference_tokens,
-        rewards=[reward["aligned_rewards"] for _, reward in rewards.items()],
+        rewards=[reward[reward_key] for _, reward in rewards.items()],
         model_names=[model_name for model_name, _ in rewards.items()],
         output_path=args.output_path,
         figsize=args.figsize,
+        line_chart=args.line_chart,
     )
 
 
