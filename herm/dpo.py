@@ -45,7 +45,6 @@ class DPOInference:
             #  1. https://github.com/huggingface/trl/issues/907
             #  2. https://github.com/EleutherAI/lm-evaluation-harness/pull/531#issuecomment-1595586257
             #  3. https://github.com/LianjiaTech/BELLE/issues/337
-            print(prompt)
             if not isinstance(prompt, str):
                 raise ValueError(f"prompt should be an str but got {type(prompt)}")
             prompt_tokens = self.tokenizer(prompt, add_special_tokens=False)
