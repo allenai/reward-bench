@@ -151,7 +151,7 @@ def main():
         custom_dialogue_formatting=custom_dialogue,
         tokenizer=tokenizer,
         logger=logger,
-        remove_columns=["config", "prompt", "dataset_details", "model_input", "input"], 
+        remove_columns=["config", "prompt", "dataset_details", "model_input", "input"],
         # remove columns saves spave on GPU when running inference
     )
     # copy id for saving, then remove
