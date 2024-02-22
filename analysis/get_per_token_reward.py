@@ -205,8 +205,8 @@ def main():
 
     # If chat_template exists
     if args.chat_template:
-        print("Applying chat template: {args.chat_template}")
-        templater = AutoTokenizer(args.chat_template)
+        print(f"Applying chat template: {args.chat_template}")
+        templater = AutoTokenizer.from_pretrained(args.chat_template)
         chat = [{"role": "user", "content": args.text}]
         text = templater.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
     else:
