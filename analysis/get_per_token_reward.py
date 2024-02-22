@@ -132,7 +132,7 @@ def get_args():
     parser.add_argument(
         "--chat_template",
         type=str,
-        default="tulu",
+        default="natolambert/gpt2-dummy-rm",
         help="Path to the chat template.",
     )
     parser.add_argument(
@@ -202,6 +202,16 @@ def main():
         # preserve the subword tokenization by the tokenizer.
         tokens = [tokenizer.convert_tokens_to_string([t]) for t in _tokens]
         return cumulative_texts, tokens
+
+    # If chat_template exists
+    if args.chat_template:
+        print("Applying chat template: {args.chat_template}")
+        templater = AutoTokenizer(args.chat_template)
+        chat = [{"role": "user", "content": args.text}]
+        text = templater.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
+    else:
+        print("No chat template applied.")
+        text = args.text
 
     substrings, tokens = _tokenify_string(args.text)
     dataset = Dataset.from_list([{"text": substring} for substring in substrings])
