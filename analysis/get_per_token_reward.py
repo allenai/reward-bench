@@ -456,6 +456,7 @@ def save_results(
             repo_type="dataset",
             commit_message=commit_message,
         )
+        print(f"Saved to HuggingFace with commit message: {commit_message}")
 
 
 if __name__ == "__main__":
