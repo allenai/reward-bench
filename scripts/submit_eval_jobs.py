@@ -31,6 +31,7 @@ argparser.add_argument("--eval_on_bon", action="store_true", default=False, help
 argparser.add_argument("--image", type=str, default="jacobm/herm", help="Beaker image to use")
 argparser.add_argument("--cluster", type=str, default="ai2/allennlp-cirrascale", help="Beaker cluster to use")
 argparser.add_argument("--upload_to_hub", action="store_false", default=True, help="Upload to results to HF hub")
+argparser.add_argument("--model", type=str, default=None, help="Specific model to evaluate if not sweep")
 args = argparser.parse_args()
 
 today = date.today().strftime("%m%d%Y")
@@ -83,6 +84,12 @@ models_to_evaluate = list(configs.keys())
 #     "IDEA-CCNL/Ziya-LLaMA-7B-Reward",
 # ]
 
+if args.model is not None:
+    if args.model in models_to_evaluate:
+        models_to_evaluate = [args.model]
+    else:
+        raise ValueError(f"Model {args.model} not found in configs")
+
 for model in models_to_evaluate:
     model_config = configs[model]
     if eval_on_pref_sets:
@@ -115,7 +122,6 @@ for model in models_to_evaluate:
     if eval_on_pref_sets:
         d["tasks"][0]["arguments"][0] += " --pref_sets"
 
-    print(d)
     # use os to check if beaker_configs/auto_created exists
     if not os.path.exists("beaker_configs/auto_created"):
         os.makedirs("beaker_configs/auto_created")

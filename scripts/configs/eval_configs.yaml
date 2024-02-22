@@ -22,14 +22,12 @@ OpenAssistant/reward-model-deberta-v3-large-v2:
   tokenizer: 'OpenAssistant/reward-model-deberta-v3-large-v2'
   chat_template: 'raw'
   batch_size: 64
-  direct_load: False
   trust_remote_code: False
 weqweasdas/hh_rlhf_rm_open_llama_3b:
   model: 'weqweasdas/hh_rlhf_rm_open_llama_3b'
   tokenizer: 'weqweasdas/hh_rlhf_rm_open_llama_3b'
   chat_template: 'Robin'
   batch_size: 64
-  direct_load: False
   trust_remote_code: False
 llm-blender/PairRM-hf:
   model: 'llm-blender/PairRM-hf'
@@ -67,3 +65,9 @@ IDEA-CCNL/Ziya-LLaMA-7B-Reward:
   chat_template: 'Ziya'
   batch_size: 32
   trust_remote_code: True
+berkeley-nest/Starling-RM-34B:
+  model: 'berkeley-nest/Starling-RM-34B'
+  tokenizer: '01-ai/Yi-34B-Chat'
+  chat_template: 'Yi-34b-chat'
+  batch_size: 4
+  trust_remote_code: False
