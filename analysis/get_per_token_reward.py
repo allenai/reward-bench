@@ -28,73 +28,9 @@ from accelerate import Accelerator
 from accelerate.logging import get_logger
 from datasets import Dataset
 from tqdm import tqdm
-from transformers import (
-    AutoModelForSequenceClassification,
-    AutoTokenizer,
-    T5ForConditionalGeneration,
-    pipeline,
-)
+from transformers import AutoTokenizer, pipeline
 
-from herm import models
-
-REWARD_MODEL_CONFIG = {
-    "default": {
-        "model_builder": AutoModelForSequenceClassification.from_pretrained,
-        "pipeline_builder": pipeline,
-        "quantized": True,
-        "custom_dialogue": False,
-    },
-    "oasst": {
-        "model_builder": AutoModelForSequenceClassification.from_pretrained,
-        "pipeline_builder": pipeline,
-        "quantized": True,
-        "custom_dialogue": False,
-        "models": [
-            "OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1",
-            "OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5",
-            "OpenAssistant/reward-model-deberta-v3-base",
-            "OpenAssistant/reward-model-deberta-v3-large",
-            "OpenAssistant/reward-model-deberta-v3-large-v2",
-            "OpenAssistant/reward-model-electra-large-discriminator",
-        ],
-    },
-    "Starling": {
-        "model_builder": models.starling.build_starling_rm,
-        "pipeline_builder": models.starling.StarlingPipeline,
-        "quantized": False,
-        "custom_dialogue": False,
-        "models": [
-            "berkeley-nest/Starling-RM-7B-alpha",
-        ],
-    },
-    "openbmb": {
-        "model_builder": models.openbmb.LlamaRewardModel.from_pretrained,
-        "pipeline_builder": models.openbmb.OpenBMBPipeline,
-        "quantized": True,
-        "custom_dialogue": False,
-        "models": ["openbmb/UltraRM-13b"],
-    },
-    "PairRM": {
-        "model_builder": models.pairrm.DebertaV2Model.from_pretrained,
-        "pipeline_builder": models.pairrm.PairRMPipeline,
-        "quantized": True,
-        "custom_dialogue": True,
-        "models": [
-            "llm-blender/PairRM",
-            "llm-blender/PairRM-hf",
-        ],
-    },
-    "SHP": {
-        "model_builder": T5ForConditionalGeneration.from_pretrained,
-        "pipeline_builder": models.shp.SHPPipeline,
-        "quantized": True,
-        "custom_dialogue": True,
-        "models": [
-            "stanfordnlp/SteamSHP-flan-t5-large",
-            "stanfordnlp/SteamSHP-flan-t5-xl",
-        ],
-    },
-}
+from herm import REWARD_MODEL_CONFIG
 
 
 def get_args():
