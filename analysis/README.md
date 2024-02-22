@@ -1,7 +1,12 @@
-# Visualizations for HERM
+# Visualizations & Eval Analysis for HERM
 
 We're going to add visualizations for both the eval. data and results here.
 So far, we have the following tools:
+
+### Convert BoN outputs to AlpacaEval format
+```
+python analysis/bon_to_alpacaeval.py --generation_model=zephyr-7b --reward_model=OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5
+```
 
 ### Get benchmark results
 This prints out the HERM results in a Markdown or LaTeX table. Note that you need to pass an API token to the `HF_COLLAB_TOKEN` environment variable.
