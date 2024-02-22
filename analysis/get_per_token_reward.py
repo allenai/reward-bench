@@ -451,7 +451,7 @@ def save_results(
         upload_file(
             repo_id=hf_dataset_repo,
             path_or_fileobj=output_file,
-            path_in_repo=f"text_hashes/{text_hash}/{model_chat_hash}.json",
+            path_in_repo=f"per-token-reward/{text_hash}/{model_chat_hash}.json",
             token=api_token,
             repo_type="dataset",
             commit_message=commit_message,
