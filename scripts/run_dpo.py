@@ -98,18 +98,18 @@ def main():
         conv=conv,
         tokenizer=tokenizer,
         logger=logger,
-        keep_columns=["text_chosen", "text_rejected", "id", "prompt"],
+        keep_columns=["text_chosen", "text_rejected", "prompt"],
     )
 
     # copy id for saving, then remove
-    ids = dataset["id"]
-    dataset = dataset.remove_columns("id")
+    #ids = dataset["id"]
+    #dataset = dataset.remove_columns("id")
 
     # debug: use only 10 examples
     if args.debug:
         dataset = dataset.select(range(10))
         subsets = subsets[:10]
-        ids = ids[:10]
+        #ids = ids[:10]
 
     ############################
     # Load reward model pipeline
