@@ -14,6 +14,7 @@
 
 # Script to output the per-token reward across a piece of text given a reward model
 
+import os
 import argparse
 import hashlib
 import json
@@ -27,6 +28,7 @@ import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from datasets import Dataset
+from huggingface_hub import upload_file
 from tqdm import tqdm
 from transformers import (
     AutoModelForSequenceClassification,
@@ -116,6 +118,12 @@ def get_args():
         help="Path to the model or HuggingFace link.",
     )
     parser.add_argument(
+        "--hf_dataset_repo",
+        type=str,
+        default="ai2-adapt-dev/per-token-reward",
+        help="HuggingFace dataset repository to upload the results.",
+    )
+    parser.add_argument(
         "--tokenizer",
         type=str,
         default=None,
@@ -154,6 +162,8 @@ def get_args():
                 raise ValueError(f"{model} require pairwise inputs, not supported")
 
     _validate_require_pairwise_inputs(models=["PairRM", "SHP"])
+    if args.hf_dataset_repo:
+        assert os.getenv("HF_TOKEN")
 
     return args
 
@@ -237,6 +247,7 @@ def main():
         substrings=substrings,
         tokens=tokens,
         rewards=per_token_rewards,
+        hf_dataset_repo=args.hf_dataset_repo,
     )
 
 
@@ -387,8 +398,9 @@ def save_results(
     substrings: List[str],
     tokens: List[str],
     rewards: List[str],
+    hf_dataset_repo: Optional[str] = None,
 ):
-    """Save results to disk
+    """Save results to disk and on the HuggingFace hub
 
     This function will first hash the prompt, and then the model with the chat template.
     Then, it will save the model result in a JSON file on disk.
@@ -399,6 +411,7 @@ def save_results(
     chat_template (str): the name of the chat template.
     tokens (List[str]): the tokens extracted by the reward pipeline's tokenizer.
     rewards (List[str]): the rewards computed by the reward pipeline.
+    hf_dataset_repo (Optional[str]): HuggingFace dataset to save the results to.
     """
     # Hash the text first using base16
     text_hash = hashlib.shake_256(text.encode()).hexdigest(5)
@@ -428,6 +441,21 @@ def save_results(
     # Assumes the model output is a pointer to a HuggingFace repository
     with open(output_file, "w") as f:
         json.dump(reward_info, f, indent=4)
+
+    # Upload to HuggingFace
+    if hf_dataset_repo:
+        api_token = os.getenv("HF_TOKEN")
+        commit_message = (
+            f"Upload {model} with template '{chat_template}' ({model_chat_hash}) results for text '{text_hash}'"
+        )
+        upload_file(
+            repo_id=hf_dataset_repo,
+            path_or_fileobj=output_file,
+            path_in_repo=f"text_hashes/{text_hash}/{model_chat_hash}.json",
+            token=api_token,
+            repo_type="dataset",
+            commit_message=commit_message,
+        )
 
 
 if __name__ == "__main__":
