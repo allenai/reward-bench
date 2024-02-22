@@ -213,7 +213,7 @@ def main():
         print("No chat template applied.")
         text = args.text
 
-    substrings, tokens = _tokenify_string(args.text)
+    substrings, tokens = _tokenify_string(text)
     dataset = Dataset.from_list([{"text": substring} for substring in substrings])
 
     # Load reward model pipeline
@@ -251,7 +251,7 @@ def main():
     # Save the results
     save_results(
         output_dir=args.output_dir,
-        text=args.text,
+        text=text,
         model=args.model,
         chat_template=args.chat_template,
         substrings=substrings,
