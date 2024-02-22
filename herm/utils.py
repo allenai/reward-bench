@@ -97,7 +97,7 @@ def load_eval_dataset(
     conv: Conversation = None,
     tokenizer: PreTrainedTokenizer = None,
     logger: logging.Logger = None,
-    keep_columns: List[str] = None,
+    keep_columns: List[str] = ["text_chosen", "text_rejected", "id"],
 ) -> Dataset:
     """
     Loads either the core eval set for HERM or the existing preference data test sets.

@@ -92,6 +92,7 @@ Notes: Do not use the character - in image names for beaker,
 
 When updating the `Dockerfile`, make sure to see the instructions at the top to update the base cuda version. 
 
-In development, we have the following docker images
-- `jacobm/herm`: for running `run_rm.py` sweeps (last updated 14 Feb.)
+In development, we have the following docker images (most recent first)
+- `nathanl/herm`: for running everything, including new Starling 34B RM (last updated 22 Feb.)
 - `nathanl/herm_bon_v2`: for running `run_bon.py` sweeps (last updated 21 Feb.) 
+- `jacobm/herm`: for running `run_rm.py` sweeps (last updated 14 Feb.)

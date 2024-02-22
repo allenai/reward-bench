@@ -42,14 +42,14 @@ def build_starling_rm(model_name, **kwargs):
 
         # TODO, not documented by authors how to quantize this
         reward_model.load_state_dict(torch.load(checkpoint), strict=False)
+        reward_model = reward_model.to("cuda")
     elif model_name == "berkeley-nest/Starling-RM-34B":
-        reward_model = LlamaForSequenceClassification.from_pretrained("berkeley-nest/Starling-RM-34B")
+        reward_model = LlamaForSequenceClassification.from_pretrained("berkeley-nest/Starling-RM-34B", **kwargs)
     else:
         raise ValueError(
             f"Model {model_name} not found in Starling reward models. Supported are {SUPPORTED_STARLING_MODELS}"
         )
 
-    reward_model = reward_model.to("cuda")
     reward_model.eval().requires_grad_(False)
     return reward_model
 
@@ -138,7 +138,7 @@ class GPTRewardModel(nn.Module):
 class StarlingPipeline:
     def __init__(self, task, model, tokenizer):
         self.task = task
-        self.model = model.to("cuda")
+        self.model = model
         self.tokenizer = tokenizer
 
     def __call__(self, samples, **kwargs):
@@ -164,5 +164,9 @@ class StarlingPipeline:
                 input_ids=input_ids[i * batch_size : (i + 1) * batch_size],
                 attention_mask=attention_masks[i * batch_size : (i + 1) * batch_size],
             )
+            # if scores are dict (for Yi model), extract them from tensor.
+            if isinstance(rewards, dict):
+                rewards = rewards["scores"]
             out.extend(rewards)
+
         return torch.hstack(out)

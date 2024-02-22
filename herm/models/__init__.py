@@ -45,7 +45,7 @@ REWARD_MODEL_CONFIG = {
     "berkeley-nest/Starling-RM-34B": {
         "model_builder": build_starling_rm,
         "pipeline_builder": StarlingPipeline,
-        "quantized": False,
+        "quantized": True,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
     },
