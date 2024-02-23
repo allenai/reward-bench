@@ -62,28 +62,6 @@ def get_args():
 
 def main():
     args = get_args()
-    args = get_args()
-    if args.model in REWARD_MODEL_CONFIG:
-        config = REWARD_MODEL_CONFIG[args.model]
-    else:
-        config = REWARD_MODEL_CONFIG["default"]
-
-    # Default entries
-    # "model_builder": AutoModelForSequenceClassification.from_pretrained,
-    # "pipeline_builder": pipeline,
-    # "quantized": True,
-    # "custom_dialogue": False,
-    # "model_type": "Seq. Classifier"
-
-    quantized = config["quantized"]  # only Starling isn't quantized for now
-    custom_dialogue = config["custom_dialogue"]
-    _ = config["model_type"]  # todo will be needed to add PairRM and SteamSHP
-    model_builder = config["model_builder"]
-    pipeline_builder = config["pipeline_builder"]
-
-    # not included in config to make user explicitly understand they are passing this
-    trust_remote_code = args.trust_remote_code
-
     ###############
     # Setup logging
     ###############
@@ -107,6 +85,28 @@ def main():
     # load chat template
     chat_template = args.chat_template
     conv = get_conv_template(chat_template)
+
+    if args.model in REWARD_MODEL_CONFIG:
+        config = REWARD_MODEL_CONFIG[args.model]
+    else:
+        config = REWARD_MODEL_CONFIG["default"]
+    logger.info(f"Using reward model config: {config}")
+
+    # Default entries
+    # "model_builder": AutoModelForSequenceClassification.from_pretrained,
+    # "pipeline_builder": pipeline,
+    # "quantized": True,
+    # "custom_dialogue": False,
+    # "model_type": "Seq. Classifier"
+
+    quantized = config["quantized"]  # only Starling isn't quantized for now
+    custom_dialogue = config["custom_dialogue"]
+    _ = config["model_type"]  # todo will be needed to add PairRM and SteamSHP
+    model_builder = config["model_builder"]
+    pipeline_builder = config["pipeline_builder"]
+
+    # not included in config to make user explicitly understand they are passing this
+    trust_remote_code = args.trust_remote_code
 
     ############################
     # Load dataset
