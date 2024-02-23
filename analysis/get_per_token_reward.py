@@ -258,6 +258,7 @@ def load_reward_pipeline(
     if reward_pipeline.tokenizer.pad_token_id is None:
         reward_pipeline.model.config.pad_token_id = reward_pipeline.tokenizer.eos_token_id
         reward_pipeline.tokenizer.pad_token_id = reward_pipeline.tokenizer.eos_token_id
+        reward_pipeline.tokenizer.truncation_side = "left"
 
     return reward_pipeline
 
