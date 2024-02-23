@@ -45,7 +45,7 @@ def get_args():
     parser.add_argument(
         "text",
         type=str,
-        help="Text to evaluate.",
+        help="Text to evaluate. You can also pass a text file.",
     )
     # optional arguments
     parser.add_argument(
@@ -112,6 +112,13 @@ def main():
     else:
         config = REWARD_MODEL_CONFIG["default"]
 
+    if Path(args.text).is_file() and Path(args.text).suffix == ".txt":
+        print("Found a text file, reading the text...")
+        with open(args.text, "r") as f:
+            _text = f.read()
+    else:
+        _text = args.text
+
     if args.random_seed:
         print(f"Setting random seed to {args.random_seed}")
         torch.manual_seed(args.random_seed)
@@ -145,11 +152,11 @@ def main():
     if args.chat_template:
         print(f"Applying chat template: {args.chat_template}")
         conv = get_conv_template(args.chat_template)
-        conv.append_message(role=conv.roles[0], message=args.text)
+        conv.append_message(role=conv.roles[0], message=_text)
         text = conv.get_prompt()
     else:
         print("No chat template supplied.")
-        text = args.text
+        text = _text
 
     substrings, tokens = _tokenify_string(text)
     dataset = Dataset.from_list([{"text": substring} for substring in substrings])
