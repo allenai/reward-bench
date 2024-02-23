@@ -156,7 +156,9 @@ def main():
         logger=logger,
         keep_columns=["text_chosen", "text_rejected", "id"],
     )
+    import ipdb
 
+    ipdb.set_trace()
     # copy id for saving, then remove
     ids = dataset["id"]
     dataset = dataset.remove_columns("id")
