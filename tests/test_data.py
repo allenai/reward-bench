@@ -59,7 +59,7 @@ class PrepareDialoguesTest(unittest.TestCase):
         desired_chosen = "<|user|>\nI love to drink coffee at work.<|endoftext|>\n<|assistant|>\nGreat, so that’s something you want to purchase.<|endoftext|>\n<|user|>\nTo make coffee at work?<|endoftext|>\n<|assistant|>\nYes, you’re correct!<|endoftext|>\n"  # noqa
         assert (
             prepared["prompt"]
-            == "<|user|>\nI love to drink coffee at work.<|endoftext|>\n<|assistant|>\nGreat, so that’s something you want to purchase.<|endoftext|>\n<|user|>\nTo make coffee at work?<|endoftext|>\n" # noqa
+            == "<|user|>\nI love to drink coffee at work.<|endoftext|>\n<|assistant|>\nGreat, so that’s something you want to purchase.<|endoftext|>\n<|user|>\nTo make coffee at work?<|endoftext|>\n"  # noqa
         )
         assert prepared["text_chosen"] == desired_chosen
         assert prepared["text_rejected"] == desired_rejected
@@ -108,7 +108,7 @@ class PrepareDialoguesTest(unittest.TestCase):
         desired_rejected = "<|user|>\nI love to drink coffee at work.\n<|assistant|>\nGreat, so that’s something you want to purchase.\n<|user|>\nTo make coffee at work?\n<|assistant|>\nNo, that's wrong!\n"  # noqa
         assert (
             prepared["prompt"]
-            == "<|user|>\nI love to drink coffee at work.\n<|assistant|>\nGreat, so that’s something you want to purchase.\n<|user|>\nTo make coffee at work?\n" # noqa
+            == "<|user|>\nI love to drink coffee at work.\n<|assistant|>\nGreat, so that’s something you want to purchase.\n<|user|>\nTo make coffee at work?\n"  # noqa
         )
         assert prepared["text_chosen"] == desired_chosen
         assert prepared["text_rejected"] == desired_rejected
