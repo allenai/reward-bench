@@ -30,73 +30,9 @@ from accelerate.logging import get_logger
 from datasets import Dataset
 from huggingface_hub import upload_file
 from tqdm import tqdm
-from transformers import (
-    AutoModelForSequenceClassification,
-    AutoTokenizer,
-    T5ForConditionalGeneration,
-    pipeline,
-)
+from transformers import AutoTokenizer, pipeline
 
-from herm import models
-
-REWARD_MODEL_CONFIG = {
-    "default": {
-        "model_builder": AutoModelForSequenceClassification.from_pretrained,
-        "pipeline_builder": pipeline,
-        "quantized": True,
-        "custom_dialogue": False,
-    },
-    "oasst": {
-        "model_builder": AutoModelForSequenceClassification.from_pretrained,
-        "pipeline_builder": pipeline,
-        "quantized": True,
-        "custom_dialogue": False,
-        "models": [
-            "OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1",
-            "OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5",
-            "OpenAssistant/reward-model-deberta-v3-base",
-            "OpenAssistant/reward-model-deberta-v3-large",
-            "OpenAssistant/reward-model-deberta-v3-large-v2",
-            "OpenAssistant/reward-model-electra-large-discriminator",
-        ],
-    },
-    "Starling": {
-        "model_builder": models.starling.build_starling_rm,
-        "pipeline_builder": models.starling.StarlingPipeline,
-        "quantized": False,
-        "custom_dialogue": False,
-        "models": [
-            "berkeley-nest/Starling-RM-7B-alpha",
-        ],
-    },
-    "openbmb": {
-        "model_builder": models.openbmb.LlamaRewardModel.from_pretrained,
-        "pipeline_builder": models.openbmb.OpenBMBPipeline,
-        "quantized": True,
-        "custom_dialogue": False,
-        "models": ["openbmb/UltraRM-13b"],
-    },
-    "PairRM": {
-        "model_builder": models.pairrm.DebertaV2Model.from_pretrained,
-        "pipeline_builder": models.pairrm.PairRMPipeline,
-        "quantized": True,
-        "custom_dialogue": True,
-        "models": [
-            "llm-blender/PairRM",
-            "llm-blender/PairRM-hf",
-        ],
-    },
-    "SHP": {
-        "model_builder": T5ForConditionalGeneration.from_pretrained,
-        "pipeline_builder": models.shp.SHPPipeline,
-        "quantized": True,
-        "custom_dialogue": True,
-        "models": [
-            "stanfordnlp/SteamSHP-flan-t5-large",
-            "stanfordnlp/SteamSHP-flan-t5-xl",
-        ],
-    },
-}
+from herm.models import REWARD_MODEL_CONFIG
 
 
 def get_args():
@@ -170,9 +106,10 @@ def get_args():
 
 def main():
     args = get_args()
-    model_name = args.model if args.model in REWARD_MODEL_CONFIG.keys() else "default"
-
-    config = REWARD_MODEL_CONFIG.get(model_name)
+    if args.model in REWARD_MODEL_CONFIG:
+        config = REWARD_MODEL_CONFIG[args.model]
+    else:
+        config = REWARD_MODEL_CONFIG["default"]
 
     if args.random_seed:
         print(f"Setting random seed to {args.random_seed}")
@@ -259,33 +196,6 @@ def main():
         rewards=per_token_rewards,
         hf_dataset_repo=args.hf_dataset_repo,
     )
-
-
-def get_config(model_name: str, default_if_missing: bool = True) -> Dict[str, Any]:
-    """Get the appropriate loading configuration given a model name
-
-    We only do minimal string matching here, basically checking if a substring, say,
-    oasst or others exist in REWARD_MODEL_CONFIG.keys().
-
-    model_name (str): the HuggingFace link or pointer to the model.
-    default_if_missing (bool): if True, will return the default configuration if
-        model is missing from our config templates. If False, then it raises
-        a ValueError.
-    RETURNS (Dict[str, Any]): the loading configuration for a given model.
-    """
-    for tpl, config in REWARD_MODEL_CONFIG.items():
-        available_models = config["models"]
-        if model_name in available_models:
-            config = config.pop("models")
-            print(f"Returning configuration from {tpl}. Config={config}")
-            return config
-
-    # If model_name is not found anywhere
-    if default_if_missing:
-        print("Model {model_name} not found in available models. Returning default configuration")
-        return REWARD_MODEL_CONFIG.get("default")
-    else:
-        raise ValueError(f"Model {model_name} not found in available models!")
 
 
 def setup_logging(name: Optional[str] = None) -> logging.Logger:
