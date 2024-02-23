@@ -96,7 +96,7 @@ def get_args():
         default=None,
         help="Random seed for reproducibility.",
     )
-    args = parser.parse_args("")
+    args = parser.parse_args()
 
     # Input validation
     def _validate_require_pairwise_inputs(models):
