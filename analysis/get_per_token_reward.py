@@ -45,9 +45,15 @@ def get_args():
     parser.add_argument(
         "text",
         type=str,
-        help="Text to evaluate. You can also pass a text file.",
+        help="Text to evaluate. Will be assigned with the user role.",
     )
     # optional arguments
+    parser.add_argument(
+        "--assistant_text",
+        type=str,
+        default="",
+        help="The assistant's reply. Will be assigned with the assistant role.",
+    )
     parser.add_argument(
         "--model",
         type=str,
@@ -100,7 +106,11 @@ def get_args():
 
     _validate_require_pairwise_inputs(models=["PairRM", "SHP"])
     if args.hf_dataset_repo:
-        assert os.getenv("HF_TOKEN")
+        if not os.getenv("HF_TOKEN"):
+            raise ValueError("No HF_TOKEN found. Please set your environment variables!")
+
+    if args.assistant_text and not args.chat_template:
+        raise ValueError("You must supply --chat_template when using --assistant_text.")
 
     return args
 
@@ -111,13 +121,6 @@ def main():
         config = REWARD_MODEL_CONFIG[args.model]
     else:
         config = REWARD_MODEL_CONFIG["default"]
-
-    if Path(args.text).is_file() and Path(args.text).suffix == ".txt":
-        print("Found a text file, reading the text...")
-        with open(args.text, "r") as f:
-            _text = f.read()
-    else:
-        _text = args.text
 
     if args.random_seed:
         print(f"Setting random seed to {args.random_seed}")
@@ -152,11 +155,13 @@ def main():
     if args.chat_template:
         print(f"Applying chat template: {args.chat_template}")
         conv = get_conv_template(args.chat_template)
-        conv.append_message(role=conv.roles[0], message=_text)
+        conv.append_message(role=conv.roles[0], message=args.text)
+        if args.assistant_text:
+            conv.append_message(role=conv.roles[1], message=args.assistant_text)
         text = conv.get_prompt()
     else:
         print("No chat template supplied.")
-        text = _text
+        text = args.text
 
     substrings, tokens = _tokenify_string(text)
     dataset = Dataset.from_list([{"text": substring} for substring in substrings])
