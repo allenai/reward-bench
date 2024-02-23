@@ -137,16 +137,10 @@ def load_eval_dataset(
             if logger is not None:
                 logger.info("*** Preparing dataset with HF Transformers ***")
             # docs https://huggingface.co/docs/transformers/main/en/chat_templating
-            import ipdb
-
-            ipdb.set_trace()
             dataset = raw_dataset.map(
                 prepare_dialogue_from_tokenizer,
                 fn_kwargs={"tokenizer": tokenizer},
             )
-            import ipdb
-
-            ipdb.set_trace()
 
         # else use FastChat to get chat template
         else:
