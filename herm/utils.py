@@ -23,6 +23,8 @@ from fastchat.conversation import Conversation
 from huggingface_hub import HfApi
 from transformers import PreTrainedTokenizer
 
+from herm.models import REWARD_MODEL_CONFIG
+
 # HuggingFace Hub locations
 CORE_EVAL_SET = "ai2-adapt-dev/rm-benchmark-dev"
 EXTRA_PREF_SETS = "allenai/pref-test-sets"
@@ -95,7 +97,7 @@ def load_eval_dataset(
     conv: Conversation = None,
     tokenizer: PreTrainedTokenizer = None,
     logger: logging.Logger = None,
-    keep_columns: List[str] = None,
+    keep_columns: List[str] = ["text_chosen", "text_rejected", "id"],
 ) -> Dataset:
     """
     Loads either the core eval set for HERM or the existing preference data test sets.
@@ -429,3 +431,14 @@ def prepare_dialogue(
             f"Require `[chosen, rejected]` keys but found {list(example.keys())}"
         )
     return example
+
+
+def load_model_config(model_name):
+    """
+    Load the model for evaluation.
+    """
+    # if custom config, load that, else return default
+    if model_name in REWARD_MODEL_CONFIG:
+        return REWARD_MODEL_CONFIG[model_name]
+    else:
+        return REWARD_MODEL_CONFIG["default"]
