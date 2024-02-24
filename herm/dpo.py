@@ -13,7 +13,8 @@ class DPOInference:
         self.tokenizer = tokenizer
         self.accelerator = accelerator
         self.model.eval().requires_grad_(False)
-        self.ref_model.eval().requires_grad_(False)
+        if ref_model is not None:
+            self.ref_model.eval().requires_grad_(False)
 
         # for internals from TRL
         self.is_encoder_decoder = model.config.is_encoder_decoder
@@ -212,8 +213,8 @@ class DPOInference:
                 chosen_logratios = policy_chosen_logps.detach().cpu() - ref_chosen_logps.detach().cpu()
                 rejected_logratios = policy_rejected_logps.detach().cpu() - ref_rejected_logps.detach().cpu()
         else:
-            chosen_logratios = policy_chosen_logps
-            rejected_logratios = policy_rejected_logps
+            chosen_logratios = policy_chosen_logps.detach().cpu()
+            rejected_logratios = policy_rejected_logps.detach().cpu()
 
         return chosen_logratios, rejected_logratios
 
