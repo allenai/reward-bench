@@ -45,7 +45,9 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, required=True, help="path to model")
     parser.add_argument("--ref_model", type=str, default=None, help="path to model")
-    parser.add_argument("--ref_free_type", type=str, default="avg", help="type of reference free normalization (norm, avg, or sum)")
+    parser.add_argument(
+        "--ref_free_type", type=str, default="avg", help="type of reference free normalization (norm, avg, or sum)"
+    )
     parser.add_argument("--tokenizer", type=str, default=None, help="path to non-matching tokenizer")
     parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
@@ -156,7 +158,8 @@ def main():
         ref_model,
         tokenizer=tokenizer,
         accelerator=accelerator,
-        ref_free_norm=args.ref_free_type, # norm is norm, avg is average, sum is sum
+        ref_free_norm=args.ref_free_type,
+        # norm is norm, avg is average, sum is sum
     )
     # tokenize dataset
     column_names = list(dataset.features)
