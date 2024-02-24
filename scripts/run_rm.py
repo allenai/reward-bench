@@ -309,7 +309,7 @@ def main():
     results_grouped = {}
     results_grouped["model"] = args.model
     results_grouped["model_type"] = model_type
-    results_grouped["chat_template"] = args.chat_template
+    results_grouped["chat_template"] = args.chat_template if not hasattr(tokenizer, "chat_template") else "tokenizer"
 
     # print per subset and log into results_grouped file
     present_subsets = np.unique(subsets)
