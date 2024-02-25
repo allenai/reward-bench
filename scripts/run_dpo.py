@@ -55,6 +55,9 @@ def get_args():
     parser.add_argument(
         "--pref_sets", action="store_true", help="run on common preference sets instead of our custom eval set"
     )
+    parser.add_argument(
+        "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
+    )
     parser.add_argument("--debug", type=bool, default=False, help="use only 10 examples")
 
     args = parser.parse_args()
@@ -111,7 +114,9 @@ def main():
         logger=logger,
         keep_columns=["text_chosen", "text_rejected", "prompt", "id"],
     )
+    import ipdb
 
+    ipdb.set_trace()
     # copy id for saving, then remove
     ids = dataset["id"]
     dataset = dataset.remove_columns("id")
@@ -131,10 +136,10 @@ def main():
         "load_in_8bit": True,
         "device_map": "auto",
         "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
-        "trust_remote_code": True,
     }
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
+        trust_remote_code=args.trust_remote_code,
         **model_kwargs,
     )
 
@@ -145,10 +150,10 @@ def main():
             "load_in_8bit": True,
             "device_map": "auto",
             "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
-            "trust_remote_code": True,
         }
         ref_model = AutoModelForCausalLM.from_pretrained(
             args.ref_model,
+            trust_remote_code=args.trust_remote_code,
             **model_kwargs_ref,
         )
 
@@ -177,7 +182,9 @@ def main():
         shuffle=False,
         drop_last=False,
     )
+    import ipdb
 
+    ipdb.set_trace()
     results = []
     scores_chosen = []
     scores_rejected = []

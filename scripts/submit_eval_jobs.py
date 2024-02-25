@@ -108,9 +108,10 @@ for model in models_to_evaluate:
         f"python scripts/{script}"
         f" --model {model}"
         f" --tokenizer {model_config['tokenizer']}"
-        f" --chat_template {model_config['chat_template']}"
         f" --batch_size {model_config['batch_size']}"
     )
+    if model_config["chat_template"] is not None:
+        d["tasks"][0]["arguments"][0] += f" --chat_template {model_config['chat_template']}"
     if model_config["trust_remote_code"]:
         if not eval_dpo:  # TODO create trust remote code option in DPO script
             d["tasks"][0]["arguments"][0] += " --trust_remote_code"
@@ -120,6 +121,7 @@ for model in models_to_evaluate:
         d["tasks"][0]["arguments"][0] += " --pref_sets"
     if "ref_model" in model_config:
         d["tasks"][0]["arguments"][0] += f" --ref_model {model_config['ref_model']}"
+        # TODO add logic for ref free
     # use os to check if beaker_configs/auto_created exists
     if not os.path.exists("beaker_configs/auto_created"):
         os.makedirs("beaker_configs/auto_created")
