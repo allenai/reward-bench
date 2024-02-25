@@ -92,7 +92,8 @@ Notes: Do not use the character - in image names for beaker,
 
 When updating the `Dockerfile`, make sure to see the instructions at the top to update the base cuda version. 
 
-In development, we have the following docker images (most recent first as it's likely what you need)
+In development, we have the following docker images (most recent first as it's likely what you need).
+TODO: we should log the git commit affiliated with each of these, or delete them when outdated.
 - `nathanl/herm_dpo`: for adding functionality with DPO sweeps, fix minor bugs (last updated 24 Feb.)
 - `nathanl/herm`: for running everything, including new Starling 34B RM (last updated 22 Feb.)
 - `nathanl/herm_bon_v2`: for running `run_bon.py` sweeps (last updated 21 Feb.) 

@@ -29,7 +29,7 @@ argparser.add_argument(
 )
 argparser.add_argument("--eval_dpo", action="store_true", default=False, help="Evaluate DPO model suite")
 argparser.add_argument("--eval_on_bon", action="store_true", default=False, help="Evaluate on BON preference sets")
-argparser.add_argument("--image", type=str, default="nathanl/herm", help="Beaker image to use")
+argparser.add_argument("--image", type=str, default="nathanl/herm_dpo", help="Beaker image to use")
 argparser.add_argument("--cluster", type=str, default="ai2/allennlp-cirrascale", help="Beaker cluster to use")
 argparser.add_argument("--upload_to_hub", action="store_false", default=True, help="Upload to results to HF hub")
 argparser.add_argument("--model", type=str, default=None, help="Specific model to evaluate if not sweep")
@@ -97,22 +97,23 @@ for model in models_to_evaluate:
     else:
         experiment_group = "herm-preference-sets"
         script = "run_rm.py"
-    print(f"Submitting evaluation for model: {model_config['model']} on {experiment_group}")
+    print(f"Submitting evaluation for model: {model} on {experiment_group}")
     d = copy.deepcopy(d1)
 
-    name = f'herm_eval_for_{model_config["model"]}_on_{experiment_group}'.replace("/", "-")
+    name = f"herm_eval_for_{model}_on_{experiment_group}".replace("/", "-")
     d["description"] = name
     d["tasks"][0]["name"] = name
 
     d["tasks"][0]["arguments"][0] = (
         f"python scripts/{script}"
-        f" --model {model_config['model']}"
+        f" --model {model}"
         f" --tokenizer {model_config['tokenizer']}"
         f" --chat_template {model_config['chat_template']}"
         f" --batch_size {model_config['batch_size']}"
     )
     if model_config["trust_remote_code"]:
-        d["tasks"][0]["arguments"][0] += " --trust_remote_code"
+        if not eval_dpo:  # TODO create trust remote code option in DPO script
+            d["tasks"][0]["arguments"][0] += " --trust_remote_code"
     if not upload_to_hub:
         d["tasks"][0]["arguments"][0] += " --do_not_save"
     if eval_on_pref_sets:
