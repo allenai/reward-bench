@@ -42,7 +42,7 @@ setup(
         "isort>=5.12.0",
         "pandas",
         "pytest",
-        "spacy-alignments",  # dependency for aligning tokenizers
+        "spacy-alignments",  # dependency for aligning tokenizers TODO consider removing
         "scipy",
         "tabulate",  # dependency for markdown rendering in pandas
         "tokenizers",
