@@ -109,7 +109,11 @@ def main():
         conv=conv,
         tokenizer=tokenizer,
         logger=logger,
+<<<<<<< HEAD
         keep_columns=["text_chosen", "text_rejected", "prompt", "id"],
+=======
+        keep_columns=["text_chosen", "text_rejected", "id", "prompt"],
+>>>>>>> main
     )
 
     # copy id for saving, then remove

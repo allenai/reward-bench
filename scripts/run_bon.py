@@ -26,14 +26,9 @@ from accelerate import Accelerator
 from accelerate.logging import get_logger
 from fastchat.conversation import get_conv_template
 from tqdm import tqdm
-from transformers import (
-    AutoModelForSequenceClassification,
-    AutoTokenizer,
-    T5ForConditionalGeneration,
-    pipeline,
-)
+from transformers import AutoTokenizer, pipeline
 
-from herm import load_bon_dataset, save_to_hub
+from herm import REWARD_MODEL_CONFIG, load_bon_dataset, save_to_hub
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -67,54 +62,6 @@ def get_args():
 
 def main():
     args = get_args()
-    quantized = True  # only Starling isn't quantized for now
-    custom_dialogue = False
-    # some models need custom code to be run
-    if "oasst" in args.model or "oasst" in args.chat_template:
-        from herm.models import openassistant  # noqa
-
-        model_builder = AutoModelForSequenceClassification.from_pretrained
-        pipeline_builder = pipeline
-    elif "Starling" in args.model or "Starling" in args.chat_template:
-        from herm.models.starling import StarlingPipeline, build_starling_rm
-
-        model_builder = build_starling_rm
-        pipeline_builder = StarlingPipeline
-        quantized = False
-    elif "openbmb" in args.model or "openbmb" in args.chat_template:
-        from herm.models.openbmb import LlamaRewardModel, OpenBMBPipeline
-
-        model_builder = LlamaRewardModel.from_pretrained
-        pipeline_builder = OpenBMBPipeline
-    elif "PairRM" in args.model or "PairRM" in args.chat_template:
-        from herm.models.pairrm import DebertaV2PairRM, PairRMPipeline
-
-        custom_dialogue = True
-        model_builder = DebertaV2PairRM.from_pretrained
-        pipeline_builder = PairRMPipeline
-    elif "SteamSHP" in args.model or "SteamSHP" in args.chat_template:
-        from herm.models.shp import SHPPipeline
-
-        custom_dialogue = True
-        model_builder = T5ForConditionalGeneration.from_pretrained
-        pipeline_builder = SHPPipeline
-    elif "beaver" in args.model or "pku-align" in args.chat_template:
-        from herm.models.beaver import BeaverPipeline, LlamaForScore
-
-        model_builder = LlamaForScore.from_pretrained
-        pipeline_builder = BeaverPipeline
-    elif "Ziya" in args.model or "Ziya" in args.chat_template:
-        from herm.models.ziya import ZiyaPipeline
-
-        model_builder = AutoModelForSequenceClassification.from_pretrained
-        pipeline_builder = ZiyaPipeline
-        quantized = False  # handled by .half() in the custom pipeline, as in model card
-    else:
-        model_builder = AutoModelForSequenceClassification.from_pretrained
-        pipeline_builder = pipeline
-
-    trust_remote_code = args.trust_remote_code
-
     ###############
     # Setup logging
     ###############
@@ -138,6 +85,28 @@ def main():
     # load chat template
     chat_template = args.chat_template
     conv = get_conv_template(chat_template)
+
+    if args.model in REWARD_MODEL_CONFIG:
+        config = REWARD_MODEL_CONFIG[args.model]
+    else:
+        config = REWARD_MODEL_CONFIG["default"]
+    logger.info(f"Using reward model config: {config}")
+
+    # Default entries
+    # "model_builder": AutoModelForSequenceClassification.from_pretrained,
+    # "pipeline_builder": pipeline,
+    # "quantized": True,
+    # "custom_dialogue": False,
+    # "model_type": "Seq. Classifier"
+
+    quantized = config["quantized"]  # only Starling isn't quantized for now
+    custom_dialogue = config["custom_dialogue"]
+    _ = config["model_type"]  # todo will be needed to add PairRM and SteamSHP
+    model_builder = config["model_builder"]
+    pipeline_builder = config["pipeline_builder"]
+
+    # not included in config to make user explicitly understand they are passing this
+    trust_remote_code = args.trust_remote_code
 
     ############################
     # Load dataset
