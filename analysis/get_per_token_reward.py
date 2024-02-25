@@ -319,7 +319,7 @@ def get_per_token_reward(
     else:
         logger.info("Running forward pass via built-in pipeline abstraction")
         reward_pipeline = accelerator.prepare(reward_pipeline)
-        results = reward_pipeline(dataset["text"], reward_pipeline_kwargs)
+        results = reward_pipeline(dataset["text"], **reward_pipeline_kwargs)
 
     return results
 
