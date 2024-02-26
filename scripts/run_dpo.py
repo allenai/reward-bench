@@ -100,13 +100,12 @@ def main():
     )
 
     # copy id for saving, then remove
-    ids = dataset["id"]
+    #ids = dataset["id"]
     dataset = dataset.remove_columns("id")
     # debug: use only 10 examples
     if args.debug:
         dataset = dataset.select(range(10))
         subsets = subsets[:10]
-        ids = ids[:10]
 
     ############################
     # Load reward model pipeline
