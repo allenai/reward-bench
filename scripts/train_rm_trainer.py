@@ -15,6 +15,8 @@ from functools import partial
 import datasets
 import torch
 from datasets import load_dataset, Dataset, Features, Value
+from trl import RewardTrainer
+from peft import LoraConfig, TaskType, get_peft_model
 
 import transformers
 from transformers import (
@@ -25,7 +27,6 @@ from transformers import (
     LlamaTokenizerFast,
     HfArgumentParser,
     TrainingArguments,
-    DataCollatorForSeq2Seq,
     set_seed,
     GPTNeoXTokenizerFast,
     GPT2Tokenizer,
@@ -33,22 +34,8 @@ from transformers import (
     Trainer,
 )
 from transformers.trainer_utils import get_last_checkpoint
-# from finetune import encode_with_prompt_completion_format, encode_with_messages_format
-
-from trl import (
-    # ModelConfig,
-    # RewardConfig,
-    RewardTrainer,
-    # get_kbit_device_map,
-    # get_peft_config,
-    # get_quantization_config
-)
-
-from peft import LoraConfig, TaskType, get_peft_model
-
 
 logger = logging.getLogger(__name__)
-
 
 @dataclass
 class ModelArguments:
@@ -282,7 +269,14 @@ def main():
             )
 
     # Set seed before initializing model.
+    if training_args.seed is None:
+        training_args.seed = 123409876
     set_seed(training_args.seed)
+
+    # TODO: explain data files
+    data_files = {
+        "tulu-2-uf": ""
+    }
 
     # TODO: hardcode assumptions that we're using Hamish's dataset format
     if data_args.dataset_name is not None:
@@ -293,76 +287,54 @@ def main():
             eval_dataset = Dataset.from_dict(raw_data['train'][len(raw_data) - 1001:])
 
         elif data_args.dataset_name == 'ultrafeedback':
-            # train_dataset = Dataset.from_dict(get_all_datasets()[:10240])
-            # train_dataset = get_all_datasets()
             dataset_schema = Features({
                 "chosen": Value("string"),
                 "rejected": Value("string")
             })
-            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf/uf-binarized-llama-2-chat.jsonl", features=dataset_schema)["train"]
-            # train_dataset = Dataset.from_dict(load_dataset(
-            #     "json",
-            #     data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf-repro/data.jsonl",
-            #     features=dataset_schema)["train"][:256]
-            # )
+            train_dataset = load_dataset(
+                "json",
+                data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf/uf-binarized-llama-2-chat.jsonl",
+                features=dataset_schema
+            )["train"]
 
         elif data_args.dataset_name == 'nectar':
-            # train_dataset = Dataset.from_dict(get_all_datasets()[:10240])
-            # train_dataset = get_all_datasets()
             dataset_schema = Features({
                 "chosen": Value("string"),
                 "rejected": Value("string")
             })
-            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar/binarized-700k-llama-2-chat.jsonl", features=dataset_schema)["train"]
-            # train_dataset = Dataset.from_dict(load_dataset(
-            #     "json",
-            #     data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/nectar/processed.jsonl",
-            #     features=dataset_schema)["train"][:256]
-            # )
+            train_dataset = load_dataset(
+                "json",
+                data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar/binarized-700k-llama-2-chat.jsonl",
+                features=dataset_schema
+            )["train"]
 
         elif data_args.dataset_name == 'nectar-full':
-            # train_dataset = Dataset.from_dict(get_all_datasets()[:10240])
-            # train_dataset = get_all_datasets()
             dataset_schema = Features({
                 "chosen": Value("string"),
                 "rejected": Value("string")
             })
-            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar/binarized-full-llama-2-chat.jsonl", features=dataset_schema)["train"]
-            # train_dataset = Dataset.from_dict(load_dataset(
-            #     "json",
-            #     data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/nectar/processed-full.jsonl",
-            #     features=dataset_schema)["train"][:256]
-            # )
+            train_dataset = load_dataset(
+                "json", 
+                data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar/binarized-full-llama-2-chat.jsonl",
+                features=dataset_schema
+            )["train"]
 
         elif data_args.dataset_name == 'nectar-binarized':
             dataset_schema = Features({
                 "chosen": Value("string"),
                 "rejected": Value("string")
             })
-            train_dataset = load_dataset("json", data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar/binarized-180k-llama-2-chat.jsonl", features=dataset_schema)["train"]
-            # train_dataset = Dataset.from_dict(load_dataset(
-            #     "json",
-            #     data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/nectar/processed-full.jsonl",
-            #     features=dataset_schema)["train"][:256]
-            # )
+            train_dataset = load_dataset(
+                "json",
+                data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar/binarized-180k-llama-2-chat.jsonl",
+                features=dataset_schema
+            )["train"]
 
-        # anthropic hh rlhf, etc
         else:
             raw_data = load_dataset(data_args.dataset_name)
             train_dataset = raw_data['train']
-        # eval_dataset = raw_data['test']
     else:
         raise ValueError('wrong dataset')
-        # data_files = {}
-        # dataset_args = {}
-        # if data_args.train_file is not None:
-        #     data_files["train"] = data_args.train_file
-        # raw_datasets = load_dataset(
-        #     "json",
-        #     data_files=data_files,
-        #     cache_dir=model_args.cache_dir,
-        #     **dataset_args,
-        # )
 
     config_kwargs = {
         "cache_dir": model_args.cache_dir,
@@ -420,15 +392,11 @@ def main():
         raise ValueError(
             "You are instantiating a new model from scratch. This is not supported by this finetuning script."
         )
-    
-    # # TODO: test this
-    # torch.nn.init.zeros_(model.score.weight)
 
     if 'gpt2' in model_args.model_name_or_path:
         print('Adding padding token for GPT2 models')
         tokenizer.add_special_tokens({'pad_token': tokenizer.eos_token})
         config.pad_token_id = config.eos_token_id
-
 
     # no default pad token for llama!
     # here we add all special tokens again, because the default ones are not in the special_tokens_map
@@ -474,177 +442,6 @@ def main():
 
     original_columns = train_dataset.column_names
     
-    ### TODO: assume we're using Hamish's format
-    ### TODO: use fastchat's conversation template
-
-    def preprocess_instruct_gptj_synthetic(examples):
-        '''
-        Here we assume each example has a 'messages' field Each message is a dict with 'role' and 'content' fields.
-        We concatenate all messages with the roles as delimiters and tokenize them together.
-        '''        
-        def _concat_messages(prompt, response):
-            message_text = "<|user|>\n" + prompt.strip() + "\n"
-            message_text += "<|assistant|>\n" + response.strip() + "\n"
-            return message_text
-
-        new_examples = {
-            "input_ids_chosen": [],
-            "attention_mask_chosen": [],
-            "input_ids_rejected": [],
-            "attention_mask_rejected": [],
-        }
-        for prompt, chosen, rejected in zip(examples['prompt'], examples["chosen"], examples["rejected"]):
-            example_chosen = _concat_messages(prompt, chosen) # f"Human: {instruction} {input} Assistant: {preferred}"
-            example_rejected = _concat_messages(prompt, rejected) # f"Human: {instruction} {input} Assistant: {dispreferred}"
-            tokenized_chosen = tokenizer(
-                example_chosen,
-                max_length=data_args.max_seq_length,
-                truncation=True,
-                # padding='max_length',
-            )
-            tokenized_rejected = tokenizer(
-                example_rejected,
-                max_length=data_args.max_seq_length,
-                truncation=True,
-                # padding='max_length',
-            )
-            new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
-            new_examples["attention_mask_chosen"].append(tokenized_chosen["attention_mask"])
-            new_examples["input_ids_rejected"].append(tokenized_rejected["input_ids"])
-            new_examples["attention_mask_rejected"].append(tokenized_rejected["attention_mask"])
-        return new_examples
-
-    # TODO: doesn't work, doesn't handle multi-turn atm
-    def preprocess_anthropic_hh_rlhf(examples):
-        '''
-        Here we assume each example has a 'messages' field Each message is a dict with 'role' and 'content' fields.
-        We concatenate all messages with the roles as delimiters and tokenize them together.
-        '''        
-        def _concat_messages(input):
-            tokens = input.replace('Human:', '').strip().split('Assistant:')
-            print(tokens)
-            assert len(tokens) == 2
-            message_text = "<|user|>\n" + tokens[0].strip() + "\n"
-            message_text += "<|assistant|>\n" + tokens[1].strip() + "\n"
-            return message_text
-
-        new_examples = {
-            "input_ids_chosen": [],
-            "attention_mask_chosen": [],
-            "input_ids_rejected": [],
-            "attention_mask_rejected": [],
-        }
-        # STACK EXCHANGE:
-        for chosen, rejected in zip(examples["chosen"], examples["rejected"]):
-            example_chosen = _concat_messages(chosen) # f"Human: {instruction} {input} Assistant: {preferred}"
-            example_rejected = _concat_messages(rejected) # f"Human: {instruction} {input} Assistant: {dispreferred}"
-            tokenized_chosen = tokenizer(
-                example_chosen,
-                max_length=data_args.max_seq_length,
-                truncation=True,
-                # padding='max_length',
-            )
-            tokenized_rejected = tokenizer(
-                example_rejected,
-                max_length=data_args.max_seq_length,
-                truncation=True,
-                # padding='max_length',
-            )
-            new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
-            new_examples["attention_mask_chosen"].append(tokenized_chosen["attention_mask"])
-            new_examples["input_ids_rejected"].append(tokenized_rejected["input_ids"])
-            new_examples["attention_mask_rejected"].append(tokenized_rejected["attention_mask"])
-        return new_examples
-
-    def preprocess_stack_exchange(examples):
-        '''
-        Here we assume each example has a 'messages' field Each message is a dict with 'role' and 'content' fields.
-        We concatenate all messages with the roles as delimiters and tokenize them together.
-        '''        
-        def _concat_messages(instruction, input, response):
-            message_text = ("<|user|>\n" + instruction.strip() + ' ' + input.strip()).strip() + "\n"
-            message_text += "<|assistant|>\n" + response.strip() + tokenizer.eos_token + "\n"
-            return message_text
-
-        new_examples = {
-            "input_ids_chosen": [],
-            "attention_mask_chosen": [],
-            "input_ids_rejected": [],
-            "attention_mask_rejected": [],
-        }
-        # STACK EXCHANGE:
-        for question, response_j, response_k in zip(examples["question"], examples["response_j"], examples["response_k"]):
-            example_chosen = _concat_messages(question, '', response_j) # f"Human: {instruction} {input} Assistant: {preferred}"
-            example_rejected = _concat_messages(question, '', response_k) # f"Human: {instruction} {input} Assistant: {dispreferred}"
-            tokenized_chosen = tokenizer(
-                example_chosen,
-                max_length=data_args.max_seq_length,
-                truncation=True,
-                # padding='max_length',
-            )
-            tokenized_rejected = tokenizer(
-                example_rejected,
-                max_length=data_args.max_seq_length,
-                truncation=True,
-                # padding='max_length',
-            )
-            new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
-            new_examples["attention_mask_chosen"].append(tokenized_chosen["attention_mask"])
-            new_examples["input_ids_rejected"].append(tokenized_rejected["input_ids"])
-            new_examples["attention_mask_rejected"].append(tokenized_rejected["attention_mask"])
-        return new_examples
-
-    def preprocess_alpaca_farm(examples):
-        '''
-        Here we assume each example has a 'messages' field Each message is a dict with 'role' and 'content' fields.
-        We concatenate all messages with the roles as delimiters and tokenize them together.
-        '''        
-        def _concat_messages(instruction, input, response):
-            message_text = ("<|user|>\n" + instruction.strip() + ' ' + input.strip()).strip() + "\n"
-            message_text += "<|assistant|>\n" + response.strip() + tokenizer.eos_token + "\n"
-            return message_text
-
-        new_examples = {
-            "input_ids_chosen": [],
-            "attention_mask_chosen": [],
-            "input_ids_rejected": [],
-            "attention_mask_rejected": [],
-        }
-        for instruction, input, output_1, output_2, preference in zip(
-                examples["instruction"],
-                examples["input"],
-                examples["output_1"],
-                examples["output_2"],
-                examples["preference"]
-            ):
-            if preference == 1:
-                preferred = output_1
-                dispreferred = output_2
-            elif preference == 2:
-                preferred = output_2
-                dispreferred = output_1
-            else:
-                raise ValueError(f'Unexpected value for preference: {preference}')
-            example_chosen = _concat_messages(instruction, input, preferred) # f"Human: {instruction} {input} Assistant: {preferred}"
-            example_rejected = _concat_messages(instruction, input, dispreferred) # f"Human: {instruction} {input} Assistant: {dispreferred}"
-            tokenized_chosen = tokenizer(
-                example_chosen,
-                max_length=data_args.max_seq_length,
-                truncation=True,
-                # padding='max_length',
-            )
-            tokenized_rejected = tokenizer(
-                example_rejected,
-                max_length=data_args.max_seq_length,
-                truncation=True,
-                # padding='max_length',
-            )
-            new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
-            new_examples["attention_mask_chosen"].append(tokenized_chosen["attention_mask"])
-            new_examples["input_ids_rejected"].append(tokenized_rejected["input_ids"])
-            new_examples["attention_mask_rejected"].append(tokenized_rejected["attention_mask"])
-        return new_examples
-    
     def preprocess_ultrafeedback(example):
         chosen = example["chosen"]
         rejected = example["rejected"]
@@ -667,15 +464,13 @@ def main():
             "attention_mask_rejected": tokenized_rejected["attention_mask"],
         }
 
-
+    ### TODO: use fastchat's conversation template
     train_dataset = train_dataset.filter(
         lambda x: x["chosen"] != x["rejected"],
         num_proc=data_args.preprocessing_num_workers,
     )
     # preprocess the dataset and filter out QAs that are longer than script_args.max_length
     train_dataset = train_dataset.map(
-        # preprocess_instruct_gptj_synthetic,
-        # preprocess_alpaca_farm if data_args.dataset_name == 'alpaca_farm_human_preferences' else preprocess_instruct_gptj_synthetic,
         preprocess_ultrafeedback,
         num_proc=data_args.preprocessing_num_workers,
         remove_columns=original_columns,
@@ -686,49 +481,12 @@ def main():
         num_proc=data_args.preprocessing_num_workers,
     )
 
-    # eval_dataset = eval_dataset.map(
-    #     preprocess_instruct_gptj_synthetic,
-    #     batched=True,
-    #     # TODO: reenable for non-streaming datasets
-    #     # num_proc=data_args.preprocessing_num_workers,
-    #     remove_columns=original_columns,
-    # )
-
-    # # To speed up this part, we use multiprocessing.
-    # with training_args.main_process_first(desc="Processing instruction data"):
-    #     if not data_args.streaming:
-    #         lm_datasets = raw_datasets.map(
-    #             encode_function,
-    #             batched=False,
-    #             num_proc=data_args.preprocessing_num_workers,
-    #             load_from_cache_file=not data_args.overwrite_cache,
-    #             desc="Tokenizing and reformatting instruction data",
-    #         )
-    #     else:
-    #         lm_datasets = raw_datasets.map(
-    #             encode_function,
-    #             batched=False,
-    #         )
-    #     lm_datasets.set_format(type="pt")
-    #     lm_datasets = lm_datasets.filter(lambda example: (example['labels'] != -100).any())
-
-    # if training_args.do_train:
-    #     if "train" not in raw_datasets:
-    #         raise ValueError("--do_train requires a train dataset")
-    #     train_dataset = lm_datasets["train"]
-    #     if data_args.max_train_samples is not None:
-    #         max_train_samples = min(len(train_dataset), data_args.max_train_samples)
-    #         train_dataset = train_dataset.select(range(max_train_samples))
-
     # initalize a trainer
     trainer = RewardTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset if training_args.do_train else None,
-        # TODO: fix eval
-        # eval_dataset=eval_dataset,
         tokenizer=tokenizer,
-        # data_collator=DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model),
     )
 
     # Training
@@ -752,22 +510,8 @@ def main():
         trainer.log_metrics("train", metrics)
         trainer.save_metrics("train", metrics)
         trainer.save_state()
-
-    # kwargs = {"finetuned_from": model_args.model_name_or_path, "tasks": "text-generation"}
-    # if data_args.dataset_name is not None:
-    #     kwargs["dataset_tags"] = data_args.dataset_name
-    #     if data_args.dataset_config_name is not None:
-    #         kwargs["dataset_args"] = data_args.dataset_config_name
-    #         kwargs["dataset"] = f"{data_args.dataset_name} {data_args.dataset_config_name}"
-    #     else:
-    #         kwargs["dataset"] = data_args.dataset_name
-
-    # if training_args.push_to_hub:
-    #     trainer.push_to_hub(**kwargs)
-    # else:
-    #     trainer.create_model_card(**kwargs)
         
-    # TODO: evaluate on HERM at the end?
+    # TODO: evaluate on HERM at the end
 
 
 if __name__ == "__main__":
