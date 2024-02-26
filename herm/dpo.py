@@ -7,13 +7,18 @@ from torch import nn
 
 
 class DPOInference:
-    def __init__(self, model, ref_model, tokenizer, accelerator):
+    def __init__(self, model, ref_model, tokenizer, accelerator, ref_free_norm="norm"):
         self.model = model
         self.ref_model = ref_model
         self.tokenizer = tokenizer
         self.accelerator = accelerator
         self.model.eval().requires_grad_(False)
-        self.ref_model.eval().requires_grad_(False)
+        if ref_model is not None:
+            self.ref_model.eval().requires_grad_(False)
+        else:
+            if ref_free_norm not in ["norm", "avg", "sum"]:
+                raise ValueError(f"Unknown ref_free_norm: {ref_free_norm}")
+            self.ref_free_norm = ref_free_norm
 
         # for internals from TRL
         self.is_encoder_decoder = model.config.is_encoder_decoder
@@ -193,27 +198,27 @@ class DPOInference:
         Uses TRL inference batched logprob computation to compute chosen + rejected
         logprobs then compute rewards and win rate.
         """
-        (
-            policy_chosen_logps,
-            policy_rejected_logps,
-            _,  # policy_chosen_logits,
-            _,  # policy_rejected_logits,
-        ) = self.concatenated_forward(self.model, batch)
-
-        # optionally compute reward without normalizing via reference model
-        if not ref_free:
+        with torch.no_grad():
             (
-                ref_chosen_logps,
-                ref_rejected_logps,
-                _,  # ref_chosen_logits,
-                _,  # ref_rejected_logits,
-            ) = self.concatenated_forward(self.ref_model, batch)
-            with torch.no_grad():
+                policy_chosen_logps,
+                policy_rejected_logps,
+                _,  # policy_chosen_logits,
+                _,  # policy_rejected_logits,
+            ) = self.concatenated_forward(self.model, batch)
+
+            # optionally compute reward without normalizing via reference model
+            if not ref_free:
+                (
+                    ref_chosen_logps,
+                    ref_rejected_logps,
+                    _,  # ref_chosen_logits,
+                    _,  # ref_rejected_logits,
+                ) = self.concatenated_forward(self.ref_model, batch)
                 chosen_logratios = policy_chosen_logps.detach().cpu() - ref_chosen_logps.detach().cpu()
                 rejected_logratios = policy_rejected_logps.detach().cpu() - ref_rejected_logps.detach().cpu()
-        else:
-            chosen_logratios = policy_chosen_logps
-            rejected_logratios = policy_rejected_logps
+            else:
+                chosen_logratios = policy_chosen_logps.detach().cpu()
+                rejected_logratios = policy_rejected_logps.detach().cpu()
 
         return chosen_logratios, rejected_logratios
 
@@ -247,10 +252,22 @@ class DPOInference:
             **model_kwargs,
         ).logits
 
+        # set in init
+        if self.ref_free_norm == "norm":
+            average_log_prob = False
+            norm_log_prob = True
+        elif self.ref_free_norm == "avg":
+            average_log_prob = True
+            norm_log_prob = False
+        elif self.ref_free_norm == "sum":
+            average_log_prob = False
+            norm_log_prob = False
+
         all_logps = self.get_batch_logps(
             all_logits,
             concatenated_batch["concatenated_labels"],
-            average_log_prob=False,
+            average_log_prob=average_log_prob,
+            norm_log_prob=norm_log_prob,
             is_encoder_decoder=self.is_encoder_decoder,
             label_pad_token_id=self.label_pad_token_id,
         )
@@ -268,6 +285,7 @@ class DPOInference:
         logits: torch.FloatTensor,
         labels: torch.LongTensor,
         average_log_prob: bool = False,
+        norm_log_prob: bool = False,
         label_pad_token_id: int = -100,
         is_encoder_decoder: bool = False,
     ) -> torch.FloatTensor:
@@ -279,6 +297,8 @@ class DPOInference:
                 label_pad_token_id are ignored. Shape: (batch_size, sequence_length)
             average_log_prob: If True, return the average log probability per (non-masked) token.
                 Otherwise, return the sum of the log probabilities of the (non-masked) tokens.
+            norm_log_prob: If True, return the normalized log probability per (non-masked) token.
+                Note, only one of average_log_prob and norm_log_prob can be True.
 
         Returns:
             A tensor of shape (batch_size,) containing the average/sum log probabilities
@@ -299,6 +319,8 @@ class DPOInference:
 
         if average_log_prob:
             return (per_token_logps * loss_mask).sum(-1) / loss_mask.sum(-1)
+        elif norm_log_prob:
+            return -torch.norm((per_token_logps * loss_mask), p=2, dim=-1)
         else:
             return (per_token_logps * loss_mask).sum(-1)
 

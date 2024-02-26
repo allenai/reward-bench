@@ -233,8 +233,8 @@ def main():
                 text_chosen = [b["text_chosen"] for b in batch]
                 results_sub = reward_pipe(text_chosen, text_rejected, **reward_pipeline_kwargs)
                 [results.append(1) if result else results.append(0) for result in results_sub.cpu().numpy().tolist()]
-                scores_chosen.extend(None * len(results_sub))
-                scores_rejected.extend(None * len(results_sub))
+                scores_chosen.extend([None] * len(results_sub))
+                scores_rejected.extend([None] * len(results_sub))
             else:
                 rewards_chosen = reward_pipe(batch["text_chosen"], **reward_pipeline_kwargs)
                 rewards_rejected = reward_pipe(batch["text_rejected"], **reward_pipeline_kwargs)
@@ -276,7 +276,7 @@ def main():
     results_grouped = {}
     results_grouped["model"] = args.model
     results_grouped["model_type"] = model_type
-    results_grouped["chat_template"] = args.chat_template
+    results_grouped["chat_template"] = args.chat_template if not hasattr(tokenizer, "chat_template") else "tokenizer"
 
     # print per subset and log into results_grouped file
     present_subsets = np.unique(subsets)

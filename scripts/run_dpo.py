@@ -45,12 +45,18 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, required=True, help="path to model")
     parser.add_argument("--ref_model", type=str, default=None, help="path to model")
+    parser.add_argument(
+        "--ref_free_type", type=str, default="avg", help="type of reference free normalization (norm, avg, or sum)"
+    )
     parser.add_argument("--tokenizer", type=str, default=None, help="path to non-matching tokenizer")
     parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
     parser.add_argument("--batch_size", type=int, default=6, help="batch size for inference")
     parser.add_argument(
         "--pref_sets", action="store_true", help="run on common preference sets instead of our custom eval set"
+    )
+    parser.add_argument(
+        "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
     )
     parser.add_argument("--debug", type=bool, default=False, help="use only 10 examples")
 
@@ -84,6 +90,14 @@ def main():
     chat_template = args.chat_template
     conv = get_conv_template(chat_template)
 
+    # define reference free
+    if args.ref_model is None:
+        ref_free = True
+        logger.info("Running reference free DPO - no reference model provided")
+    else:
+        ref_free = False
+        logger.info(f"Running DPO with reference model {args.ref_model}")
+
     ############################
     # Load dataset
     ############################
@@ -100,6 +114,10 @@ def main():
         keep_columns=["text_chosen", "text_rejected", "id", "prompt"],
     )
 
+    import ipdb
+
+    ipdb.set_trace()
+
     dataset = dataset.remove_columns("id")
     # debug: use only 10 examples
     if args.debug:
@@ -115,23 +133,26 @@ def main():
         "load_in_8bit": True,
         "device_map": "auto",
         "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
-        "trust_remote_code": True,
     }
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
+        trust_remote_code=args.trust_remote_code,
         **model_kwargs,
     )
 
-    model_kwargs_ref = {
-        "load_in_8bit": True,
-        "device_map": "auto",
-        "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
-        "trust_remote_code": True,
-    }
-    ref_model = AutoModelForCausalLM.from_pretrained(
-        args.ref_model,
-        **model_kwargs_ref,
-    )
+    if ref_free:
+        ref_model = None
+    else:
+        model_kwargs_ref = {
+            "load_in_8bit": True,
+            "device_map": "auto",
+            "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
+        }
+        ref_model = AutoModelForCausalLM.from_pretrained(
+            args.ref_model,
+            trust_remote_code=args.trust_remote_code,
+            **model_kwargs_ref,
+        )
 
     # use internal inference functions in DPO trainer
     dpo = DPOInference(
@@ -139,6 +160,8 @@ def main():
         ref_model,
         tokenizer=tokenizer,
         accelerator=accelerator,
+        ref_free_norm=args.ref_free_type,
+        # norm is norm, avg is average, sum is sum
     )
     # tokenize dataset
     column_names = list(dataset.features)
@@ -156,14 +179,16 @@ def main():
         shuffle=False,
         drop_last=False,
     )
+    import ipdb
 
+    ipdb.set_trace()
     results = []
     scores_chosen = []
     scores_rejected = []
     for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
         logger.info(f"RM inference step {step}/{len(dataloader)}")
 
-        rewards_chosen, rewards_rejected = dpo.inference_step(batch)
+        rewards_chosen, rewards_rejected = dpo.inference_step(batch, ref_free=ref_free)
 
         # for each item in batch, record 1 if chosen > rejected
         # extra score from dict within batched results (e.g. logits)
@@ -199,7 +224,12 @@ def main():
     results_grouped["model"] = args.model
     results_grouped["ref_model"] = args.ref_model
     results_grouped["model_type"] = "DPO"  # TODO add options for references free, DPO-ref-free, or DPO-normalized
-    results_grouped["chat_template"] = args.chat_template
+    if ref_free:
+        results_grouped["model_type"] = "DPO Ref. Free"
+        save_modifier = "_ref_free"
+    else:
+        save_modifier = ""
+    results_grouped["chat_template"] = args.chat_template if not hasattr(tokenizer, "chat_template") else "tokenizer"
     # print per subset and log into results_grouped file
     present_subsets = np.unique(subsets)
     for subset in present_subsets:
@@ -213,7 +243,9 @@ def main():
     # Upload results to hub
     ############################
     sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
-    results_url = save_to_hub(results_grouped, args.model, sub_path, args.debug, local_only=args.do_not_save)
+    results_url = save_to_hub(
+        results_grouped, args.model + save_modifier, sub_path, args.debug, local_only=args.do_not_save
+    )
     if not args.do_not_save:
         logger.info(f"Uploaded reward model results to {results_url}")
 
@@ -225,7 +257,7 @@ def main():
     scores_dict["chat_template"] = args.chat_template
     sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
 
-    scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug)
+    scores_url = save_to_hub(scores_dict, args.model + save_modifier, sub_path_scores, args.debug)
     logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
 
 
