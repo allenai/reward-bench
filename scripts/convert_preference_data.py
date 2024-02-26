@@ -239,31 +239,31 @@ def _concat_messages_tulu(messages):
 #     )
 # )
 
-def _concat_messages_llama_2_chat(messages):
-    message_text = ""
-    system_prompt = ""
-    for message in messages:
-        if message["role"] == "system":
-            system_prompt = f"<<SYS>>\n{message['content'].strip()}<</SYS>>\n\n"
-        elif message["role"] == "user":
-            if len(system_prompt) > 0:
-                message_text += f"<s>[INST] {system_prompt} {message['content'].strip()} [/INST]"
-                system_prompt = ""
-            else:
-                message_text += f"<s>[INST] {message['content'].strip()} [/INST] "
-        elif message["role"] == "assistant":
-            message_text += f" {message['content'].strip()} </s>"
-        else:
-            raise ValueError("Invalid role: {}".format(message["role"]))
-    return message_text
+# def _concat_messages_llama_2_chat(messages):
+#     message_text = ""
+#     system_prompt = ""
+#     for message in messages:
+#         if message["role"] == "system":
+#             system_prompt = f"<<SYS>>\n{message['content'].strip()}<</SYS>>\n\n"
+#         elif message["role"] == "user":
+#             if len(system_prompt) > 0:
+#                 message_text += f"<s>[INST] {system_prompt} {message['content'].strip()} [/INST]"
+#                 system_prompt = ""
+#             else:
+#                 message_text += f"<s>[INST] {message['content'].strip()} [/INST] "
+#         elif message["role"] == "assistant":
+#             message_text += f" {message['content'].strip()} </s>"
+#         else:
+#             raise ValueError("Invalid role: {}".format(message["role"]))
+#     return message_text
 
-def convert_examples(ex):
-    return {
-        'chosen': _concat_messages_llama_2_chat(ex['chosen']),
-        'rejected': _concat_messages_llama_2_chat(ex['rejected']),
-    }
+# def convert_examples(ex):
+#     return {
+#         'chosen': _concat_messages_llama_2_chat(ex['chosen']),
+#         'rejected': _concat_messages_llama_2_chat(ex['rejected']),
+#     }
 
-new_data = [convert_examples(x) for x in new_data]
+# new_data = [convert_examples(x) for x in new_data]
 
 # save it
 with open(args.output, 'w') as f:
