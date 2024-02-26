@@ -70,8 +70,6 @@ def main():
     ###############
     # Setup logging
     ###############
-    accelerator = Accelerator()
-    # current_device = accelerator.process_index
     logger = get_logger(__name__)
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -112,20 +110,18 @@ def main():
         conv=conv,
         tokenizer=tokenizer,
         logger=logger,
-        keep_columns=["text_chosen", "text_rejected", "prompt", "id"],
+        keep_columns=["text_chosen", "text_rejected", "id", "prompt"],
     )
     import ipdb
 
     ipdb.set_trace()
     # copy id for saving, then remove
-    ids = dataset["id"]
+    #ids = dataset["id"]
     dataset = dataset.remove_columns("id")
-
     # debug: use only 10 examples
     if args.debug:
         dataset = dataset.select(range(10))
         subsets = subsets[:10]
-        ids = ids[:10]
 
     ############################
     # Load reward model pipeline
