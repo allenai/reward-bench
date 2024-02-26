@@ -22,7 +22,6 @@ from typing import Any, ClassVar, Literal
 
 import torch
 import torch.nn as nn
-from fastchat.conversation import Conversation, SeparatorStyle, register_conv_template
 from torch import distributed as dist
 from torch.types import Number
 from transformers import (
@@ -40,20 +39,6 @@ from transformers.utils.doc import (
     replace_return_docstrings,
 )
 from transformers.utils.generic import ModelOutput
-
-# UltraLM / UltraRM Chat Template
-# Reference1: https://huggingface.co/openbmb/UltraLM-65b
-# Reference2: https://huggingface.co/openbmb/UltraRM-13b
-register_conv_template(
-    Conversation(
-        name="pku-align",
-        system_message="BEGINNING OF CONVERSATION:",
-        roles=("USER", "ASSISTANT"),
-        sep_style=SeparatorStyle.ADD_COLON_SPACE_SINGLE,
-        sep=" ",
-    )
-)
-
 
 NormalizeFunction = Literal["affine", "scale", "translate", "identity"]
 NormalizerType = Literal["RunningMeanStd", "ExponentialMovingAverage"]

@@ -63,11 +63,11 @@ IDEA-CCNL/Ziya-LLaMA-7B-Reward:
   model: 'IDEA-CCNL/Ziya-LLaMA-7B-Reward'
   tokenizer: 'IDEA-CCNL/Ziya-LLaMA-7B-Reward'
   chat_template: 'Ziya'
-  batch_size: 32
+  batch_size: 16
   trust_remote_code: True
 berkeley-nest/Starling-RM-34B:
   model: 'berkeley-nest/Starling-RM-34B'
   tokenizer: '01-ai/Yi-34B-Chat'
   chat_template: 'Yi-34b-chat'
-  batch_size: 4
+  batch_size: 2
   trust_remote_code: False

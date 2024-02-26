@@ -13,6 +13,7 @@
 # limitations under the License.
 
 __version__ = "0.1.0.dev"
+from .chattemplates import *  # noqa
 from .dpo import DPOInference
 from .models import REWARD_MODEL_CONFIG
 from .utils import (
