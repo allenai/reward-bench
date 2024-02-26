@@ -179,9 +179,6 @@ def main():
         shuffle=False,
         drop_last=False,
     )
-    import ipdb
-
-    ipdb.set_trace()
     results = []
     scores_chosen = []
     scores_rejected = []
