@@ -1,0 +1,13 @@
+# This file contains the DPO inference parameters for various models
+HuggingFaceH4/zephyr-7b-alpha:
+  model: 'HuggingFaceH4/zephyr-7b-alpha'
+  ref_model: 'HuggingFaceH4/mistral-7b-sft-alpha'
+  batch_size: 12
+allenai/tulu-2-dpo-13b:
+  model: 'allenai/tulu-2-dpo-13b'
+  ref_model: 'allenai/tulu-2-13b'
+  batch_size: 12
+allenai/tulu-2-dpo-7b:
+  model: 'allenai/tulu-2-dpo-7b'
+  ref_model: 'allenai/tulu-2-7b'
+  batch_size: 16
