@@ -60,6 +60,7 @@ def get_args():
 
 def main():
     args = get_args()
+    accelerator = Accelerator()
 
     ###############
     # Setup logging
@@ -99,8 +100,6 @@ def main():
         keep_columns=["text_chosen", "text_rejected", "id", "prompt"],
     )
 
-    # copy id for saving, then remove
-    #ids = dataset["id"]
     dataset = dataset.remove_columns("id")
     # debug: use only 10 examples
     if args.debug:
