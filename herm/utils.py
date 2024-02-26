@@ -327,6 +327,12 @@ def prepare_dialogue_from_tokenizer(
             # assert that the last message before this is user
             assert messages[-1]["role"] == "user"
 
+            # required for DPO code only, otherwise discarded
+            temp_prompt = tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+            )
+
             # end with chosen/rejected
             messages.append({"role": "assistant", "content": example["chosen"]})
             example["text_chosen"] = tokenizer.apply_chat_template(
@@ -339,8 +345,18 @@ def prepare_dialogue_from_tokenizer(
                 messages,
                 tokenize=False,
             )
+            example["prompt"] = temp_prompt
         # single turn
         else:
+            # needed for DPO
+            messages = [
+                {"role": "user", "content": example["prompt"]},
+            ]
+            temp_prompt = tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+            )
+
             messages = [
                 {"role": "user", "content": example["prompt"]},
                 {"role": "assistant", "content": example["chosen"]},
@@ -357,7 +373,9 @@ def prepare_dialogue_from_tokenizer(
                 messages,
                 tokenize=False,
             )
+            example["prompt"] = temp_prompt
     elif ift:
+        # TODO adapt this for DPO models with tokenize_row function
         messages = [
             {"role": "user", "content": example["prompt"]},
             {"role": "assistant", "content": example["input"]},
@@ -395,6 +413,9 @@ def prepare_dialogue(
             # assert that the last message before this is user
             assert dialogue_template.messages[-1][0] == dialogue_template.roles[0]
 
+            # needed for DPO
+            temp_prompt = dialogue_template.get_prompt()
+
             # end with chosen/rejected
             dialogue_template.messages.append([dialogue_template.roles[1], example["chosen"]])
             example["text_chosen"] = dialogue_template.get_prompt()
@@ -402,10 +423,17 @@ def prepare_dialogue(
             dialogue_template.messages[-1] = [dialogue_template.roles[1], example["rejected"]]
             example["text_rejected"] = dialogue_template.get_prompt()
 
+            example["prompt"] = temp_prompt
+
         # single turn
         else:
             if isinstance(example["prompt"], list):
                 example["prompt"] = example["prompt"][0]
+            dialogue_template.messages = [
+                [dialogue_template.roles[0], example["prompt"]],
+            ]
+            temp_prompt = dialogue_template.get_prompt()
+
             dialogue_template.messages = [
                 [dialogue_template.roles[0], example["prompt"]],
                 [dialogue_template.roles[1], example["chosen"]],
@@ -416,14 +444,22 @@ def prepare_dialogue(
                 [dialogue_template.roles[1], example["rejected"]],
             ]
             example["text_rejected"] = dialogue_template.get_prompt()
+
+            example["prompt"] = temp_prompt
     elif ift:
         if isinstance(example["prompt"], list):
             example["prompt"] = example["prompt"][0]
+
+        dialogue_template.messages = [
+            [dialogue_template.roles[0], example["prompt"]],
+        ]
+        temp_prompt = dialogue_template.get_prompt()
         dialogue_template.messages = [
             [dialogue_template.roles[0], example["prompt"]],
             [dialogue_template.roles[1], example["input"]],
         ]
         example["text"] = dialogue_template.get_prompt()
+        example["prompt"] = temp_prompt  # needed for DPO
 
     else:
         raise ValueError(
