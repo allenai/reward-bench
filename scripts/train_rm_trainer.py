@@ -199,7 +199,7 @@ class DataTrainingArguments:
             "help": ("The maximum total input sequence length after tokenization. Sequences longer than this will be truncated,")
         },
     )
-    chat_template: Optional[int] = field(
+    chat_template: Optional[str] = field(
         default="tulu",
         metadata={
             "help": ("The chat template to apply to chosen/rejected pairs. Default is Tulu.")
