@@ -406,6 +406,8 @@ def main():
     
     def apply_tulu_chat_format(messages):
         message_text = ""
+        print(messages)
+        print()
         for message in messages:
             if message["role"] == "system":
                 message_text += "<|system|>\n" + message["content"].strip() + "\n"
