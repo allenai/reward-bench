@@ -28,9 +28,6 @@ from transformers import (
     HfArgumentParser,
     TrainingArguments,
     set_seed,
-    GPTNeoXTokenizerFast,
-    GPT2Tokenizer,
-    OPTForCausalLM,
 )
 from transformers.trainer_utils import get_last_checkpoint
 
@@ -362,14 +359,6 @@ def main():
         config.pad_token_id = 32000
         model.config.pad_token_id = 32000
         assert num_added_tokens in [0, 1], "LlamaTokenizer should only add one special token - the pad_token, or no tokens if pad token present."
-    elif isinstance(tokenizer, GPTNeoXTokenizerFast):
-        num_added_tokens = tokenizer.add_special_tokens({
-            "pad_token": "<pad>",
-        })
-        assert num_added_tokens == 1, "GPTNeoXTokenizer should only add one special token - the pad_token."
-    elif isinstance(tokenizer, GPT2Tokenizer) and isinstance(model, OPTForCausalLM):
-        num_added_tokens = tokenizer.add_special_tokens({'unk_token': '<unk>'})
-        print('not adding any tokens')
 
     print(f'model config: {config}')
 
