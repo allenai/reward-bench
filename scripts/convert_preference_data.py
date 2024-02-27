@@ -56,14 +56,14 @@ elif args.input_dataset == 'berkeley-nest/Nectar':
     for sample in dataset:
         prompt = sample['prompt'].replace("Human: ", "").replace("Assistant: ", "").strip()
         answers = sorted(sample['answers'], key=lambda x: x['rank'])
-        chosen = answers[0]['answer']
-        rejected = random_gen.choice(answers[1:])['answer']
-        # pairs = [
-        #     (0,5),
-        #     (1,5),
-        #     (0,6),
-        #     (1,6)
-        # ]
+        # chosen = answers[0]['answer']
+        # rejected = random_gen.choice(answers[1:])['answer']
+        pairs = [
+            (0,5),
+            (1,5),
+            (0,6),
+            (1,6)
+        ]
         # pairs = [
         #     (0,1),
         #     (0,2),
@@ -73,23 +73,23 @@ elif args.input_dataset == 'berkeley-nest/Nectar':
         #     (0,6),
         # ]
         # for (i, j) in pairs:
-        # for i in range(len(answers) - 1):
-        #     for j in range(i + 1, len(answers)):
-                # chosen = answers[i]['answer']
-                # rejected = answers[j]['answer']
-        chosen =  [
-            {'role': 'user', 'content': prompt},
-            {'role': 'assistant', 'content': chosen},
-        ]
-        rejected =  [
-            {'role': 'user', 'content': prompt},
-            {'role': 'assistant', 'content': rejected},
-        ]
-        new_data.append({
-            'chosen': chosen,
-            'rejected': rejected,
-            'source': 'nectar'
-        })
+        for i in range(len(answers) - 1):
+            for j in range(i + 1, len(answers)):
+                chosen = answers[i]['answer']
+                rejected = answers[j]['answer']
+                chosen =  [
+                    {'role': 'user', 'content': prompt},
+                    {'role': 'assistant', 'content': chosen},
+                ]
+                rejected =  [
+                    {'role': 'user', 'content': prompt},
+                    {'role': 'assistant', 'content': rejected},
+                ]
+                new_data.append({
+                    'chosen': chosen,
+                    'rejected': rejected,
+                    'source': 'nectar'
+                })
 elif args.input_dataset == 'argilla/ultrafeedback-binarized-preferences-cleaned':
     for sample in dataset:
         chosen = sample['chosen']

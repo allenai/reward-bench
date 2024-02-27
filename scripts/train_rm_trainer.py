@@ -31,7 +31,6 @@ from transformers import (
     GPTNeoXTokenizerFast,
     GPT2Tokenizer,
     OPTForCausalLM,
-    Trainer,
 )
 from transformers.trainer_utils import get_last_checkpoint
 
@@ -203,6 +202,12 @@ class DataTrainingArguments:
             "help": ("The maximum total input sequence length after tokenization. Sequences longer than this will be truncated,")
         },
     )
+    chat_template: Optional[int] = field(
+        default="tulu",
+        metadata={
+            "help": ("The chat template to apply to chosen/rejected pairs. Default is Tulu.")
+        }
+    )
 
     def __post_init__(self):
         if self.dataset_name is None and self.train_file is None:
@@ -274,67 +279,13 @@ def main():
     set_seed(training_args.seed)
 
     # TODO: explain data files
-    data_files = {
-        "tulu-2-uf": ""
-    }
-
-    # TODO: hardcode assumptions that we're using Hamish's dataset format
-    if data_args.dataset_name is not None:
-        # ALPACA FARM
-        if data_args.dataset_name == 'alpaca_farm_human_preferences':
-            raw_data = load_dataset('json', data_files='training_data/alpaca_human_preference.json')
-            train_dataset = Dataset.from_dict(raw_data['train'][:len(raw_data) - 1001])
-            eval_dataset = Dataset.from_dict(raw_data['train'][len(raw_data) - 1001:])
-
-        elif data_args.dataset_name == 'ultrafeedback':
-            dataset_schema = Features({
-                "chosen": Value("string"),
-                "rejected": Value("string")
-            })
-            train_dataset = load_dataset(
-                "json",
-                data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/uf/uf-binarized-llama-2-chat.jsonl",
-                features=dataset_schema
-            )["train"]
-
-        elif data_args.dataset_name == 'nectar':
-            dataset_schema = Features({
-                "chosen": Value("string"),
-                "rejected": Value("string")
-            })
-            train_dataset = load_dataset(
-                "json",
-                data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar/binarized-700k-llama-2-chat.jsonl",
-                features=dataset_schema
-            )["train"]
-
-        elif data_args.dataset_name == 'nectar-full':
-            dataset_schema = Features({
-                "chosen": Value("string"),
-                "rejected": Value("string")
-            })
-            train_dataset = load_dataset(
-                "json", 
-                data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar/binarized-full-llama-2-chat.jsonl",
-                features=dataset_schema
-            )["train"]
-
-        elif data_args.dataset_name == 'nectar-binarized':
-            dataset_schema = Features({
-                "chosen": Value("string"),
-                "rejected": Value("string")
-            })
-            train_dataset = load_dataset(
-                "json",
-                data_files="/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar/binarized-180k-llama-2-chat.jsonl",
-                features=dataset_schema
-            )["train"]
-
-        else:
-            raw_data = load_dataset(data_args.dataset_name)
-            train_dataset = raw_data['train']
+    if data_args.dataset_name is None:
+        raise ValueError("Must provide a valid dataset name")
+    elif data_args.dataset_name[-6:] == ".jsonl":
+        # load dataset file
+        train_dataset = load_dataset("json", data_files=data_args.dataset_name)["train"]
     else:
-        raise ValueError('wrong dataset')
+        train_dataset = load_dataset(data_args.dataset_name)['train']
 
     config_kwargs = {
         "cache_dir": model_args.cache_dir,
@@ -442,7 +393,7 @@ def main():
 
     original_columns = train_dataset.column_names
     
-    def preprocess_ultrafeedback(example):
+    def preprocess_preference_pairs(example):
         chosen = example["chosen"]
         rejected = example["rejected"]
         tokenized_chosen = tokenizer(
@@ -463,15 +414,58 @@ def main():
             "input_ids_rejected": tokenized_rejected["input_ids"],
             "attention_mask_rejected": tokenized_rejected["attention_mask"],
         }
+    
+    def apply_tulu_chat_format(messages):
+        message_text = ""
+        for message in messages:
+            if message["role"] == "system":
+                message_text += "<|system|>\n" + message["content"].strip() + "\n"
+            elif message["role"] == "user":
+                message_text += "<|user|>\n" + message["content"].strip() + "\n"
+            elif message["role"] == "assistant":
+                message_text += "<|assistant|>\n" + message["content"].strip() + "</s>" + "\n"
+            else:
+                raise ValueError("Invalid role: {}".format(message["role"]))
+        return message_text
 
-    ### TODO: use fastchat's conversation template
+    def apply_llama_2_chat_format(messages):
+        message_text = ""
+        system_prompt = ""
+        for message in messages:
+            if message["role"] == "system":
+                system_prompt = f"<<SYS>>\n{message['content'].strip()}<</SYS>>\n\n"
+            elif message["role"] == "user":
+                if len(system_prompt) > 0:
+                    message_text += f"<s>[INST] {system_prompt} {message['content'].strip()} [/INST]"
+                    system_prompt = ""
+                else:
+                    message_text += f"<s>[INST] {message['content'].strip()} [/INST] "
+            elif message["role"] == "assistant":
+                message_text += f" {message['content'].strip()} </s>"
+            else:
+                raise ValueError("Invalid role: {}".format(message["role"]))
+        return message_text
+    
+    if data_args.chat_template == "tulu":
+        train_dataset = train_dataset.map(
+            apply_tulu_chat_format,
+            num_proc=data_args.preprocessing_num_workers,
+        )
+    elif data_args.chat_template == "llama-2":
+        train_dataset = train_dataset.map(
+            apply_llama_2_chat_format,
+            num_proc=data_args.preprocessing_num_workers,
+        )
+    else:
+        raise ValueError(f"Unsupported chat template: {data_args.chat_template}")
+
     train_dataset = train_dataset.filter(
         lambda x: x["chosen"] != x["rejected"],
         num_proc=data_args.preprocessing_num_workers,
     )
     # preprocess the dataset and filter out QAs that are longer than script_args.max_length
     train_dataset = train_dataset.map(
-        preprocess_ultrafeedback,
+        preprocess_preference_pairs,
         num_proc=data_args.preprocessing_num_workers,
         remove_columns=original_columns,
     )

@@ -15,13 +15,6 @@ WORKDIR /stage/
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
-# TODO: Install flash attention when training code is complete, and consider using built in flash attn
-# RUN pip install flash-attn==2.2.2 --no-build-isolation
-# TODO: install deepspeed accelerate einops peft
-# RUN pip install -r requirements.txt
-# RUN pip install "fschat[model_worker,webui]"
-
-# TODO: enable these when training code is complete
 COPY herm herm
 COPY scripts scripts
 COPY setup.py setup.py
@@ -29,6 +22,7 @@ COPY Makefile Makefile
 COPY README.md README.md
 RUN pip install -e .
 RUN chmod +x scripts/*
+RUN pip install flash-attn==2.5.5 --no-build-isolation
 
 # for interactive session
 RUN chmod -R 777 /stage/
