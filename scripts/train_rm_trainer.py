@@ -404,10 +404,20 @@ def main():
             "attention_mask_rejected": tokenized_rejected["attention_mask"],
         }
     
+    def apply_tulu_format(messages, format):        
+        return {
+            "chosen": apply_tulu_chat_format(messages["chosen"]),
+            "rejected": apply_tulu_chat_format(messages["rejected"]),
+        }
+    
+    def apply_llama_2_format(messages, format):        
+        return {
+            "chosen": apply_llama_2_chat_format(messages["chosen"]),
+            "rejected": apply_llama_2_chat_format(messages["rejected"]),
+        }
+    
     def apply_tulu_chat_format(messages):
         message_text = ""
-        print(messages)
-        print()
         for message in messages:
             if message["role"] == "system":
                 message_text += "<|system|>\n" + message["content"].strip() + "\n"
@@ -439,12 +449,12 @@ def main():
     
     if data_args.chat_template == "tulu":
         train_dataset = train_dataset.map(
-            apply_tulu_chat_format,
+            apply_tulu_format,
             num_proc=data_args.preprocessing_num_workers,
         )
     elif data_args.chat_template == "llama-2":
         train_dataset = train_dataset.map(
-            apply_llama_2_chat_format,
+            apply_llama_2_format,
             num_proc=data_args.preprocessing_num_workers,
         )
     else:
