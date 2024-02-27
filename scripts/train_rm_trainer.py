@@ -404,13 +404,13 @@ def main():
             "attention_mask_rejected": tokenized_rejected["attention_mask"],
         }
     
-    def apply_tulu_format(messages, format):        
+    def apply_tulu_format(messages):        
         return {
             "chosen": apply_tulu_chat_format(messages["chosen"]),
             "rejected": apply_tulu_chat_format(messages["rejected"]),
         }
     
-    def apply_llama_2_format(messages, format):        
+    def apply_llama_2_format(messages):        
         return {
             "chosen": apply_llama_2_chat_format(messages["chosen"]),
             "rejected": apply_llama_2_chat_format(messages["rejected"]),
