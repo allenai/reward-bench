@@ -1,7 +1,7 @@
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-NUM_GPUS=8
-# export CUDA_VISIBLE_DEVICES=0,1,2,3
-# NUM_GPUS=4
+# export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+# NUM_GPUS=8
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+NUM_GPUS=4
 
 MODEL_SIZE=7B
 # BATCH_SIZE_PER_GPU=1
@@ -11,10 +11,10 @@ TOTAL_BATCH_SIZE=128
 GRADIENT_ACC_STEPS=$(($TOTAL_BATCH_SIZE/$NUM_GPUS/$BATCH_SIZE_PER_GPU))
 # MODEL_PATH=TinyLlama/TinyLlama-1.1B-Chat-v1.0
 # OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/test-tinyllama-ultrafeedback-repro-uf-settings
-# MODEL_PATH=allenai/tulu-2-7b
+MODEL_PATH=allenai/tulu-2-7b
 # OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/tulu-2-7b-ultrafeedback-repro-1e-5-linear
 # OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/nectar/tulu-2-7b-nectar-full-3_8m-1e-5-linear
-MODEL_PATH=meta-llama/Llama-2-7b-chat-hf
+# MODEL_PATH=meta-llama/Llama-2-7b-chat-hf
 # TRAIN_DATASET=ultrafeedback # 60k
 # OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/llama-2-7b-chat-uf-60k
 # TRAIN_DATASET=nectar-binarized # 180k
@@ -76,16 +76,17 @@ MODEL_PATH=meta-llama/Llama-2-7b-chat-hf
     # --report_to "tensorboard" \
     # --max_steps 10 
 
-TRAIN_DATASET=nectar # 700k
-OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/llama-2-7b-chat-nectar-700k
+TRAIN_DATASET=/net/nfs.cirrascale/allennlp/jacobm/herm/data/argilla-ultrafeedback-binarized-preferences-cleaned.jsonl
+OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/tulu-2-7b-uf-test 
 
 echo "Training model ${MODEL_PATH} using $NUM_GPUS GPUs, $BATCH_SIZE_PER_GPU batch size per GPU, $GRADIENT_ACC_STEPS gradient accumulation steps"
 
-deepspeed --include localhost:0,1,2,3,4,5,6,7 scripts/train_rm_trainer.py \
+deepspeed --include localhost:0,1,2,3 scripts/train_rm_trainer.py \
     --deepspeed ds_configs/stage3_no_offloading.conf \
     --model_name_or_path $MODEL_PATH \
     --tokenizer_name $MODEL_PATH \
     --dataset_name $TRAIN_DATASET \
+    --chat_template tulu \
     --max_seq_length 1024 \
     --preprocessing_num_workers 64 \
     --do_train \
@@ -100,37 +101,7 @@ deepspeed --include localhost:0,1,2,3,4,5,6,7 scripts/train_rm_trainer.py \
     --evaluation_strategy no \
     --logging_steps 1 \
     --save_strategy epoch \
-    --seed 12349876 \
-    --num_train_epochs 1 \
-    --output_dir $OUTPUT_DIR \
-    --use_slow_tokenizer \
-    --overwrite_output_dir 
-
-TRAIN_DATASET=nectar-full # 3.8m
-OUTPUT_DIR=/net/nfs.cirrascale/allennlp/jacobm/herm/rms/ultrafeedback/llama-2-7b-chat-nectar-3.8m
-
-echo "Training model ${MODEL_PATH} using $NUM_GPUS GPUs, $BATCH_SIZE_PER_GPU batch size per GPU, $GRADIENT_ACC_STEPS gradient accumulation steps"
-
-deepspeed --include localhost:0,1,2,3,4,5,6,7 scripts/train_rm_trainer.py \
-    --deepspeed ds_configs/stage3_no_offloading.conf \
-    --model_name_or_path $MODEL_PATH \
-    --tokenizer_name $MODEL_PATH \
-    --dataset_name $TRAIN_DATASET \
-    --max_seq_length 1024 \
-    --preprocessing_num_workers 64 \
-    --do_train \
-    --use_flash_attn \
-    --bf16 \
-    --per_device_train_batch_size $BATCH_SIZE_PER_GPU \
-    --gradient_accumulation_steps $GRADIENT_ACC_STEPS \
-    --learning_rate 1e-5 \
-    --lr_scheduler_type linear \
-    --warmup_ratio 0.03 \
-    --weight_decay 0. \
-    --evaluation_strategy no \
-    --logging_steps 1 \
-    --save_strategy epoch \
-    --seed 12349876 \
+    --seed 123409876 \
     --num_train_epochs 1 \
     --output_dir $OUTPUT_DIR \
     --use_slow_tokenizer \
