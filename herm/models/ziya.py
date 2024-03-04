@@ -13,22 +13,6 @@
 # limitations under the License.
 
 import torch
-from fastchat.conversation import Conversation, SeparatorStyle, register_conv_template
-
-# e.g. https://huggingface.co/IDEA-CCNL/Ziya-LLaMA-7B-Reward#usage
-# prefix_user = "Human:"
-# prefix_bot = "\n\nAssistant:"
-# query = "列举一种空气污染。"
-# response = "一种常见的空气污染源是化石燃料的燃烧产生的尾气排放，包括来自汽车、卡车、飞机、
-#       火车和工业厂房的废气排放。这会导致大气中的二氧化硫、氮氧化物、一氧化碳、臭氧和颗粒物（例如灰尘和烟雾）等污染物含量增加，对人类健康和环境造成不利影响。"
-register_conv_template(
-    Conversation(
-        name="Ziya",
-        roles=("Human", "Assistant"),
-        sep_style=SeparatorStyle.ADD_COLON_SPACE_SINGLE,
-        sep="\n\n",
-    )
-)
 
 
 # pipeline because custom model returns reward directly compared to other models
