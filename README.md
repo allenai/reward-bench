@@ -46,6 +46,10 @@ Or for example, the best of N sweep on the non-default image:
 python scripts/submit_eval_jobs.py --eval_on_bon --image=nathanl/herm_bon
 ``` 
 
+Models using the default abstraction `AutoModelForSequenceClassification.from_pretrained` can also be loaded locally. Expanding this functionality is TODO. E.g.
+```
+python scripts/run_rm.py --model=/net/nfs.cirrascale/allennlp/hamishi/EasyLM/rm_13b_3ep --chat_template=tulu --batch_size=8
+```
 
 ## Running DPO Models
 
