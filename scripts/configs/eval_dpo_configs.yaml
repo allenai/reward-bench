@@ -70,9 +70,15 @@ Qwen/Qwen1.5-7B-Chat:
 #   chat_template:
 #   batch_size: 4
 #   trust_remote_code: False
-# NousResearch/Nous-Hermes-2-Mistral-7B-DPO:
-#   ref_model: mistralai/Mistral-7B-v0.1
-#   tokenizer: NousResearch/Nous-Hermes-2-Mistral-7B-DPO
-#   chat_template:
-#   batch_size: 4
-#   trust_remote_code: False
+NousResearch/Nous-Hermes-2-Mistral-7B-DPO:
+  ref_model: teknium/OpenHermes-2.5-Mistral-7B
+  tokenizer: NousResearch/Nous-Hermes-2-Mistral-7B-DPO
+  chat_template:
+  batch_size: 4
+  trust_remote_code: False
+HuggingFaceH4/zephyr-7b-gemma-v0.1:
+  ref_model: HuggingFaceH4/zephyr-7b-gemma-sft-v0.1
+  tokenizer: HuggingFaceH4/zephyr-7b-gemma-v0.1
+  chat_template:
+  batch_size: 4
+  trust_remote_code: False
