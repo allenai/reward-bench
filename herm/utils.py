@@ -132,10 +132,15 @@ def load_eval_dataset(
 
     # Apply chat template
     if not custom_dialogue_formatting:
-        # assert either conv is passed or tokenizer has chat_template
-        assert conv is not None or hasattr(tokenizer, "chat_template")
-
+        usable_tokenizer = False
         if hasattr(tokenizer, "chat_template"):
+            if tokenizer.chat_template is not None:
+                usable_tokenizer = True
+
+        # assert either conv is passed or tokenizer has chat_template
+        assert conv is not None or usable_tokenizer
+
+        if usable_tokenizer:
             if logger is not None:
                 logger.info("*** Preparing dataset with HF Transformers ***")
             # docs https://huggingface.co/docs/transformers/main/en/chat_templating
@@ -268,10 +273,15 @@ def load_bon_dataset(
 
     # Apply chat template
     if not custom_dialogue_formatting:
-        # assert either conv is passed or tokenizer has chat_template
-        assert conv is not None or hasattr(tokenizer, "chat_template")
-
+        usable_tokenizer = False
         if hasattr(tokenizer, "chat_template"):
+            if tokenizer.chat_template is not None:
+                usable_tokenizer = True
+
+        # assert either conv is passed or tokenizer has chat_template
+        assert conv is not None or usable_tokenizer
+
+        if usable_tokenizer:
             if logger is not None:
                 logger.info("*** Preparing dataset with HF Transformers ***")
             # docs https://huggingface.co/docs/transformers/main/en/chat_templating

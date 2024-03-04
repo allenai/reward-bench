@@ -31,7 +31,7 @@ The core scripts automatically evaluate our core evaluation set. To run these on
 
 To run individual models with `scripts/run_rm.py`, use any of the following examples:
 ```
-python scripts/run_rm.py --model=openbmb/UltraRM-13b --chat_template=billa --batch_size=8
+python scripts/run_rm.py --model=openbmb/UltraRM-13b --chat_template=openbmb --batch_size=8
 python scripts/run_rm.py --model=OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5 --chat_template=oasst_pythia
 python scripts/run_rm.py --model=PKU-Alignment/beaver-7b-v1.0-cost --chat_template=pku-align --batch_size=16
 python scripts/run_rm.py --model=IDEA-CCNL/Ziya-LLaMA-7B-Reward --batch_size=32 --trust_remote_code --chat_template=Ziya
@@ -94,6 +94,9 @@ When updating the `Dockerfile`, make sure to see the instructions at the top to 
 
 In development, we have the following docker images (most recent first as it's likely what you need).
 TODO: we should log the git commit affiliated with each of these, or delete them when outdated.
+- `nathanl/herm_v2`: chat template loading from tokenizer fixes.
+
+Deprecated:
 - `nathanl/herm_dpo`: for adding functionality with DPO sweeps, fix minor bugs (last updated 24 Feb.)
 - `nathanl/herm`: for running everything, including new Starling 34B RM (last updated 22 Feb.)
 - `nathanl/herm_bon_v2`: for running `run_bon.py` sweeps (last updated 21 Feb.) 

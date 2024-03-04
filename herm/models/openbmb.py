@@ -16,21 +16,7 @@ from typing import List, Optional
 
 import torch
 import torch.nn as nn
-from fastchat.conversation import Conversation, SeparatorStyle, register_conv_template
 from transformers import LlamaConfig, LlamaModel, PreTrainedModel
-
-# UltraLM / UltraRM Chat Template
-# Reference1: https://huggingface.co/openbmb/UltraLM-65b
-# Reference2: https://huggingface.co/openbmb/UltraRM-13b
-register_conv_template(
-    Conversation(
-        name="openbmb",
-        system_message="",
-        roles=("User:", "Assistant"),
-        sep_style=SeparatorStyle.ADD_NEW_LINE_SINGLE,
-        sep="\n",
-    )
-)
 
 
 class OpenBMBPipeline:
