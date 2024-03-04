@@ -114,10 +114,6 @@ def main():
         keep_columns=["text_chosen", "text_rejected", "id", "prompt"],
     )
 
-    import ipdb
-
-    ipdb.set_trace()
-
     dataset = dataset.remove_columns("id")
     # debug: use only 10 examples
     if args.debug:
