@@ -22,7 +22,7 @@ COPY Makefile Makefile
 COPY README.md README.md
 RUN pip install -e .
 RUN chmod +x scripts/*
-RUN pip install flash-attn==2.3.4 --no-build-isolation
+RUN pip install flash-attn==2.5.0 --no-build-isolation
 
 # for interactive session
 RUN chmod -R 777 /stage/

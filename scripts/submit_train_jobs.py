@@ -6,25 +6,23 @@ from datetime import date
 
 today = date.today().strftime("%m%d%Y")
 
-with open("beaker_configs/default_finetune.yaml", 'r') as f:
+with open("beaker_configs/beaker_train.yaml", 'r') as f:
     default_yaml = f.read()
 d1 = yaml.load(default_yaml, Loader=yaml.FullLoader)
 
-# cluster = "ai2/general-cirrascale"
-# cluster = "ai2/yizhongw-a100-80gb"
 cluster = "ai2/allennlp-cirrascale"
 num_gpus = 4
 d1['tasks'][0]['context']['cluster'] = cluster
 d1['tasks'][0]['context']['priority'] = "high"
-d1['tasks'][0]['resources']['gpuCount'] = num_gpus
 
-# modify here for different set of experiments
-experiment_group = "dataset_comparison"
-wandb_project = "open_instruct"
-wandb_api_key = "Your Wandb API Key"
+with open("scripts/configs/train_configs.yaml", "r") as f:
+    configs = yaml.load(f.read(), Loader=yaml.FullLoader)
 
+# TODO: explain
 models = [
     "allenai/tulu-2-7b",
+    "meta-llama/Llama-2-7b-chat-hf",
+    "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
 ]
 
 datasets = [
@@ -35,6 +33,8 @@ datasets = [
 
 # ----------------------- dataset comparison -----------------------
 for model in models:
+    model_config = configs[model]
+    d1['tasks'][0]['resources']['gpuCount'] = model_config["num_gpus"]
     for dataset in datasets:
         d = copy.deepcopy(d1)
 
@@ -46,7 +46,7 @@ for model in models:
         d['description'] = exp_name
         d['tasks'][0]['name'] = exp_name
 
-        GRADIENT_ACC_STEPS=model_config["total_batch_size"]/num_gpus/model_config["batch_size_per_gpu"]))
+        GRADIENT_ACC_STEPS=model_config["total_batch_size"]/num_gpus/model_config["batch_size_per_gpu"]
 
         d["tasks"][0]["arguments"][0] = (
                 f"deepspeed --include localhost:{','.join(range(num_gpus))} scripts/train_rm_trainer.py"
@@ -71,44 +71,16 @@ for model in models:
                 " --save_strategy epoch"
                 " --seed 123409876"
                 " --num_train_epochs 1"
-                f" --output_dir {OUTPUT_DIR}"
+                f" --output_dir /output"
                 " --use_slow_tokenizer"
-                " --overwrite_output_dir"
+                " --overwrite_output_dir &&"
+                # " TODO: ADD EVAL COMMAND HERE"
             )
-
-        # model specific
-        for mount_dataset in d['tasks'][0]['datasets']:
-            if mount_dataset["mountPath"] == "/hf_llama_models":
-                mount_dataset["source"]["beaker"] = f"Yizhongw03/hf_llama_model_{model_size}"
-        if model_size == "7B":
-            d['tasks'][0]['arguments'][0] = d['tasks'][0]['arguments'][0].replace(
-                "--per_device_train_batch_size 2", 
-                "--per_device_train_batch_size 2"
-            )
-            d['tasks'][0]['arguments'][0] = d['tasks'][0]['arguments'][0].replace(
-                "--gradient_accumulation_steps 16",
-                f"--gradient_accumulation_steps {128 // 2 // num_gpus}"
-            )
-        elif model_size == "13B":
-            d['tasks'][0]['arguments'][0] = d['tasks'][0]['arguments'][0].replace(
-                "--per_device_train_batch_size 2", 
-                "--per_device_train_batch_size 2"
-            )
-            d['tasks'][0]['arguments'][0] = d['tasks'][0]['arguments'][0].replace(
-                "--gradient_accumulation_steps 16",
-                f"--gradient_accumulation_steps {128 // 2 // num_gpus}"
-            )
-            d['tasks'][0]['arguments'][0] = d['tasks'][0]['arguments'][0].replace(
-                "--deepspeed_config_file ds_configs/stage3_no_offloading_accelerate.conf",
-                "--deepspeed_config_file ds_configs/stage3_offloading_accelerate.conf",
-            )
-        else:
-            raise NotImplementedError
 
         fn = "beaker_configs/auto_created/{}.yaml".format(exp_name)
         file = open(fn, "w")
         yaml.dump(d, file, default_flow_style=True)
         file.close()
 
-        cmd = "beaker experiment create {} --workspace ai2/yizhong_default".format(fn)
+        cmd = "beaker experiment create {} --workspace ai2/herm".format(fn)
         subprocess.Popen(cmd, shell=True)
