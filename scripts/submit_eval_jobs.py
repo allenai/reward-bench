@@ -87,7 +87,7 @@ for model in models_to_evaluate:
     model_config = configs[model]
     if eval_on_pref_sets:
         experiment_group = "common-preference-sets"
-        script = "run_rm.py"
+        script = "run_dpo.py" if eval_dpo else "run_rm.py"
     elif eval_on_bon:
         experiment_group = "bon-preference-sets"
         script = "run_bon.py"
