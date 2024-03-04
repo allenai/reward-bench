@@ -15,7 +15,7 @@ OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1:
   model: 'OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1'
   tokenizer: 'OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1'
   chat_template: 'oasst_pythia'
-  batch_size: 64
+  batch_size: 16
   trust_remote_code: False
 OpenAssistant/reward-model-deberta-v3-large-v2:
   model: 'OpenAssistant/reward-model-deberta-v3-large-v2'
