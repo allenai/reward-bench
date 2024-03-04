@@ -32,19 +32,19 @@ Qwen/Qwen1.5-1.8B-Chat:
   ref_model: Qwen/Qwen1.5-1.8B
   tokenizer: Qwen/Qwen1.5-1.8B-Chat
   chat_template:
-  batch_size: 8
+  batch_size: 6
   trust_remote_code: False
 Qwen/Qwen1.5-4B-Chat:
   ref_model: Qwen/Qwen1.5-4B
   tokenizer: Qwen/Qwen1.5-4B-Chat
   chat_template:
-  batch_size: 6
+  batch_size: 3
   trust_remote_code: False
 Qwen/Qwen1.5-7B-Chat:
   ref_model: Qwen/Qwen1.5-7B
   tokenizer: Qwen/Qwen1.5-7B-Chat
   chat_template:
-  batch_size: 4
+  batch_size: 2
   trust_remote_code: False
 # Qwen/Qwen1.5-14B-Chat:
 #   ref_model: Qwen/Qwen1.5-14B
