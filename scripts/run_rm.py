@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import argparse
+import json
 import logging
 import os
 import sys
@@ -286,7 +287,7 @@ def main():
 
     ############################
     # Upload results to hub
-    ############################
+    ############################    
     sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
     results_url = save_to_hub(results_grouped, args.model, sub_path, args.debug, local_only=args.do_not_save)
     if not args.do_not_save:
@@ -307,6 +308,9 @@ def main():
     else:
         logger.info("Not uploading chosen-rejected text with scores due to model compatibility")
 
+    # ai2 internal visualization, not needed external
+    with open("results/metrics.json", "w") as f: # save format for AI2 beaker to show results
+        json.dump(results_grouped, f)
 
 if __name__ == "__main__":
     main()
