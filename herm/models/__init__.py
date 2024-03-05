@@ -13,7 +13,11 @@
 # limitations under the License.
 
 from transformers import (
+    AutoModelForCausalLM,
     AutoModelForSequenceClassification,
+    AutoTokenizer,
+    LlamaTokenizer,
+    MixtralForCausalLM,
     T5ForConditionalGeneration,
     pipeline,
 )
@@ -101,5 +105,16 @@ REWARD_MODEL_CONFIG = {
         "quantized": True,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
+    },
+}
+
+DPO_MODEL_CONFIG = {
+    "default": {
+        "model_builder": AutoModelForCausalLM.from_pretrained,
+        "tokenizer_builder": AutoTokenizer.from_pretrained,
+    },
+    "NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO": {
+        "model_builder": MixtralForCausalLM.from_pretrained,
+        "tokenizer_builder": LlamaTokenizer.from_pretrained,
     },
 }
