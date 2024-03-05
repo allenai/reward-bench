@@ -116,8 +116,7 @@ for model in models_to_evaluate:
     if model_config["chat_template"] is not None:
         d["tasks"][0]["arguments"][0] += f" --chat_template {model_config['chat_template']}"
     if model_config["trust_remote_code"]:
-        if not eval_dpo:  # TODO create trust remote code option in DPO script
-            d["tasks"][0]["arguments"][0] += " --trust_remote_code"
+        d["tasks"][0]["arguments"][0] += " --trust_remote_code"
     if not upload_to_hub:
         d["tasks"][0]["arguments"][0] += " --do_not_save"
     if eval_on_pref_sets:

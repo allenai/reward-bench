@@ -81,7 +81,9 @@ def main():
     transformers.utils.logging.enable_explicit_format()
 
     logger.info(f"Running reward model on {args.model} with chat template {args.chat_template}")
-
+    if args.trust_remote_code:
+        logger.info("Loading model with Trust Remote Code")
+    
     # load chat template
     chat_template = args.chat_template
     conv = get_conv_template(chat_template)

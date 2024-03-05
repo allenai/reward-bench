@@ -91,6 +91,8 @@ def main():
     else:
         config = REWARD_MODEL_CONFIG["default"]
     logger.info(f"Using reward model config: {config}")
+    if args.trust_remote_code:
+        logger.info("Loading model with Trust Remote Code")
 
     # Default entries
     # "model_builder": AutoModelForSequenceClassification.from_pretrained,
