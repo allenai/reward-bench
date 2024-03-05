@@ -237,7 +237,12 @@ def main():
     ############################
     sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
     results_url = save_to_hub(
-        results_grouped, args.model + save_modifier, sub_path, args.debug, local_only=args.do_not_save
+        results_grouped,
+        args.model + save_modifier,
+        sub_path,
+        args.debug,
+        local_only=args.do_not_save,
+        save_metrics_for_beaker=True
     )
     if not args.do_not_save:
         logger.info(f"Uploaded reward model results to {results_url}")

@@ -37,7 +37,12 @@ api = HfApi(token=HF_TOKEN)
 
 
 def save_to_hub(
-    results_dict: Union[Dict, List], model_name: str, target_path: str, debug: bool = False, local_only: bool = False
+    results_dict: Union[Dict, List],
+    model_name: str,
+    target_path: str,
+    debug: bool = False,
+    local_only: bool = False,
+    save_metrics_for_beaker: bool = False,
 ):
     """
     Utility for saving results in dict to the hub in programatic organization.
@@ -46,6 +51,11 @@ def save_to_hub(
         scores_path = f"results/scores/{model_name}.json"
     else:
         scores_path = f"results/metrics/{model_name}.json"
+
+    if save_metrics_for_beaker:
+        # ai2 internal visualization, not needed external
+        with open("results/metrics.json", "w") as f: # save format for AI2 beaker to show results
+            json.dump(results_dict, f)
 
     dirname = os.path.dirname(scores_path)
     os.makedirs(dirname, exist_ok=True)
