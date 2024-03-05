@@ -57,17 +57,18 @@ def main():
     hf_evals_repo = snapshot_download(
         local_dir=Path(LOCAL_DIR),
         repo_id=args.hf_evals_repo,
+        ignore_patterns=["pref-sets-scores/*", "eval-set-scores/*"],
         use_auth_token=api_token,
         tqdm_class=None,
         repo_type="dataset",
     )
     hf_evals_df = load_results(hf_evals_repo, subdir="eval-set/")
     hf_prefs_df = load_results(hf_evals_repo, subdir="pref-sets/")
-    generate_whisker_plot(hf_evals_df, args.output_dir)
-    generate_whisker_plot(hf_prefs_df, args.output_dir)
+    generate_whisker_plot(hf_evals_df, args.output_dir, name="eval-set")
+    generate_whisker_plot(hf_prefs_df, args.output_dir, name="pref-set")
 
 
-def generate_whisker_plot(df, output_path):
+def generate_whisker_plot(df, output_path, name=None):
     # remove the row with random in it from the df
     df = df[~df["model"].str.contains("random")]
 
@@ -134,7 +135,10 @@ def generate_whisker_plot(df, output_path):
     plt.show()
     if output_path:
         print(f"Saving figure to {output_path}")
-        plt.savefig(output_path, transparent=True, dpi=120)
+        # if output path doesn't exist, make it
+        if not output_path.exists():
+            output_path.mkdir(parents=True, exist_ok=True)
+        plt.savefig(output_path / (name + ".pdf"), transparent=True)
 
 
 if __name__ == "__main__":
