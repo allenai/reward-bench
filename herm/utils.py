@@ -147,6 +147,8 @@ def load_eval_dataset(
             dataset = raw_dataset.map(
                 prepare_dialogue_from_tokenizer,
                 fn_kwargs={"tokenizer": tokenizer},
+                num_proc=8,
+                load_from_cache_file=False,
             )
 
         # else use FastChat to get chat template
@@ -156,7 +158,8 @@ def load_eval_dataset(
             dataset = raw_dataset.map(
                 prepare_dialogue,
                 fn_kwargs={"dialogue_template": conv},
-                # num_proc=8, # using >1 process causes issues with re-assigning prompt in example
+                num_proc=8, # using >1 process causes issues with re-assigning prompt in example
+                load_from_cache_file=False,
             )
     else:
         if logger is not None:
