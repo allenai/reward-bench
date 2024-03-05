@@ -64,12 +64,6 @@ def save_to_hub(
                 dumped = json.dumps(record, indent=4, sort_keys=True) + "\n"
                 f.write(dumped)
 
-    # ai2 internal visualization, not needed external, only for dict results (doesn't make sense for others)
-    if isinstance(results_dict, Dict):
-        # save format for AI2 beaker to show results
-        with open("results/metrics.json", "w") as f:
-            f.write(dumped)
-
     if not local_only:
         scores_url = api.upload_file(
             path_or_fileobj=scores_path,
