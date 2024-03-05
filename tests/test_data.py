@@ -180,7 +180,7 @@ class LoadEvalDatasetTest(unittest.TestCase):
 
         self.assertEqual(
             dataset[3456]["prompt"],
-            "<|user|>\nWhat is the main transportation in the Philippines?\n<|assistant|>\nThat depends on what you mean by “main.” Do you mean how most people move around?  Or do you mean how many people use it?\n<|user|>\nYes how do they get around there?\n", # noqa
+            "<|user|>\nWhat is the main transportation in the Philippines?\n<|assistant|>\nThat depends on what you mean by “main.” Do you mean how most people move around?  Or do you mean how many people use it?\n<|user|>\nYes how do they get around there?\n",  # noqa
             "Dialogue formatting error",
         )
         self.assertEqual(
@@ -226,7 +226,7 @@ class LoadEvalDatasetTest(unittest.TestCase):
 
         self.assertEqual(
             dataset[3456]["prompt"],
-            "<|user|>\nWhat is the main transportation in the Philippines?</s>\n<|assistant|>\nThat depends on what you mean by “main.” Do you mean how most people move around?  Or do you mean how many people use it?</s>\n<|user|>\nYes how do they get around there?</s>\n", # noqa
+            "<|user|>\nWhat is the main transportation in the Philippines?</s>\n<|assistant|>\nThat depends on what you mean by “main.” Do you mean how most people move around?  Or do you mean how many people use it?</s>\n<|user|>\nYes how do they get around there?</s>\n",  # noqa
             "Dialogue formatting error",
         )
         self.assertEqual(
