@@ -99,7 +99,7 @@ When updating the `Dockerfile`, make sure to see the instructions at the top to 
 
 In development, we have the following docker images (most recent first as it's likely what you need).
 TODO: we should log the git commit affiliated with each of these, or delete them when outdated.
-- `nathanl/herm_v4`: chat template loading from tokenizer fixes + DPO additions.
+- `nathanl/herm_v5`: chat template loading from tokenizer fixes + DPO additions.
 
 Deprecated:
 - `nathanl/herm_dpo`: for adding functionality with DPO sweeps, fix minor bugs (last updated 24 Feb.)

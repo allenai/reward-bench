@@ -85,16 +85,16 @@ HuggingFaceH4/zephyr-7b-gemma-v0.1:
   chat_template:
   batch_size: 2
   trust_remote_code: False
-allenai/tulu-2-dpo-13b:
-  ref_model: allenai/tulu-2-13b
-  tokenizer: allenai/tulu-2-dpo-13b
-  chat_template: tulu
-  num_gpus: 2
-  batch_size: 2
-  trust_remote_code: False
-allenai/tulu-2-dpo-7b:
-  ref_model: allenai/tulu-2-7b
-  tokenizer: allenai/tulu-2-dpo-7b
-  chat_template: tulu
-  batch_size: 2
-  trust_remote_code: False
+# allenai/tulu-2-dpo-13b:
+#   ref_model: allenai/tulu-2-13b
+#   tokenizer: allenai/tulu-2-dpo-13b
+#   chat_template: tulu
+#   num_gpus: 2
+#   batch_size: 2
+#   trust_remote_code: False
+# allenai/tulu-2-dpo-7b:
+#   ref_model: allenai/tulu-2-7b
+#   tokenizer: allenai/tulu-2-dpo-7b
+#   chat_template: tulu
+#   batch_size: 2
+#   trust_remote_code: False
