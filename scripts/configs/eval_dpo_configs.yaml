@@ -46,30 +46,33 @@ Qwen/Qwen1.5-7B-Chat:
   chat_template:
   batch_size: 2
   trust_remote_code: False
-# Qwen/Qwen1.5-14B-Chat:
-#   ref_model: Qwen/Qwen1.5-14B
-#   tokenizer: Qwen/Qwen1.5-14B-Chat
-#   chat_template:
-#   batch_size: 4
-#   trust_remote_code: False
+Qwen/Qwen1.5-14B-Chat:
+  ref_model: Qwen/Qwen1.5-14B
+  tokenizer: Qwen/Qwen1.5-14B-Chat
+  chat_template:
+  batch_size: 2
+  num_gpus: 2
+  trust_remote_code: False
 # Qwen/Qwen1.5-72B-Chat:
 #   ref_model: Qwen/Qwen1.5-72B
 #   tokenizer: Qwen/Qwen1.5-72B-Chat
 #   chat_template:
 #   batch_size: 4
 #   trust_remote_code: False
-# mistralai/Mixtral-8x7B-Instruct-v0.1:
-#   ref_model: mistralai/Mixtral-8x7B-v0.1
-#   tokenizer: mistralai/Mixtral-8x7B-Instruct-v0.1
-#   chat_template:
-#   batch_size: 4
-#   trust_remote_code: False
-# NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO:
-#   ref_model: mistralai/Mixtral-8x7B-v0.1
-#   tokenizer: NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO
-#   chat_template:
-#   batch_size: 4
-#   trust_remote_code: False
+mistralai/Mixtral-8x7B-Instruct-v0.1:
+  ref_model: mistralai/Mixtral-8x7B-v0.1
+  tokenizer: mistralai/Mixtral-8x7B-Instruct-v0.1
+  chat_template:
+  batch_size: 1
+  num_gpus: 2
+  trust_remote_code: False
+NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO:
+  ref_model: NousResearch/Nous-Hermes-2-Mistral-7B-DPO
+  tokenizer: NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO
+  chat_template:
+  batch_size: 1
+  num_gpus: 2
+  trust_remote_code: False
 NousResearch/Nous-Hermes-2-Mistral-7B-DPO:
   ref_model: teknium/OpenHermes-2.5-Mistral-7B
   tokenizer: NousResearch/Nous-Hermes-2-Mistral-7B-DPO
@@ -80,5 +83,18 @@ HuggingFaceH4/zephyr-7b-gemma-v0.1:
   ref_model: HuggingFaceH4/zephyr-7b-gemma-sft-v0.1
   tokenizer: HuggingFaceH4/zephyr-7b-gemma-v0.1
   chat_template:
+  batch_size: 2
+  trust_remote_code: False
+allenai/tulu-2-dpo-13b:
+  ref_model: allenai/tulu-2-13b
+  tokenizer: allenai/tulu-2-dpo-13b
+  chat_template: tulu
+  num_gpus: 2
+  batch_size: 2
+  trust_remote_code: False
+allenai/tulu-2-dpo-7b:
+  ref_model: allenai/tulu-2-7b
+  tokenizer: allenai/tulu-2-dpo-7b
+  chat_template: tulu
   batch_size: 2
   trust_remote_code: False
