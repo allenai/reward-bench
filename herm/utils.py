@@ -44,10 +44,8 @@ def save_to_hub(
     """
     if "scores" in target_path:
         scores_path = f"results/scores/{model_name}.json"
-        beaker_path = None
     else:
         scores_path = f"results/metrics/{model_name}.json"
-        beaker_path = "results/metrics.json"  # save format for AI2 beaker to show results
 
     dirname = os.path.dirname(scores_path)
     os.makedirs(dirname, exist_ok=True)
@@ -67,8 +65,9 @@ def save_to_hub(
                 f.write(dumped)
 
     # ai2 internal visualization, not needed external, only for dict results (doesn't make sense for others)
-    if beaker_path and isinstance(results_dict, Dict):
-        with open(beaker_path, "w") as f:
+    if isinstance(results_dict, Dict):
+        # save format for AI2 beaker to show results
+        with open("results/metrics.json", "w") as f:
             f.write(dumped)
 
     if not local_only:
