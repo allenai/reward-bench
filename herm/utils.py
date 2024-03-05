@@ -37,17 +37,25 @@ api = HfApi(token=HF_TOKEN)
 
 
 def save_to_hub(
-    results_dict: Union[Dict, List], model_name: str, target_path: str, debug: bool = False, local_only: bool = False
+    results_dict: Union[Dict, List],
+    model_name: str,
+    target_path: str,
+    debug: bool = False,
+    local_only: bool = False,
+    save_metrics_for_beaker: bool = False,
 ):
     """
     Utility for saving results in dict to the hub in programatic organization.
     """
     if "scores" in target_path:
         scores_path = f"results/scores/{model_name}.json"
-        beaker_path = None
     else:
         scores_path = f"results/metrics/{model_name}.json"
-        beaker_path = "results/metrics.json"  # save format for AI2 beaker to show results
+
+    if save_metrics_for_beaker:
+        # ai2 internal visualization, not needed external
+        with open("results/metrics.json", "w") as f:  # save format for AI2 beaker to show results
+            json.dump(results_dict, f)
 
     dirname = os.path.dirname(scores_path)
     os.makedirs(dirname, exist_ok=True)
@@ -65,11 +73,6 @@ def save_to_hub(
             for record in results_dict:
                 dumped = json.dumps(record, indent=4, sort_keys=True) + "\n"
                 f.write(dumped)
-
-    # ai2 internal visualization, not needed external, only for dict results (doesn't make sense for others)
-    if beaker_path and isinstance(results_dict, Dict):
-        with open(beaker_path, "w") as f:
-            f.write(dumped)
 
     if not local_only:
         scores_url = api.upload_file(
