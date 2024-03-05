@@ -159,14 +159,15 @@ class StarlingPipeline:
         input_ids = encoding_dict["input_ids"]
         attention_masks = encoding_dict["attention_mask"]
         out = []
-        for i in range(math.ceil(len(samples) / batch_size)):
-            rewards = self.model(
-                input_ids=input_ids[i * batch_size : (i + 1) * batch_size],
-                attention_mask=attention_masks[i * batch_size : (i + 1) * batch_size],
-            )
-            # if scores are dict (for Yi model), extract them from tensor.
-            if isinstance(rewards, dict):
-                rewards = rewards["scores"]
-            out.extend(rewards)
+        with torch.no_grad():
+            for i in range(math.ceil(len(samples) / batch_size)):
+                rewards = self.model(
+                    input_ids=input_ids[i * batch_size : (i + 1) * batch_size],
+                    attention_mask=attention_masks[i * batch_size : (i + 1) * batch_size],
+                )
+                # if scores are dict (for Yi model), extract them from tensor.
+                if isinstance(rewards, dict):
+                    rewards = rewards["scores"]
+                out.extend(rewards)
 
         return torch.hstack(out)
