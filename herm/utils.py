@@ -54,7 +54,7 @@ def save_to_hub(
 
     if save_metrics_for_beaker:
         # ai2 internal visualization, not needed external
-        with open("results/metrics.json", "w") as f: # save format for AI2 beaker to show results
+        with open("results/metrics.json", "w") as f:  # save format for AI2 beaker to show results
             json.dump(results_dict, f)
 
     dirname = os.path.dirname(scores_path)

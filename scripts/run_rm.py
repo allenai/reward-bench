@@ -289,12 +289,7 @@ def main():
     ############################
     sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
     results_url = save_to_hub(
-        results_grouped,
-        args.model,
-        sub_path,
-        args.debug,
-        local_only=args.do_not_save,
-        save_metrics_for_beaker=True
+        results_grouped, args.model, sub_path, args.debug, local_only=args.do_not_save, save_metrics_for_beaker=True
     )
     if not args.do_not_save:
         logger.info(f"Uploaded reward model results to {results_url}")
@@ -313,6 +308,7 @@ def main():
         logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
     else:
         logger.info("Not uploading chosen-rejected text with scores due to model compatibility")
+
 
 if __name__ == "__main__":
     main()
