@@ -113,7 +113,7 @@ def main():
     ############################
     logger.info("*** Load dataset ***")
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=args.trust_remote_code)
     dataset = load_bon_dataset(
         best_of=args.best_of,
         conv=conv,

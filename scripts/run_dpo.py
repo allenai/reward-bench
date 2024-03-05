@@ -103,7 +103,7 @@ def main():
     ############################
     logger.info("*** Load dataset ***")
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=args.trust_remote_code)
     tokenizer.pad_token = tokenizer.eos_token
     # if no BOS token, set as pad token, e.g. QWEN models
     if tokenizer.bos_token is None:
