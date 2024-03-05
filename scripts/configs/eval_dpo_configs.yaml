@@ -70,7 +70,7 @@ NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO:
   ref_model: NousResearch/Nous-Hermes-2-Mistral-7B-DPO
   tokenizer: NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO
   chat_template:
-  batch_size: 1
+  batch_size: 2
   num_gpus: 2
   trust_remote_code: False
 NousResearch/Nous-Hermes-2-Mistral-7B-DPO:
