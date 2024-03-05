@@ -1,5 +1,6 @@
 version: v2
 description: herm-train
+budget: ai2/allennlp
 tasks:
   - name: herm-train
     image:
@@ -7,7 +8,7 @@ tasks:
     command: [
       '/bin/sh', '-c'
     ]
-  arguments: ['SCRIPT_HERE']
+    arguments: ['SCRIPT_HERE']
     envVars:
       - name: CUDA_DEVICE_ORDER
         value: PCI_BUS_ID
@@ -25,12 +26,6 @@ tasks:
       - mountPath: /data
         source:
           beaker: Yizhongw03/processed_open_instruct_data
-      - mountPath: /mmlu
-        source:
-          beaker: Yizhongw03/mmlu
-      - mountPath: /hf_llama_models
-        source:
-          beaker: Yizhongw03/hf_llama_model_7B
     result:
       path: /output
     resources:

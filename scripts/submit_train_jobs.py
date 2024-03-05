@@ -6,7 +6,7 @@ from datetime import date
 
 today = date.today().strftime("%m%d%Y")
 
-with open("beaker_configs/beaker_train.yaml", 'r') as f:
+with open("scripts/configs/beaker_train.yaml", 'r') as f:
     default_yaml = f.read()
 d1 = yaml.load(default_yaml, Loader=yaml.FullLoader)
 
@@ -20,14 +20,14 @@ with open("scripts/configs/train_configs.yaml", "r") as f:
 
 # TODO: explain
 models = [
-    "allenai/tulu-2-7b",
-    "meta-llama/Llama-2-7b-chat-hf",
+    # "allenai/tulu-2-7b",
+    # "meta-llama/Llama-2-7b-chat-hf",
     "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
 ]
 
 datasets = [
     "/net/nfs.cirrascale/allennlp/jacobm/herm/data/argilla-ultrafeedback-binarized-preferences-cleaned.jsonl",
-    "/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar-binarized-preferences-random-rejected.jsonl",
+    # "/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar-binarized-preferences-random-rejected.jsonl",
 ]
 
 
@@ -49,7 +49,7 @@ for model in models:
         GRADIENT_ACC_STEPS=model_config["total_batch_size"]/num_gpus/model_config["batch_size_per_gpu"]
 
         d["tasks"][0]["arguments"][0] = (
-                f"deepspeed --include localhost:{','.join(range(num_gpus))} scripts/train_rm_trainer.py"
+                f"deepspeed --include localhost:{','.join(str(n) for n in range(num_gpus))} scripts/train_rm_trainer.py"
                 " --deepspeed ds_configs/stage3_no_offloading.conf"
                 f" --model_name_or_path {model}"
                 f" --tokenizer {model_config['tokenizer']}"
@@ -73,7 +73,7 @@ for model in models:
                 " --num_train_epochs 1"
                 f" --output_dir /output"
                 " --use_slow_tokenizer"
-                " --overwrite_output_dir &&"
+                " --overwrite_output_dir"
                 # " TODO: ADD EVAL COMMAND HERE"
             )
 
