@@ -1,78 +1,100 @@
-# stabilityai/stablelm-zephyr-3b:
-#   ref_model: stabilityai/stablelm-3b-4e1t
-#   tokenizer: stabilityai/stablelm-zephyr-3b
-#   chat_template:
-#   batch_size: 12
-#   trust_remote_code: False
+stabilityai/stablelm-zephyr-3b:
+  ref_model: stabilityai/stablelm-3b-4e1t
+  tokenizer: stabilityai/stablelm-zephyr-3b
+  chat_template:
+  batch_size: 12
+  trust_remote_code: False
 stabilityai/stablelm-2-zephyr-1_6b:
   ref_model: stabilityai/stablelm-2-1_6b
   tokenizer: stabilityai/stablelm-2-zephyr-1_6b
   chat_template:
-  batch_size: 16
+  batch_size: 6
   trust_remote_code: True
-# HuggingFaceH4/zephyr-7b-beta:
-#   ref_model: HuggingFaceH4/mistral-7b-sft-beta
-#   tokenizer: HuggingFaceH4/zephyr-7b-beta
-#   chat_template:
-#   batch_size: 8
-#   trust_remote_code: False
-# HuggingFaceH4/zephyr-7b-alpha:
-#   ref_model: HuggingFaceH4/mistral-7b-sft-alpha
-#   tokenizer: HuggingFaceH4/zephyr-7b-alpha
-#   chat_template:
-#   batch_size: 8
-#   trust_remote_code: False
+HuggingFaceH4/zephyr-7b-beta:
+  ref_model: HuggingFaceH4/mistral-7b-sft-beta
+  tokenizer: HuggingFaceH4/zephyr-7b-beta
+  chat_template:
+  batch_size: 4
+  trust_remote_code: False
+HuggingFaceH4/zephyr-7b-alpha:
+  ref_model: HuggingFaceH4/mistral-7b-sft-alpha
+  tokenizer: HuggingFaceH4/zephyr-7b-alpha
+  chat_template:
+  batch_size: 4
+  trust_remote_code: False
 Qwen/Qwen1.5-0.5B-Chat:
   ref_model: Qwen/Qwen1.5-0.5B
   tokenizer: Qwen/Qwen1.5-0.5B-Chat
   chat_template:
-  batch_size: 16
+  batch_size: 6
   trust_remote_code: False
 Qwen/Qwen1.5-1.8B-Chat:
   ref_model: Qwen/Qwen1.5-1.8B
   tokenizer: Qwen/Qwen1.5-1.8B-Chat
   chat_template:
-  batch_size: 16
+  batch_size: 3
   trust_remote_code: False
 Qwen/Qwen1.5-4B-Chat:
   ref_model: Qwen/Qwen1.5-4B
   tokenizer: Qwen/Qwen1.5-4B-Chat
   chat_template:
-  batch_size: 16
+  batch_size: 2
   trust_remote_code: False
 Qwen/Qwen1.5-7B-Chat:
   ref_model: Qwen/Qwen1.5-7B
   tokenizer: Qwen/Qwen1.5-7B-Chat
   chat_template:
-  batch_size: 4
+  batch_size: 2
   trust_remote_code: False
-# Qwen/Qwen1.5-14B-Chat:
-#   ref_model: Qwen/Qwen1.5-14B
-#   tokenizer: Qwen/Qwen1.5-14B-Chat
-#   chat_template:
-#   batch_size: 4
-#   trust_remote_code: False
+Qwen/Qwen1.5-14B-Chat:
+  ref_model: Qwen/Qwen1.5-14B
+  tokenizer: Qwen/Qwen1.5-14B-Chat
+  chat_template:
+  batch_size: 2
+  num_gpus: 2
+  trust_remote_code: False
 # Qwen/Qwen1.5-72B-Chat:
 #   ref_model: Qwen/Qwen1.5-72B
 #   tokenizer: Qwen/Qwen1.5-72B-Chat
 #   chat_template:
 #   batch_size: 4
 #   trust_remote_code: False
-# mistralai/Mixtral-8x7B-Instruct-v0.1:
-#   ref_model: mistralai/Mixtral-8x7B-v0.1
-#   tokenizer: mistralai/Mixtral-8x7B-Instruct-v0.1
-#   chat_template:
-#   batch_size: 4
+mistralai/Mixtral-8x7B-Instruct-v0.1:
+  ref_model: mistralai/Mixtral-8x7B-v0.1
+  tokenizer: mistralai/Mixtral-8x7B-Instruct-v0.1
+  chat_template:
+  batch_size: 2
+  num_gpus: 4
+  trust_remote_code: False
+NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO:
+  ref_model: NousResearch/Nous-Hermes-2-Mixtral-8x7B-SFT
+  tokenizer: NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO
+  chat_template:
+  batch_size: 2
+  num_gpus: 4
+  trust_remote_code: False
+NousResearch/Nous-Hermes-2-Mistral-7B-DPO:
+  ref_model: teknium/OpenHermes-2.5-Mistral-7B
+  tokenizer: NousResearch/Nous-Hermes-2-Mistral-7B-DPO
+  chat_template:
+  batch_size: 4
+  trust_remote_code: False
+HuggingFaceH4/zephyr-7b-gemma-v0.1:
+  ref_model: HuggingFaceH4/zephyr-7b-gemma-sft-v0.1
+  tokenizer: HuggingFaceH4/zephyr-7b-gemma-v0.1
+  chat_template:
+  batch_size: 2
+  trust_remote_code: False
+# allenai/tulu-2-dpo-13b:
+#   ref_model: allenai/tulu-2-13b
+#   tokenizer: allenai/tulu-2-dpo-13b
+#   chat_template: tulu
+#   num_gpus: 2
+#   batch_size: 2
 #   trust_remote_code: False
-# NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO:
-#   ref_model: mistralai/Mixtral-8x7B-v0.1
-#   tokenizer: NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO
-#   chat_template:
-#   batch_size: 4
-#   trust_remote_code: False
-# NousResearch/Nous-Hermes-2-Mistral-7B-DPO:
-#   ref_model: mistralai/Mistral-7B-v0.1
-#   tokenizer: NousResearch/Nous-Hermes-2-Mistral-7B-DPO
-#   chat_template:
-#   batch_size: 4
+# allenai/tulu-2-dpo-7b:
+#   ref_model: allenai/tulu-2-7b
+#   tokenizer: allenai/tulu-2-dpo-7b
+#   chat_template: tulu
+#   batch_size: 2
 #   trust_remote_code: False

@@ -47,7 +47,7 @@ REWARD_MODEL_CONFIG = {
         "model_type": "Seq. Classifier",
     },
     "berkeley-nest/Starling-RM-34B": {
-        "model_builder": LlamaForSequenceClassification,
+        "model_builder": LlamaForSequenceClassification.from_pretrained,
         "pipeline_builder": StarlingPipeline,
         "quantized": True,
         "custom_dialogue": False,

@@ -29,7 +29,7 @@ argparser.add_argument(
 )
 argparser.add_argument("--eval_dpo", action="store_true", default=False, help="Evaluate DPO model suite")
 argparser.add_argument("--eval_on_bon", action="store_true", default=False, help="Evaluate on BON preference sets")
-argparser.add_argument("--image", type=str, default="nathanl/herm_v2", help="Beaker image to use")
+argparser.add_argument("--image", type=str, default="nathanl/herm_v5", help="Beaker image to use")
 argparser.add_argument("--cluster", type=str, default="ai2/allennlp-cirrascale", help="Beaker cluster to use")
 argparser.add_argument("--upload_to_hub", action="store_false", default=True, help="Upload to results to HF hub")
 argparser.add_argument("--model", type=str, default=None, help="Specific model to evaluate if not sweep")
@@ -87,7 +87,7 @@ for model in models_to_evaluate:
     model_config = configs[model]
     if eval_on_pref_sets:
         experiment_group = "common-preference-sets"
-        script = "run_rm.py"
+        script = "run_dpo.py" if eval_dpo else "run_rm.py"
     elif eval_on_bon:
         experiment_group = "bon-preference-sets"
         script = "run_bon.py"
@@ -103,6 +103,9 @@ for model in models_to_evaluate:
     name = f"herm_eval_for_{model}_on_{experiment_group}".replace("/", "-")
     d["description"] = name
     d["tasks"][0]["name"] = name
+
+    if "num_gpus" in model_config:
+        d["tasks"][0]["resources"]["gpuCount"] = model_config["num_gpus"]
 
     d["tasks"][0]["arguments"][0] = (
         f"python scripts/{script}"

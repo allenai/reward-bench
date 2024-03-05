@@ -105,6 +105,10 @@ def main():
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
     tokenizer.pad_token = tokenizer.eos_token
+    # if no BOS token, set as pad token, e.g. QWEN models
+    if tokenizer.bos_token is None:
+        tokenizer.bos_token_id = tokenizer.eos_token_id
+        tokenizer.pad_token_id = tokenizer.eos_token_id
 
     dataset, subsets = load_eval_dataset(
         core_set=not args.pref_sets,
@@ -178,6 +182,7 @@ def main():
     results = []
     scores_chosen = []
     scores_rejected = []
+
     for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
         logger.info(f"RM inference step {step}/{len(dataloader)}")
 

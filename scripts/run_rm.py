@@ -114,7 +114,8 @@ def main():
     logger.info("*** Load dataset ***")
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-    tokenizer.truncation_side = "left"  # copied from Starling, but few samples are above context length
+    if not custom_dialogue:  # not needed for PairRM / SteamSHP
+        tokenizer.truncation_side = "left"  # copied from Starling, but few samples are above context length
     dataset, subsets = load_eval_dataset(
         core_set=not args.pref_sets,
         conv=conv,

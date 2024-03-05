@@ -46,12 +46,17 @@ Or for example, the best of N sweep on the non-default image:
 python scripts/submit_eval_jobs.py --eval_on_bon --image=nathanl/herm_bon
 ``` 
 
+Models using the default abstraction `AutoModelForSequenceClassification.from_pretrained` can also be loaded locally. Expanding this functionality is TODO. E.g.
+```
+python scripts/run_rm.py --model=/net/nfs.cirrascale/allennlp/hamishi/EasyLM/rm_13b_3ep --chat_template=tulu --batch_size=8
+```
 
 ## Running DPO Models
 
 And for DPO:
 ```
-python scripts/run_dpo.py --model=stabilityai/stablelm-zephyr-3b --ref_model=stabilityai/stablelm-3b-4e1t --batch_size=32
+python scripts/run_dpo.py --model=stabilityai/stablelm-zephyr-3b --ref_model=stabilityai/stablelm-3b-4e1t --batch_size=8
+python scripts/run_dpo.py --model=stabilityai/stablelm-2-zephyr-1_6b --ref_model=stabilityai/stablelm-2-1_6b --batch_size=16
 ```
 
 ## Creating Best of N (BoN) rankings
@@ -94,7 +99,7 @@ When updating the `Dockerfile`, make sure to see the instructions at the top to 
 
 In development, we have the following docker images (most recent first as it's likely what you need).
 TODO: we should log the git commit affiliated with each of these, or delete them when outdated.
-- `nathanl/herm_v2`: chat template loading from tokenizer fixes.
+- `nathanl/herm_v5`: chat template loading from tokenizer fixes + DPO additions.
 
 Deprecated:
 - `nathanl/herm_dpo`: for adding functionality with DPO sweeps, fix minor bugs (last updated 24 Feb.)
