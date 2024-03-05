@@ -148,11 +148,6 @@ def load_eval_dataset(
                 prepare_dialogue_from_tokenizer,
                 fn_kwargs={"tokenizer": tokenizer},
             )
-            # second pass needed for some weird bug with tokenizer and map
-            dataset = dataset.map(
-                prepare_dialogue_from_tokenizer,
-                fn_kwargs={"tokenizer": tokenizer},
-            )
 
         # else use FastChat to get chat template
         else:

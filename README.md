@@ -55,7 +55,8 @@ python scripts/run_rm.py --model=/net/nfs.cirrascale/allennlp/hamishi/EasyLM/rm_
 
 And for DPO:
 ```
-python scripts/run_dpo.py --model=stabilityai/stablelm-zephyr-3b --ref_model=stabilityai/stablelm-3b-4e1t --batch_size=32
+python scripts/run_dpo.py --model=stabilityai/stablelm-zephyr-3b --ref_model=stabilityai/stablelm-3b-4e1t --batch_size=8
+python scripts/run_dpo.py --model=stabilityai/stablelm-2-zephyr-1_6b --ref_model=stabilityai/stablelm-2-1_6b --batch_size=16
 ```
 
 ## Creating Best of N (BoN) rankings

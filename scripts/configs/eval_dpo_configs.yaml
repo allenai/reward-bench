@@ -1,9 +1,9 @@
-# stabilityai/stablelm-zephyr-3b:
-#   ref_model: stabilityai/stablelm-3b-4e1t
-#   tokenizer: stabilityai/stablelm-zephyr-3b
-#   chat_template:
-#   batch_size: 12
-#   trust_remote_code: False
+stabilityai/stablelm-zephyr-3b:
+  ref_model: stabilityai/stablelm-3b-4e1t
+  tokenizer: stabilityai/stablelm-zephyr-3b
+  chat_template:
+  batch_size: 12
+  trust_remote_code: False
 stabilityai/stablelm-2-zephyr-1_6b:
   ref_model: stabilityai/stablelm-2-1_6b
   tokenizer: stabilityai/stablelm-2-zephyr-1_6b
@@ -38,7 +38,7 @@ Qwen/Qwen1.5-4B-Chat:
   ref_model: Qwen/Qwen1.5-4B
   tokenizer: Qwen/Qwen1.5-4B-Chat
   chat_template:
-  batch_size: 3
+  batch_size: 2
   trust_remote_code: False
 Qwen/Qwen1.5-7B-Chat:
   ref_model: Qwen/Qwen1.5-7B
@@ -63,15 +63,15 @@ mistralai/Mixtral-8x7B-Instruct-v0.1:
   ref_model: mistralai/Mixtral-8x7B-v0.1
   tokenizer: mistralai/Mixtral-8x7B-Instruct-v0.1
   chat_template:
-  batch_size: 1
-  num_gpus: 2
+  batch_size: 2
+  num_gpus: 4
   trust_remote_code: False
 NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO:
-  ref_model: NousResearch/Nous-Hermes-2-Mistral-7B-DPO
+  ref_model: NousResearch/Nous-Hermes-2-Mixtral-8x7B-SFT
   tokenizer: NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO
   chat_template:
   batch_size: 2
-  num_gpus: 2
+  num_gpus: 4
   trust_remote_code: False
 NousResearch/Nous-Hermes-2-Mistral-7B-DPO:
   ref_model: teknium/OpenHermes-2.5-Mistral-7B
