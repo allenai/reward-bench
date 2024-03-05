@@ -36,6 +36,9 @@ def load_results(
             _results.append(pd.DataFrame(load_dataset("json", data_files=str(filepath), split="train")))
     results_df = pd.concat(_results)
 
+    # remove internal experiments under org ai2
+    results_df = results_df[~results_df["model"].str.contains("ai2")]
+
     # Cleanup the dataframe for presentation
     def _cleanup(df: pd.DataFrame) -> pd.DataFrame:
         # remove chat_template comlumn
@@ -56,6 +59,15 @@ def load_results(
         if "model_beaker" in cols:
             cols.remove("model_beaker")
             df = df.drop(columns=["model_beaker"])
+
+        # remove ref_model
+        if "ref_model" in cols:
+            cols.remove("ref_model")
+            df = df.drop(columns=["ref_model"])
+
+        if "xstest" in cols:
+            cols.remove("xstest")
+            df = df.drop(columns=["xstest"])
 
         # round
         df[cols] = df[cols].round(2)
