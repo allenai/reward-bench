@@ -8,7 +8,7 @@ stabilityai/stablelm-2-zephyr-1_6b:
   ref_model: stabilityai/stablelm-2-1_6b
   tokenizer: stabilityai/stablelm-2-zephyr-1_6b
   chat_template:
-  batch_size: 12
+  batch_size: 8
   trust_remote_code: True
 HuggingFaceH4/zephyr-7b-beta:
   ref_model: HuggingFaceH4/mistral-7b-sft-beta
@@ -26,7 +26,7 @@ Qwen/Qwen1.5-0.5B-Chat:
   ref_model: Qwen/Qwen1.5-0.5B
   tokenizer: Qwen/Qwen1.5-0.5B-Chat
   chat_template:
-  batch_size: 12
+  batch_size: 10
   trust_remote_code: False
 Qwen/Qwen1.5-1.8B-Chat:
   ref_model: Qwen/Qwen1.5-1.8B
