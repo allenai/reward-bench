@@ -81,6 +81,8 @@ def main():
     transformers.utils.logging.enable_explicit_format()
 
     logger.info(f"Running reward model on {args.model} with chat template {args.chat_template}")
+    if args.trust_remote_code:
+        logger.info("Loading model with Trust Remote Code")
 
     # load chat template
     chat_template = args.chat_template
@@ -113,7 +115,7 @@ def main():
     ############################
     logger.info("*** Load dataset ***")
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=args.trust_remote_code)
     if not custom_dialogue:  # not needed for PairRM / SteamSHP
         tokenizer.truncation_side = "left"  # copied from Starling, but few samples are above context length
     dataset, subsets = load_eval_dataset(

@@ -29,7 +29,7 @@ argparser.add_argument(
 )
 argparser.add_argument("--eval_dpo", action="store_true", default=False, help="Evaluate DPO model suite")
 argparser.add_argument("--eval_on_bon", action="store_true", default=False, help="Evaluate on BON preference sets")
-argparser.add_argument("--image", type=str, default="nathanl/herm_v5", help="Beaker image to use")
+argparser.add_argument("--image", type=str, default="nathanl/herm_v6", help="Beaker image to use")
 argparser.add_argument("--cluster", type=str, default="ai2/allennlp-cirrascale", help="Beaker cluster to use")
 argparser.add_argument("--upload_to_hub", action="store_false", default=True, help="Upload to results to HF hub")
 argparser.add_argument("--model", type=str, default=None, help="Specific model to evaluate if not sweep")
@@ -116,8 +116,7 @@ for model in models_to_evaluate:
     if model_config["chat_template"] is not None:
         d["tasks"][0]["arguments"][0] += f" --chat_template {model_config['chat_template']}"
     if model_config["trust_remote_code"]:
-        if not eval_dpo:  # TODO create trust remote code option in DPO script
-            d["tasks"][0]["arguments"][0] += " --trust_remote_code"
+        d["tasks"][0]["arguments"][0] += " --trust_remote_code"
     if not upload_to_hub:
         d["tasks"][0]["arguments"][0] += " --do_not_save"
     if eval_on_pref_sets:

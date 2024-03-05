@@ -63,16 +63,16 @@ mistralai/Mixtral-8x7B-Instruct-v0.1:
   ref_model: mistralai/Mixtral-8x7B-v0.1
   tokenizer: mistralai/Mixtral-8x7B-Instruct-v0.1
   chat_template:
-  batch_size: 2
+  batch_size: 1
   num_gpus: 4
   trust_remote_code: False
 NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO:
   ref_model: NousResearch/Nous-Hermes-2-Mixtral-8x7B-SFT
   tokenizer: NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO
   chat_template:
-  batch_size: 2
+  batch_size: 1
   num_gpus: 4
-  trust_remote_code: False
+  trust_remote_code: True
 NousResearch/Nous-Hermes-2-Mistral-7B-DPO:
   ref_model: teknium/OpenHermes-2.5-Mistral-7B
   tokenizer: NousResearch/Nous-Hermes-2-Mistral-7B-DPO

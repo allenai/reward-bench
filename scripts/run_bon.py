@@ -91,6 +91,8 @@ def main():
     else:
         config = REWARD_MODEL_CONFIG["default"]
     logger.info(f"Using reward model config: {config}")
+    if args.trust_remote_code:
+        logger.info("Loading model with Trust Remote Code")
 
     # Default entries
     # "model_builder": AutoModelForSequenceClassification.from_pretrained,
@@ -113,7 +115,7 @@ def main():
     ############################
     logger.info("*** Load dataset ***")
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=args.trust_remote_code)
     dataset = load_bon_dataset(
         best_of=args.best_of,
         conv=conv,
