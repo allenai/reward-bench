@@ -11,7 +11,6 @@ with open("scripts/configs/beaker_train.yaml", 'r') as f:
 d1 = yaml.load(default_yaml, Loader=yaml.FullLoader)
 
 cluster = "ai2/allennlp-cirrascale"
-num_gpus = 4
 d1['tasks'][0]['context']['cluster'] = cluster
 d1['tasks'][0]['context']['priority'] = "high"
 
@@ -46,20 +45,23 @@ for model in models:
         d['description'] = exp_name
         d['tasks'][0]['name'] = exp_name
 
-        GRADIENT_ACC_STEPS=model_config["total_batch_size"]/num_gpus/model_config["batch_size_per_gpu"]
+        GRADIENT_ACC_STEPS=int(model_config["total_batch_size"]/model_config["num_gpus"]/model_config["batch_size_per_gpu"])
+
+        optional_configs = ""
+        if model_config['bf16']:
+            optional_configs += " --bf16"
+        if model_config['use_flash_attn']:
+            optional_configs += " --use_flash_attn"
 
         d["tasks"][0]["arguments"][0] = (
-                f"deepspeed --include localhost:{','.join(str(n) for n in range(num_gpus))} scripts/train_rm_trainer.py"
-                " --deepspeed ds_configs/stage3_no_offloading.conf"
+                f"deepspeed --include localhost:{','.join(str(n) for n in range(model_config['num_gpus']))} scripts/train_rm_trainer.py"
+                " --deepspeed scripts/configs/stage3_no_offloading.conf"
                 f" --model_name_or_path {model}"
                 f" --tokenizer {model_config['tokenizer']}"
-                f" --batch_size {model_config['batch_size']}"
                 f" --dataset_name {dataset}"
                 f" --max_seq_length {model_config['max_seq_len']}"
                 " --preprocessing_num_workers 64"
-                " --do_train"
-                " --use_flash_attn" if model_config['use_flash_attn'] else ""
-                " --bf16" if model_config['bf16'] else ""
+                f" --do_train {optional_configs}"
                 f" --per_device_train_batch_size {model_config['batch_size_per_gpu']}"
                 f" --gradient_accumulation_steps {GRADIENT_ACC_STEPS}"
                 " --learning_rate 1e-5"
@@ -74,6 +76,7 @@ for model in models:
                 f" --output_dir /output"
                 " --use_slow_tokenizer"
                 " --overwrite_output_dir"
+                " --output_dir /output"
                 # " TODO: ADD EVAL COMMAND HERE"
             )
 
