@@ -1,4 +1,18 @@
-# Holistic Evaluation of Reward Models (RewardBench)
+<div align="center">
+  <img src="https://github.com/allenai/reward-bench/assets/10695622/24ed272a-0844-451f-b414-fde57478703e" alt="RewardBench Logo" width="600" style="margin-left:'auto' margin-right:'auto' display:'block'"/>
+  <br>
+  <br>
+  <h1>RewardBench: Evaluating Reward Models</h1>
+  <br>
+  <p>
+  <a href="https://huggingface.co/spaces/allenai/reward-bench">Leaderbord</a> 📐 |
+  <a href="https://huggingface.co/datasets/allenai/reward-bench">RewardBench Dataset</a> |
+  <a href="https://huggingface.co/datasets/allenai/preference-test-sets">Existing Test Sets</a> |
+  <a href="https://huggingface.co/datasets/allenai/reward-bench-results">Results</a> 📊 |
+  Paper (coming soon) 📝
+</p>
+
+</div>
 
 This will hold scripts for generating scores and uploading results.
 Two primary to generate results (more in `scripts/`):
