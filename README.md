@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="https://github.com/allenai/reward-bench/assets/10695622/24ed272a-0844-451f-b414-fde57478703e" alt="RewardBench Logo" width="500" style="margin-left:'auto' margin-right:'auto' display:'block' margin-bottom:'5px'"/>
   <h1>RewardBench: Evaluating Reward Models</h1>
   <p>
   <a href="https://huggingface.co/spaces/allenai/reward-bench">Leaderbord</a> 📐 |
@@ -8,7 +7,7 @@
   <a href="https://huggingface.co/datasets/allenai/reward-bench-results">Results</a> 📊 |
   Paper (coming soon) 📝
 </p>
-
+  <img src="https://github.com/allenai/reward-bench/assets/10695622/24ed272a-0844-451f-b414-fde57478703e" alt="RewardBench Logo" width="700" style="margin-left:'auto' margin-right:'auto' display:'block' margin-bottom:'5px'"/>
 </div>
 
 **RewardBench** is a benchmark designed to evaluate the capabilities and safety of reward models (including those trained with Direct Preference Optimization, DPO).
