@@ -1,5 +1,4 @@
 import argparse
-import copy
 import subprocess
 from datetime import date
 
