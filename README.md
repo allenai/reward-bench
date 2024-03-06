@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/allenai/reward-bench/assets/10695622/24ed272a-0844-451f-b414-fde57478703e" alt="RewardBench Logo" width="500" style="margin-left:'auto' margin-right:'auto' display:'block'"/>
+  <img src="https://github.com/allenai/reward-bench/assets/10695622/24ed272a-0844-451f-b414-fde57478703e" alt="RewardBench Logo" width="500" style="margin-left:'auto' margin-right:'auto' display:'block' margin-bottom:'5px'"/>
   <h1>RewardBench: Evaluating Reward Models</h1>
   <p>
   <a href="https://huggingface.co/spaces/allenai/reward-bench">Leaderbord</a> 📐 |
