@@ -65,7 +65,7 @@ To run this, execute:
 ```
 python analysis/draw_model_histogram output.png --log_scale
 ```
-![output](https://github.com/allenai/rewardbench/assets/10695622/e5aa4c0f-83de-4997-8307-f49c22456671)
+![output](https://github.com/allenai/herm/assets/10695622/e5aa4c0f-83de-4997-8307-f49c22456671)
 
 This will also return the following table by default:
 
