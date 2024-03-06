@@ -233,7 +233,6 @@ def main():
         training_args.seed = 123409876
     set_seed(training_args.seed)
 
-    # TODO: explain data files
     if data_args.dataset_name is None:
         raise ValueError("Must provide a valid dataset name")
     elif data_args.dataset_name[-6:] == ".jsonl":
@@ -341,13 +340,11 @@ def main():
             chosen,
             max_length=data_args.max_seq_length,
             truncation=True,
-            # padding='max_length',
         )
         tokenized_rejected = tokenizer(
             rejected,
             max_length=data_args.max_seq_length,
             truncation=True,
-            # padding='max_length',
         )
         return {
             "input_ids_chosen": tokenized_chosen["input_ids"],
@@ -416,7 +413,6 @@ def main():
         lambda x: x["chosen"] != x["rejected"],
         num_proc=data_args.preprocessing_num_workers,
     )
-    # preprocess the dataset and filter out QAs that are longer than script_args.max_length
     train_dataset = train_dataset.map(
         preprocess_preference_pairs,
         num_proc=data_args.preprocessing_num_workers,
@@ -457,8 +453,6 @@ def main():
         trainer.log_metrics("train", metrics)
         trainer.save_metrics("train", metrics)
         trainer.save_state()
-
-    # TODO: evaluate on HERM at the end
 
 
 if __name__ == "__main__":
