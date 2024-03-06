@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/allenai/reward-bench/assets/10695622/24ed272a-0844-451f-b414-fde57478703e" alt="RewardBench Logo" width="600" style="margin-left:'auto' margin-right:'auto' display:'block'"/>
+  <img src="https://github.com/allenai/reward-bench/assets/10695622/24ed272a-0844-451f-b414-fde57478703e" alt="RewardBench Logo" width="500" style="margin-left:'auto' margin-right:'auto' display:'block'"/>
   <br>
   <br>
   <h1>RewardBench: Evaluating Reward Models</h1>
@@ -14,14 +14,15 @@
 
 </div>
 
-This will hold scripts for generating scores and uploading results.
-Two primary to generate results (more in `scripts/`):
+**RewardBench** is a benchmark designed to evaluate the capabilities and safety of reward models (including those trained with Direct Preference Optimization, DPO).
+The repository includes the following:
+* Common inference code for a variety of reward models (Starling, PairRM, OpenAssistant, DPO, and more).
+* Common dataset formatting and tests for fair reward model inference.
+* Analysis and visualization tools.
+
+The two primary scripts to generate results (more in `scripts/`):
 1. `scripts/run_rm.py`: Run evaluations for reward models.
 2. `scripts/run_dpo.py`: Run evaluations for direct preference optimization (DPO) models.
-
-## Links
-Dataset, space, etc coming soon.
-For contributors, it can be found in this [HuggingFace org](https://huggingface.co/ai2-adapt-dev).
 
 ## Installation
 Please install `torch`` on your system, and then install the following requirements.
