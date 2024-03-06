@@ -17,30 +17,11 @@ today = date.today().strftime("%m%d%Y")
 
 with open("scripts/configs/beaker_train.yaml", "r") as f:
     default_yaml = f.read()
-d1 = yaml.load(default_yaml, Loader=yaml.FullLoader)
-
-d1["tasks"][0]["context"]["cluster"] = args.cluster
-d1["tasks"][0]["context"]["priority"] = "high"
-d1["tasks"][0]["image"]["beaker"] = args.image
+d = yaml.load(default_yaml, Loader=yaml.FullLoader)
 
 with open("scripts/configs/train_configs.yaml", "r") as f:
     configs = yaml.load(f.read(), Loader=yaml.FullLoader)
-
-# These are our currently supported base models. Uncommend whichever you'd like to train on top of.
-models = [
-    # "allenai/tulu-2-7b",
-    # "meta-llama/Llama-2-7b-chat-hf",
-    "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-]
-
-datasets = [
-    "/net/nfs.cirrascale/allennlp/jacobm/herm/data/argilla-ultrafeedback-binarized-preferences-cleaned.jsonl",
-    # "/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar-binarized-preferences-random-rejected.jsonl",
-]
-
 model_config = configs[args.model]
-d = copy.deepcopy(d1)
-d["tasks"][0]["resources"]["gpuCount"] = model_config["num_gpus"]
 
 # name and description
 model_stem = args.model.replace("/", "-")
@@ -49,8 +30,13 @@ if ".jsonl" in args.dataset:
 else:
     dataset_stem = args.dataset
 exp_name = f"herm_train-rm_{model_stem}_{dataset_stem}"
+
 d["description"] = exp_name
+d["tasks"][0]["context"]["cluster"] = args.cluster
+d["tasks"][0]["context"]["priority"] = "high"
 d["tasks"][0]["name"] = exp_name
+d["tasks"][0]["image"]["beaker"] = args.image
+d["tasks"][0]["resources"]["gpuCount"] = model_config["num_gpus"]
 
 GRADIENT_ACC_STEPS = int(
     model_config["total_batch_size"] / model_config["num_gpus"] / model_config["batch_size_per_gpu"]
