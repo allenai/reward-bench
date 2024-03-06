@@ -95,12 +95,12 @@ for model in models_to_evaluate:
         experiment_group = "dpo-eval"
         script = "run_dpo.py"
     else:
-        experiment_group = "herm-preference-sets"
+        experiment_group = "rewardbench-preference-sets"
         script = "run_rm.py"
     print(f"Submitting evaluation for model: {model} on {experiment_group}")
     d = copy.deepcopy(d1)
 
-    name = f"herm_eval_for_{model}_on_{experiment_group}".replace("/", "-")
+    name = f"rewardbench_eval_for_{model}_on_{experiment_group}".replace("/", "-")
     d["description"] = name
     d["tasks"][0]["name"] = name
 
@@ -133,5 +133,5 @@ for model in models_to_evaluate:
     yaml.dump(d, file, default_flow_style=True)
     file.close()
 
-    cmd = "beaker experiment create {} --workspace ai2/herm".format(fn)
+    cmd = "beaker experiment create {} --workspace ai2/rewardbench".format(fn)
     subprocess.Popen(cmd, shell=True)

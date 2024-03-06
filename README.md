@@ -1,4 +1,4 @@
-# Holistic Evaluation of Reward Models (HERM)
+# Holistic Evaluation of Reward Models (RewardBench)
 
 This will hold scripts for generating scores and uploading results.
 Two primary to generate results (more in `scripts/`):
@@ -70,10 +70,10 @@ python scripts/run_bon.py --model=OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2
 
 ```
 ├── README.md                   <- The top-level README for researchers using this project
-├── analysis/                   <- Directory of tools to analyze HERM results or other reward model properties
-├── herm/                       <- Core utils and modeling files
+├── analysis/                   <- Directory of tools to analyze RewardBench results or other reward model properties
+├── rewardbench/                       <- Core utils and modeling files
 |   ├── models/                     ├── Standalone files for running existing reward models
-|   └── *.py                        └── HERM tools and utilities
+|   └── *.py                        └── RewardBench tools and utilities
 ├── scripts/                    <- Scripts and configs to train and evaluate reward models
 ├── tests                       <- Unit tests
 ├── Dockerfile                  <- Build file for reproducible and scaleable research at AI2
@@ -84,7 +84,7 @@ python scripts/run_bon.py --model=OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2
 
 ## Maitenence
 
-### Updating the docker image (consider removing this section when we publicly release HERM)
+### Updating the docker image (consider removing this section when we publicly release RewardBench)
 When updating this repo, the docker image should be rebuilt to include those changes. 
 For AI2 members, please update the list below with any images you use regularly.
 For example, if you update `scripts/run_rm.py` and include a new package (or change a package version), you should rebuild the image and verify it still works on known models.

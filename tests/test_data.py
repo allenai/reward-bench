@@ -17,7 +17,11 @@ from datasets import load_dataset
 from fastchat.conversation import get_conv_template
 from transformers import AutoTokenizer
 
-from herm import load_eval_dataset, prepare_dialogue, prepare_dialogue_from_tokenizer
+from rewardbench import (
+    load_eval_dataset,
+    prepare_dialogue,
+    prepare_dialogue_from_tokenizer,
+)
 
 
 class PrepareDialoguesTest(unittest.TestCase):

@@ -28,7 +28,7 @@ from fastchat.conversation import get_conv_template
 from tqdm import tqdm
 from transformers import AutoTokenizer, pipeline
 
-from herm import REWARD_MODEL_CONFIG, load_bon_dataset, save_to_hub
+from rewardbench import REWARD_MODEL_CONFIG, load_bon_dataset, save_to_hub
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)

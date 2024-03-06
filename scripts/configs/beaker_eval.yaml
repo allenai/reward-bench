@@ -1,8 +1,8 @@
 version: v2
-description: herm-eval-default
+description: rewardbench-eval-default
 budget: ai2/allennlp
 tasks:
-  - name: herm-eval-default
+  - name: rewardbench-eval-default
     image:
       beaker: <image>
     command: [
@@ -24,7 +24,7 @@ tasks:
       - name: TRANSFORMERS_CACHE
         value: ./cache/
       - name: WANDB_PROJECT
-        value: herm
+        value: rewardbench
       - name: WANDB_WATCH
         value: false
       - name: WANDB_LOG_MODEL
