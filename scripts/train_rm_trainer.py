@@ -11,27 +11,26 @@ import sys
 import warnings
 from dataclasses import dataclass, field
 from typing import Optional
-from functools import partial
+
 import datasets
 import torch
-from datasets import load_dataset, Dataset, Features, Value
-from trl import RewardTrainer
-from peft import LoraConfig, TaskType, get_peft_model
-
 import transformers
+from datasets import load_dataset
 from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,
     AutoTokenizer,
+    HfArgumentParser,
     LlamaTokenizer,
     LlamaTokenizerFast,
-    HfArgumentParser,
     TrainingArguments,
     set_seed,
 )
 from transformers.trainer_utils import get_last_checkpoint
+from trl import RewardTrainer
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class ModelArguments:
@@ -61,10 +60,6 @@ class ModelArguments:
         default=None,
         metadata={"help": "Where do you want to store the pretrained models downloaded from huggingface.co"},
     )
-    use_fast_tokenizer: bool = field(
-        default=False,
-        metadata={"help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."},
-    )
     model_revision: str = field(
         default="main",
         metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
@@ -81,16 +76,17 @@ class ModelArguments:
     use_auth_token: bool = field(
         default=None,
         metadata={
-            "help": "The `use_auth_token` argument is deprecated and will be removed in Transformers v4.34. Please use `token`."
+            "help": "The `use_auth_token` argument is deprecated and will be removed in Transformers v4.34."
+            " Please use `token`."
         },
     )
     trust_remote_code: bool = field(
         default=False,
         metadata={
             "help": (
-                "Whether or not to allow for custom models defined on the Hub in their own modeling files. This option"
-                "should only be set to `True` for repositories you trust and in which you have read the code, as it will "
-                "execute code present on the Hub on your local machine."
+                "Whether or not to allow for custom models defined on the Hub in their own modeling files."
+                " This option should only be set to `True` for repositories you trust and in which you have"
+                " read the code, as it will execute code present on the Hub on your local machine."
             )
         },
     )
@@ -108,58 +104,15 @@ class ModelArguments:
         default=False,
         metadata={
             "help": (
-                "It is an option to create the model as an empty shell, then only materialize its parameters when the pretrained weights are loaded. "
-                "set True will benefit LLM loading time and RAM consumption."
+                "It is an option to create the model as an empty shell, then only materialize its"
+                + " parameters when the pretrained weights are loaded. set True will benefit LLM"
+                + " loading time and RAM consumption."
             )
         },
     )
     use_slow_tokenizer: bool = field(
         default=False,
-        metadata={
-            "help": (
-                "use slow tokenizer or not."
-            )
-        },
-    )
-    use_lora: bool = field(
-        default=False,
-        metadata={
-            "help": (
-                "If passed, will use LoRA (low-rank parameter-efficient training) to train the model."
-            )
-        },
-    )
-    lora_rank: Optional[int] = field(
-        default=64,
-        metadata={
-            "help": (
-                "The rank of lora."
-            ),
-        },
-    )
-    lora_alpha: Optional[float] = field(
-        default=16,
-        metadata={
-            "help": (
-                "The alpha parameter of lora."
-            ),
-        },
-    )
-    lora_dropout: Optional[float] = field(
-        default=0.1,
-        metadata={
-            "help": (
-                "The dropout rate of lora modules."
-            ),
-        },
-    )
-    use_qlora: Optional[float] = field(
-        default=False,
-        metadata={
-            "help": (
-                "The dropout rate of lora modules."
-            ),
-        },
+        metadata={"help": ("use slow tokenizer or not.")},
     )
 
 
@@ -175,7 +128,9 @@ class DataTrainingArguments:
     dataset_config_name: Optional[str] = field(
         default=None, metadata={"help": "The configuration name of the dataset to use (via the datasets library)."}
     )
-    train_file: Optional[str] = field(default=None, metadata={"help": "The input training data file (a json/jsonl file)."})
+    train_file: Optional[str] = field(
+        default=None, metadata={"help": "The input training data file (a json/jsonl file)."}
+    )
     max_train_samples: Optional[int] = field(
         default=None,
         metadata={
@@ -196,14 +151,14 @@ class DataTrainingArguments:
     max_seq_length: Optional[int] = field(
         default=None,
         metadata={
-            "help": ("The maximum total input sequence length after tokenization. Sequences longer than this will be truncated,")
+            "help": (
+                "The maximum total input sequence length after tokenization."
+                + " Sequences longer than this will be truncated"
+            )
         },
     )
     chat_template: Optional[str] = field(
-        default="tulu",
-        metadata={
-            "help": ("The chat template to apply to chosen/rejected pairs. Default is Tulu.")
-        }
+        default="tulu", metadata={"help": ("The chat template to apply to chosen/rejected pairs. Default is Tulu.")}
     )
 
     def __post_init__(self):
@@ -225,7 +180,9 @@ def main():
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
     if model_args.use_auth_token is not None:
-        warnings.warn("The `use_auth_token` argument is deprecated and will be removed in Transformers v4.34.", FutureWarning)
+        warnings.warn(
+            "The `use_auth_token` argument is deprecated and will be removed in Transformers v4.34.", FutureWarning
+        )
         if model_args.token is not None:
             raise ValueError("`token` and `use_auth_token` are both specified. Please set only the argument `token`.")
         model_args.token = model_args.use_auth_token
@@ -251,7 +208,8 @@ def main():
     # Log on each process the small summary:
     logger.warning(
         f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}"
-        + f"distributed training: {training_args.parallel_mode.value == 'distributed'}, 16-bits training: {training_args.fp16}"
+        + f"distributed training: {training_args.parallel_mode.value == 'distributed'},"
+        + f" 16-bits training: {training_args.fp16}"
     )
     logger.info(f"Training parameters {training_args}")
 
@@ -282,7 +240,7 @@ def main():
         # load dataset file
         train_dataset = load_dataset("json", data_files=data_args.dataset_name)["train"]
     else:
-        train_dataset = load_dataset(data_args.dataset_name)['train']
+        train_dataset = load_dataset(data_args.dataset_name)["train"]
 
     config_kwargs = {
         "cache_dir": model_args.cache_dir,
@@ -295,15 +253,12 @@ def main():
     elif model_args.model_name_or_path:
         config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
     else:
-        raise ValueError(
-            "You are instantiating a new config instance from scratch. This is not supported by this finetuning script."
-        )
-    
+        raise ValueError("You are instantiating a new config instance from scratch. This is not supported.")
+
     config.num_labels = 1
 
     tokenizer_kwargs = {
         "cache_dir": model_args.cache_dir,
-        "use_fast": model_args.use_fast_tokenizer,
         "revision": model_args.model_revision,
         "token": model_args.token,
         "trust_remote_code": model_args.trust_remote_code,
@@ -341,47 +296,44 @@ def main():
             "You are instantiating a new model from scratch. This is not supported by this finetuning script."
         )
 
-    if 'gpt2' in model_args.model_name_or_path:
-        print('Adding padding token for GPT2 models')
-        tokenizer.add_special_tokens({'pad_token': tokenizer.eos_token})
+    if "gpt2" in model_args.model_name_or_path:
+        print("Adding padding token for GPT2 models")
+        tokenizer.add_special_tokens({"pad_token": tokenizer.eos_token})
         config.pad_token_id = config.eos_token_id
 
     # no default pad token for llama!
     # here we add all special tokens again, because the default ones are not in the special_tokens_map
-    if isinstance(tokenizer, LlamaTokenizer) or isinstance(tokenizer, LlamaTokenizerFast) or 'llama' in model_args.model_name_or_path.lower() or 'tulu' in model_args.model_name_or_path.lower():
-        print('Adding pad token for Llama/Tulu models')
-        num_added_tokens = tokenizer.add_special_tokens({
-            "bos_token": "<s>",
-            "eos_token": "</s>",
-            "unk_token": "<unk>",
-            "pad_token": "<pad>",
-        })
+    if (
+        isinstance(tokenizer, LlamaTokenizer)
+        or isinstance(tokenizer, LlamaTokenizerFast)
+        or "llama" in model_args.model_name_or_path.lower()
+        or "tulu" in model_args.model_name_or_path.lower()
+    ):
+        print("Adding pad token for Llama/Tulu models")
+        num_added_tokens = tokenizer.add_special_tokens(
+            {
+                "bos_token": "<s>",
+                "eos_token": "</s>",
+                "unk_token": "<unk>",
+                "pad_token": "<pad>",
+            }
+        )
         config.pad_token_id = 32000
         model.config.pad_token_id = 32000
-        assert num_added_tokens in [0, 1], "LlamaTokenizer should only add one special token - the pad_token, or no tokens if pad token present."
+        assert num_added_tokens in [
+            0,
+            1,
+        ], "LlamaTokenizer should only add one special token - the pad_token, or no tokens if pad token present."
 
-    print(f'model config: {config}')
+    print(f"model config: {config}")
 
     # resize embeddings if needed (e.g. for LlamaTokenizer)
     embedding_size = model.get_input_embeddings().weight.shape[0]
     if len(tokenizer) > embedding_size:
         model.resize_token_embeddings(len(tokenizer))
 
-    if model_args.use_lora:
-        logger.info("Initializing LoRA model...")
-        peft_config = LoraConfig(
-            task_type=TaskType.SEQ_CLS, 
-            inference_mode=False, 
-            r=model_args.lora_rank, 
-            lora_alpha=model_args.lora_alpha, 
-            lora_dropout=model_args.lora_dropout,
-            # target_modules=["q_proj", "o_proj", "v_proj", "k_proj", "gate_proj", "up_proj", "down_proj"]
-        )
-        model = get_peft_model(model, peft_config)
-        model.print_trainable_parameters()
-
     original_columns = train_dataset.column_names
-    
+
     def preprocess_preference_pairs(example):
         chosen = example["chosen"]
         rejected = example["rejected"]
@@ -403,19 +355,19 @@ def main():
             "input_ids_rejected": tokenized_rejected["input_ids"],
             "attention_mask_rejected": tokenized_rejected["attention_mask"],
         }
-    
-    def apply_tulu_format(messages):        
+
+    def apply_tulu_format(messages):
         return {
             "chosen": apply_tulu_chat_format(messages["chosen"]),
             "rejected": apply_tulu_chat_format(messages["rejected"]),
         }
-    
-    def apply_llama_2_format(messages):        
+
+    def apply_llama_2_format(messages):
         return {
             "chosen": apply_llama_2_chat_format(messages["chosen"]),
             "rejected": apply_llama_2_chat_format(messages["rejected"]),
         }
-    
+
     def apply_tulu_chat_format(messages):
         message_text = ""
         for message in messages:
@@ -446,7 +398,7 @@ def main():
             else:
                 raise ValueError("Invalid role: {}".format(message["role"]))
         return message_text
-    
+
     if data_args.chat_template == "tulu":
         train_dataset = train_dataset.map(
             apply_tulu_format,
@@ -491,7 +443,7 @@ def main():
             checkpoint = training_args.resume_from_checkpoint
         elif last_checkpoint is not None:
             checkpoint = last_checkpoint
-        print(f'resume from checkpoint: {checkpoint}')
+        print(f"resume from checkpoint: {checkpoint}")
         train_result = trainer.train(resume_from_checkpoint=checkpoint)
         trainer.save_model()  # Saves the tokenizer too for easy upload
 
@@ -505,7 +457,7 @@ def main():
         trainer.log_metrics("train", metrics)
         trainer.save_metrics("train", metrics)
         trainer.save_state()
-        
+
     # TODO: evaluate on HERM at the end
 
 

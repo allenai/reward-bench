@@ -4,7 +4,7 @@ budget: ai2/allennlp
 tasks:
   - name: herm-train
     image:
-      beaker: jacobm/test_herm_local_save2
+      beaker: <placeholder>
     command: [
       '/bin/sh', '-c'
     ]
