@@ -170,6 +170,7 @@ beaker_configs/auto_created
 
 # image / plot outputs
 *.png
+*.pdf 
 
 # generated local directory
 hf_snapshot_evals/

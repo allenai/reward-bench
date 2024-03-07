@@ -25,10 +25,9 @@ from accelerate.logging import get_logger
 from fastchat.conversation import get_conv_template
 from huggingface_hub import HfApi
 from tqdm import tqdm
-from transformers import AutoModelForCausalLM, AutoTokenizer
 from trl.trainer.utils import DPODataCollatorWithPadding
 
-from herm import DPOInference, load_eval_dataset, save_to_hub
+from rewardbench import DPO_MODEL_CONFIG, DPOInference, load_eval_dataset, save_to_hub
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -84,6 +83,17 @@ def main():
     transformers.utils.logging.enable_explicit_format()
 
     logger.info(f"Running reward model on {args.model} with chat template {args.chat_template}")
+    if args.trust_remote_code:
+        logger.info("Loading model with Trust Remote Code")
+
+    if args.model in DPO_MODEL_CONFIG:
+        config = DPO_MODEL_CONFIG[args.model]
+    else:
+        config = DPO_MODEL_CONFIG["default"]
+    logger.info(f"Using dpo model config: {config}")
+
+    model_builder = config["model_builder"]
+    tokenizer_builder = config["tokenizer_builder"]
 
     assert args.model != args.ref_model, "policy and reference model should be different"
     # load chat template
@@ -103,8 +113,12 @@ def main():
     ############################
     logger.info("*** Load dataset ***")
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+    tokenizer = tokenizer_builder(tokenizer_path, trust_remote_code=args.trust_remote_code)
     tokenizer.pad_token = tokenizer.eos_token
+    # if no BOS token, set as pad token, e.g. QWEN models
+    if tokenizer.bos_token is None:
+        tokenizer.bos_token_id = tokenizer.eos_token_id
+        tokenizer.pad_token_id = tokenizer.eos_token_id
 
     dataset, subsets = load_eval_dataset(
         core_set=not args.pref_sets,
@@ -130,7 +144,7 @@ def main():
         "device_map": "auto",
         "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
     }
-    model = AutoModelForCausalLM.from_pretrained(
+    model = model_builder(
         args.model,
         trust_remote_code=args.trust_remote_code,
         **model_kwargs,
@@ -144,7 +158,7 @@ def main():
             "device_map": "auto",
             "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
         }
-        ref_model = AutoModelForCausalLM.from_pretrained(
+        ref_model = model_builder(
             args.ref_model,
             trust_remote_code=args.trust_remote_code,
             **model_kwargs_ref,
@@ -178,6 +192,7 @@ def main():
     results = []
     scores_chosen = []
     scores_rejected = []
+
     for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
         logger.info(f"RM inference step {step}/{len(dataloader)}")
 

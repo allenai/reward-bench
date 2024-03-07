@@ -29,7 +29,7 @@ argparser.add_argument(
 )
 argparser.add_argument("--eval_dpo", action="store_true", default=False, help="Evaluate DPO model suite")
 argparser.add_argument("--eval_on_bon", action="store_true", default=False, help="Evaluate on BON preference sets")
-argparser.add_argument("--image", type=str, default="nathanl/herm_v2", help="Beaker image to use")
+argparser.add_argument("--image", type=str, default="nathanl/herm_v6", help="Beaker image to use")
 argparser.add_argument("--cluster", type=str, default="ai2/allennlp-cirrascale", help="Beaker cluster to use")
 argparser.add_argument("--upload_to_hub", action="store_false", default=True, help="Upload to results to HF hub")
 argparser.add_argument("--model", type=str, default=None, help="Specific model to evaluate if not sweep")
@@ -87,7 +87,7 @@ for model in models_to_evaluate:
     model_config = configs[model]
     if eval_on_pref_sets:
         experiment_group = "common-preference-sets"
-        script = "run_rm.py"
+        script = "run_dpo.py" if eval_dpo else "run_rm.py"
     elif eval_on_bon:
         experiment_group = "bon-preference-sets"
         script = "run_bon.py"
@@ -95,14 +95,17 @@ for model in models_to_evaluate:
         experiment_group = "dpo-eval"
         script = "run_dpo.py"
     else:
-        experiment_group = "herm-preference-sets"
+        experiment_group = "rewardbench-preference-sets"
         script = "run_rm.py"
     print(f"Submitting evaluation for model: {model} on {experiment_group}")
     d = copy.deepcopy(d1)
 
-    name = f"herm_eval_for_{model}_on_{experiment_group}".replace("/", "-")
+    name = f"rewardbench_eval_for_{model}_on_{experiment_group}".replace("/", "-")
     d["description"] = name
     d["tasks"][0]["name"] = name
+
+    if "num_gpus" in model_config:
+        d["tasks"][0]["resources"]["gpuCount"] = model_config["num_gpus"]
 
     d["tasks"][0]["arguments"][0] = (
         f"python scripts/{script}"
@@ -113,8 +116,7 @@ for model in models_to_evaluate:
     if model_config["chat_template"] is not None:
         d["tasks"][0]["arguments"][0] += f" --chat_template {model_config['chat_template']}"
     if model_config["trust_remote_code"]:
-        if not eval_dpo:  # TODO create trust remote code option in DPO script
-            d["tasks"][0]["arguments"][0] += " --trust_remote_code"
+        d["tasks"][0]["arguments"][0] += " --trust_remote_code"
     if not upload_to_hub:
         d["tasks"][0]["arguments"][0] += " --do_not_save"
     if eval_on_pref_sets:
@@ -131,5 +133,5 @@ for model in models_to_evaluate:
     yaml.dump(d, file, default_flow_style=True)
     file.close()
 
-    cmd = "beaker experiment create {} --workspace ai2/herm".format(fn)
+    cmd = "beaker experiment create {} --workspace ai2/rewardbench".format(fn)
     subprocess.Popen(cmd, shell=True)

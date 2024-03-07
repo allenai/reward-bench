@@ -23,7 +23,7 @@ from fastchat.conversation import Conversation
 from huggingface_hub import HfApi
 from transformers import PreTrainedTokenizer
 
-from herm.models import REWARD_MODEL_CONFIG
+from rewardbench.models import REWARD_MODEL_CONFIG
 
 # HuggingFace Hub locations
 CORE_EVAL_SET = "ai2-adapt-dev/rm-benchmark-dev"
@@ -150,11 +150,8 @@ def load_eval_dataset(
             dataset = raw_dataset.map(
                 prepare_dialogue_from_tokenizer,
                 fn_kwargs={"tokenizer": tokenizer},
-            )
-            # second pass needed for some weird bug with tokenizer and map
-            dataset = dataset.map(
-                prepare_dialogue_from_tokenizer,
-                fn_kwargs={"tokenizer": tokenizer},
+                num_proc=8,
+                load_from_cache_file=False,
             )
 
         # else use FastChat to get chat template
@@ -164,7 +161,8 @@ def load_eval_dataset(
             dataset = raw_dataset.map(
                 prepare_dialogue,
                 fn_kwargs={"dialogue_template": conv},
-                num_proc=8,
+                num_proc=8,  # using >1 process causes issues with re-assigning prompt in example
+                load_from_cache_file=False,
             )
     else:
         if logger is not None:

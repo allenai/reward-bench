@@ -35,7 +35,7 @@ from transformers import (
     pipeline,
 )
 
-from herm import models
+from rewardbench import models
 
 REWARD_MODEL_CONFIG = {
     "default": {

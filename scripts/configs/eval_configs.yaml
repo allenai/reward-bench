@@ -15,7 +15,7 @@ OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1:
   model: 'OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1'
   tokenizer: 'OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1'
   chat_template: 'oasst_pythia'
-  batch_size: 64
+  batch_size: 16
   trust_remote_code: False
 OpenAssistant/reward-model-deberta-v3-large-v2:
   model: 'OpenAssistant/reward-model-deberta-v3-large-v2'
@@ -75,5 +75,6 @@ berkeley-nest/Starling-RM-34B:
   model: 'berkeley-nest/Starling-RM-34B'
   tokenizer: '01-ai/Yi-34B-Chat'
   chat_template: 'Yi-34b-chat'
+  num_gpus: 2
   batch_size: 2
   trust_remote_code: False

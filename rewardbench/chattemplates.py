@@ -34,9 +34,9 @@ register_conv_template(
     Conversation(
         name="openbmb",
         system_message="",
-        roles=("User:", "Assistant"),
-        sep_style=SeparatorStyle.ADD_NEW_LINE_SINGLE,
-        sep="\n",
+        roles=("User: ", "Assistant: "),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="\n\n",
     )
 )
 

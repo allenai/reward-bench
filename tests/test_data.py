@@ -17,7 +17,11 @@ from datasets import load_dataset
 from fastchat.conversation import get_conv_template
 from transformers import AutoTokenizer
 
-from herm import prepare_dialogue, prepare_dialogue_from_tokenizer
+from rewardbench import (
+    load_eval_dataset,
+    prepare_dialogue,
+    prepare_dialogue_from_tokenizer,
+)
 
 
 class PrepareDialoguesTest(unittest.TestCase):
@@ -141,3 +145,101 @@ class DatasetTest(unittest.TestCase):
         assert len(dataset["shp"]) == 1741
         assert len(dataset["mtbench_human"]) == 3355
         assert len(dataset["mtbench_gpt4"]) == 2400
+
+
+class LoadEvalDatasetTest(unittest.TestCase):
+    def setUp(self):
+        self.tokenizer = AutoTokenizer.from_pretrained("HuggingFaceH4/zephyr-7b-beta")
+        self.conv = get_conv_template("tulu")
+
+    def test_load_core_set_with_conv(self):
+        dataset, _ = load_eval_dataset(
+            core_set=True,
+            conv=self.conv,
+            custom_dialogue_formatting=False,
+            tokenizer=None,
+            keep_columns=["text_chosen", "text_rejected", "prompt"],
+        )
+
+        self.assertEqual(dataset[0]["prompt"], "<|user|>\nHow do I detail a car?\n", "Dialogue formatting error")
+        self.assertEqual(
+            dataset[0]["text_chosen"][:100],
+            "<|user|>\nHow do I detail a car?\n<|assistant|>\nDetailing a car involves a thorough cleaning inside an",
+            "Dialogue formatting error",
+        )
+        self.assertEqual(
+            dataset[0]["text_chosen"][-100:],
+            "ember, regular detailing can prevent wear and tear and keep your car looking new for years to come.\n",
+            "Dialogue formatting error",
+        )
+
+    def test_load_pref_sets_with_conv(self):
+        dataset, _ = load_eval_dataset(
+            core_set=False,
+            conv=self.conv,
+            custom_dialogue_formatting=False,
+            tokenizer=None,
+            keep_columns=["text_chosen", "text_rejected", "prompt"],
+        )
+
+        self.assertEqual(
+            dataset[3456]["prompt"],
+            "<|user|>\nWhat is the main transportation in the Philippines?\n<|assistant|>\nThat depends on what you mean by “main.” Do you mean how most people move around?  Or do you mean how many people use it?\n<|user|>\nYes how do they get around there?\n",  # noqa
+            "Dialogue formatting error",
+        )
+        self.assertEqual(
+            dataset[3456]["text_chosen"][:100],
+            "<|user|>\nWhat is the main transportation in the Philippines?\n<|assistant|>\nThat depends on what you ",
+            "Dialogue formatting error",
+        )
+        self.assertEqual(
+            dataset[3456]["text_chosen"][-100:],
+            "ars - in 2017, the Philippines was the second largest car market in Southeast Asia after Indonesia.\n",
+            "Dialogue formatting error",
+        )
+
+    def test_load_core_set_with_tokenizer(self):
+        dataset, _ = load_eval_dataset(
+            core_set=True,
+            conv=None,
+            custom_dialogue_formatting=False,
+            tokenizer=self.tokenizer,
+            keep_columns=["text_chosen", "text_rejected", "prompt"],
+        )
+
+        self.assertEqual(dataset[0]["prompt"], "<|user|>\nHow do I detail a car?</s>\n", "Dialogue formatting error")
+        self.assertEqual(
+            dataset[0]["text_chosen"][:100],
+            "<|user|>\nHow do I detail a car?</s>\n<|assistant|>\nDetailing a car involves a thorough cleaning insid",
+            "Dialogue formatting error",
+        )
+        self.assertEqual(
+            dataset[0]["text_chosen"][-100:],
+            "r, regular detailing can prevent wear and tear and keep your car looking new for years to come.</s>\n",
+            "Dialogue formatting error",
+        )
+
+    def test_load_pref_sets_with_tokenizer(self):
+        dataset, _ = load_eval_dataset(
+            core_set=False,
+            conv=None,
+            custom_dialogue_formatting=False,
+            tokenizer=self.tokenizer,
+            keep_columns=["text_chosen", "text_rejected", "prompt"],
+        )
+
+        self.assertEqual(
+            dataset[3456]["prompt"],
+            "<|user|>\nWhat is the main transportation in the Philippines?</s>\n<|assistant|>\nThat depends on what you mean by “main.” Do you mean how most people move around?  Or do you mean how many people use it?</s>\n<|user|>\nYes how do they get around there?</s>\n",  # noqa
+            "Dialogue formatting error",
+        )
+        self.assertEqual(
+            dataset[3456]["text_chosen"][:100],
+            "<|user|>\nWhat is the main transportation in the Philippines?</s>\n<|assistant|>\nThat depends on what ",
+            "Dialogue formatting error",
+        )
+        self.assertEqual(
+            dataset[3456]["text_chosen"][-100:],
+            "- in 2017, the Philippines was the second largest car market in Southeast Asia after Indonesia.</s>\n",
+            "Dialogue formatting error",
+        )
