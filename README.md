@@ -95,7 +95,7 @@ python scripts/run_bon.py --model=OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2
 └── setup.py                    <- Makes project pip installable (pip install -e .) so `alignment` can be imported
 ```
 
-## Maitenence
+## Maintenance
 
 ### Updating the docker image (consider removing this section when we publicly release RewardBench)
 When updating this repo, the docker image should be rebuilt to include those changes. 
