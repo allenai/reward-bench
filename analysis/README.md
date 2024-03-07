@@ -42,6 +42,11 @@ python analysis/plot_per_subset_dist.py
 
 ### Per token uterrance reward
 This returns the reward per-token to show how the reward evolves over a piece of text.
+Use of this tool requires installation of `spacy-alignments`:
+```
+pip install spacy-alignments
+```
+Then,
 ```
 python analysis/per_token_reward.py --model=OpenAssistant/reward-model-deberta-v3-large-v2  --text="I love to walk the dog, what do you like?"
 ```

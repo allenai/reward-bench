@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # Draw the per token reward
+# Note, requires pip install spacy-alignments
 
 import argparse
 import json
