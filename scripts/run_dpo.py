@@ -27,7 +27,7 @@ from huggingface_hub import HfApi
 from tqdm import tqdm
 from trl.trainer.utils import DPODataCollatorWithPadding
 
-from herm import DPO_MODEL_CONFIG, DPOInference, load_eval_dataset, save_to_hub
+from rewardbench import DPO_MODEL_CONFIG, DPOInference, load_eval_dataset, save_to_hub
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)

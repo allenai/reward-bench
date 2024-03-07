@@ -14,13 +14,13 @@ python analysis/plot_per_subset_dist.py --output_dir=plots/whisker
 ```
 
 ### Get benchmark results
-This prints out the HERM results in a Markdown or LaTeX table. Note that you need to pass an API token to the `HF_COLLAB_TOKEN` environment variable.
+This prints out the RewardBench results in a Markdown or LaTeX table. Note that you need to pass an API token to the `HF_COLLAB_TOKEN` environment variable.
 ```
 # Use --render_latex for LaTeX output
 python analysis/get_benchmark_results.py
 ```
 
-Below is a snippet of the output for the HERM - General results:
+Below is a snippet of the output for the RewardBench - General results:
 
 | model                                            |   average |   alpacaeval |   mt-bench |   llmbar |   refusals |    hep |
 |--------------------------------------------------|-----------|--------------|------------|----------|------------|--------|

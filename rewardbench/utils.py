@@ -23,7 +23,7 @@ from fastchat.conversation import Conversation
 from huggingface_hub import HfApi
 from transformers import PreTrainedTokenizer
 
-from herm.models import REWARD_MODEL_CONFIG
+from rewardbench.models import REWARD_MODEL_CONFIG
 
 # HuggingFace Hub locations
 CORE_EVAL_SET = "ai2-adapt-dev/rm-benchmark-dev"
