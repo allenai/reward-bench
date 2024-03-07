@@ -23,9 +23,6 @@ tasks:
       - name: WANDB_DISABLED
         value: true
     datasets:
-      - mountPath: /data
-        source:
-          beaker: Yizhongw03/processed_open_instruct_data
       - mountPath: /net/nfs.cirrascale
         source:
           hostPath: /net/nfs.cirrascale

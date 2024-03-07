@@ -9,6 +9,9 @@ argparser.add_argument("--image", type=str, default="jacobm/test_herm_local_save
 argparser.add_argument("--cluster", type=str, default="ai2/allennlp-cirrascale", help="Beaker cluster to use")
 argparser.add_argument("--model", type=str, default=None, help="Specific model to train on top of")
 argparser.add_argument("--dataset", type=str, default=None, help="Specific dataset file path for training")
+argparser.add_argument("--lr", type=str, default="1e-5", help="Learning rate for training")
+argparser.add_argument("--num_epochs", type=str, default="1", help="Number of training epochs")
+argparser.add_argument("--seed", type=int, default=123409876, help="Seed for training")
 args = argparser.parse_args()
 
 
@@ -59,15 +62,15 @@ d["tasks"][0]["arguments"][0] = (
     f" --do_train {optional_configs}"
     f" --per_device_train_batch_size {model_config['batch_size_per_gpu']}"
     f" --gradient_accumulation_steps {GRADIENT_ACC_STEPS}"
-    " --learning_rate 1e-5"
+    f" --learning_rate {args.lr}"
     " --lr_scheduler_type linear"
     " --warmup_ratio 0.03"
     " --weight_decay 0."
     " --evaluation_strategy no"
     " --logging_steps 1"
     " --save_strategy epoch"
-    " --seed 123409876"
-    " --num_train_epochs 1"
+    f" --seed {args.seed}"
+    f" --num_train_epochs {args.num_epochs}"
     f" --output_dir /output"
     " --use_slow_tokenizer"
     " --overwrite_output_dir"
