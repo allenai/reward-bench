@@ -13,7 +13,11 @@
 # limitations under the License.
 
 from transformers import (
+    AutoModelForCausalLM,
     AutoModelForSequenceClassification,
+    AutoTokenizer,
+    LlamaTokenizer,
+    MixtralForCausalLM,
     T5ForConditionalGeneration,
     pipeline,
 )
@@ -23,7 +27,11 @@ from .openassistant import *  # noqa
 from .openbmb import LlamaRewardModel, OpenBMBPipeline
 from .pairrm import DebertaV2PairRM, PairRMPipeline
 from .shp import SHPPipeline
-from .starling import StarlingPipeline, build_starling_rm
+from .starling import (
+    LlamaForSequenceClassification,
+    StarlingPipeline,
+    build_starling_rm,
+)
 from .ziya import ZiyaPipeline
 
 # Please open a PR if you need to add more custom modeling code / utilize existing code for you model
@@ -43,7 +51,7 @@ REWARD_MODEL_CONFIG = {
         "model_type": "Seq. Classifier",
     },
     "berkeley-nest/Starling-RM-34B": {
-        "model_builder": build_starling_rm,
+        "model_builder": LlamaForSequenceClassification.from_pretrained,
         "pipeline_builder": StarlingPipeline,
         "quantized": True,
         "custom_dialogue": False,
@@ -97,5 +105,16 @@ REWARD_MODEL_CONFIG = {
         "quantized": True,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
+    },
+}
+
+DPO_MODEL_CONFIG = {
+    "default": {
+        "model_builder": AutoModelForCausalLM.from_pretrained,
+        "tokenizer_builder": AutoTokenizer.from_pretrained,
+    },
+    "NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO": {
+        "model_builder": MixtralForCausalLM.from_pretrained,
+        "tokenizer_builder": LlamaTokenizer.from_pretrained,
     },
 }

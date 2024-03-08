@@ -15,14 +15,14 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="herm",
+    name="rewardbench",
     version="0.1.0.dev",
     author="Nathan Lambert",
     author_email="nathanl@allenai.org",
     description="Tools for evaluating reward models",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/allenai/herm",
+    url="https://github.com/allenai/rewardbench",
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",

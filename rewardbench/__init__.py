@@ -15,7 +15,7 @@
 __version__ = "0.1.0.dev"
 from .chattemplates import *  # noqa
 from .dpo import DPOInference
-from .models import REWARD_MODEL_CONFIG
+from .models import DPO_MODEL_CONFIG, REWARD_MODEL_CONFIG
 from .utils import (
     load_bon_dataset,
     load_eval_dataset,
@@ -26,6 +26,7 @@ from .utils import (
 
 __all__ = [
     DPOInference,
+    DPO_MODEL_CONFIG,
     load_bon_dataset,
     load_eval_dataset,
     prepare_dialogue,

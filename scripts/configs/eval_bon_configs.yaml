@@ -2,7 +2,7 @@
 openbmb/UltraRM-13b:
   model: 'openbmb/UltraRM-13b'
   tokenizer: 'openbmb/UltraRM-13b'
-  chat_template: 'billa'
+  chat_template: 'openbmb'
   batch_size: 8
   trust_remote_code: False
 OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5:

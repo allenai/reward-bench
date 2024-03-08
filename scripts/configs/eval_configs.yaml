@@ -2,7 +2,7 @@
 openbmb/UltraRM-13b:
   model: 'openbmb/UltraRM-13b'
   tokenizer: 'openbmb/UltraRM-13b'
-  chat_template: 'billa'
+  chat_template: 'openbmb'
   batch_size: 8
   trust_remote_code: False
 OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5:
@@ -15,7 +15,7 @@ OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1:
   model: 'OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1'
   tokenizer: 'OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1'
   chat_template: 'oasst_pythia'
-  batch_size: 64
+  batch_size: 16
   trust_remote_code: False
 OpenAssistant/reward-model-deberta-v3-large-v2:
   model: 'OpenAssistant/reward-model-deberta-v3-large-v2'
@@ -47,6 +47,12 @@ stanfordnlp/SteamSHP-flan-t5-xl:
   chat_template: 'tulu'
   batch_size: 32
   trust_remote_code: False
+stanfordnlp/SteamSHP-flan-t5-large:
+  model: 'stanfordnlp/SteamSHP-flan-t5-large'
+  tokenizer: 'stanfordnlp/SteamSHP-flan-t5-large'
+  chat_template: 'tulu'
+  batch_size: 32
+  trust_remote_code: False
 PKU-Alignment/beaver-7b-v1.0-reward:
   model: 'PKU-Alignment/beaver-7b-v1.0-reward'
   tokenizer: 'PKU-Alignment/beaver-7b-v1.0-reward'
@@ -69,5 +75,6 @@ berkeley-nest/Starling-RM-34B:
   model: 'berkeley-nest/Starling-RM-34B'
   tokenizer: '01-ai/Yi-34B-Chat'
   chat_template: 'Yi-34b-chat'
+  num_gpus: 2
   batch_size: 2
   trust_remote_code: False

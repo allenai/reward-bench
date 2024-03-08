@@ -26,7 +26,7 @@ from fastchat.conversation import get_conv_template
 from tqdm import tqdm
 from transformers import AutoTokenizer, pipeline
 
-from herm import REWARD_MODEL_CONFIG, load_eval_dataset, save_to_hub
+from rewardbench import REWARD_MODEL_CONFIG, load_eval_dataset, save_to_hub
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -81,6 +81,8 @@ def main():
     transformers.utils.logging.enable_explicit_format()
 
     logger.info(f"Running reward model on {args.model} with chat template {args.chat_template}")
+    if args.trust_remote_code:
+        logger.info("Loading model with Trust Remote Code")
 
     # load chat template
     chat_template = args.chat_template
@@ -113,8 +115,9 @@ def main():
     ############################
     logger.info("*** Load dataset ***")
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-    tokenizer.truncation_side = "left"  # copied from Starling, but few samples are above context length
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=args.trust_remote_code)
+    if not custom_dialogue:  # not needed for PairRM / SteamSHP
+        tokenizer.truncation_side = "left"  # copied from Starling, but few samples are above context length
     dataset, subsets = load_eval_dataset(
         core_set=not args.pref_sets,
         conv=conv,
@@ -123,9 +126,6 @@ def main():
         logger=logger,
         keep_columns=["text_chosen", "text_rejected", "id"],
     )
-    import ipdb
-
-    ipdb.set_trace()
     # copy id for saving, then remove
     ids = dataset["id"]
     dataset = dataset.remove_columns("id")
@@ -291,7 +291,9 @@ def main():
     # Upload results to hub
     ############################
     sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
-    results_url = save_to_hub(results_grouped, args.model, sub_path, args.debug, local_only=args.do_not_save)
+    results_url = save_to_hub(
+        results_grouped, args.model, sub_path, args.debug, local_only=args.do_not_save, save_metrics_for_beaker=True
+    )
     if not args.do_not_save:
         logger.info(f"Uploaded reward model results to {results_url}")
 

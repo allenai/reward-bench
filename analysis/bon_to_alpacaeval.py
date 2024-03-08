@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Script for converting HERM best of n (BoN) results into the AlpacaEval format
+# Script for converting RewardBench best of n (BoN) results into the AlpacaEval format
 
 import argparse
 import os

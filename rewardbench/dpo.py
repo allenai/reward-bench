@@ -15,6 +15,7 @@ class DPOInference:
         self.model.eval().requires_grad_(False)
         if ref_model is not None:
             self.ref_model.eval().requires_grad_(False)
+            self.ref_free_norm = "none"
         else:
             if ref_free_norm not in ["norm", "avg", "sum"]:
                 raise ValueError(f"Unknown ref_free_norm: {ref_free_norm}")
@@ -260,6 +261,9 @@ class DPOInference:
             average_log_prob = True
             norm_log_prob = False
         elif self.ref_free_norm == "sum":
+            average_log_prob = False
+            norm_log_prob = False
+        elif self.ref_free_norm == "none":
             average_log_prob = False
             norm_log_prob = False
 

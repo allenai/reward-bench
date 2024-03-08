@@ -58,7 +58,7 @@ def get_args():
     return args
 
 
-def get_average_over_herm(
+def get_average_over_rewardbench(
     df: pd.DataFrame,
     subsets: List[str] = ["alpacaeval", "mt-bench", "llmbar", "refusals", "hep"],
 ) -> pd.DataFrame:
@@ -96,7 +96,7 @@ def main():
     print(f"Downloading repository snapshots into '{LOCAL_DIR}' directory")
     # Load the remote repository using the HF API
     hf_evals_repo = snapshot_download(
-        local_dir=Path(LOCAL_DIR) / "herm",
+        local_dir=Path(LOCAL_DIR) / "rewardbench",
         repo_id=args.hf_evals_repo,
         use_auth_token=api_token,
         tqdm_class=None,
@@ -107,8 +107,8 @@ def main():
     hf_prefs_df = load_results(hf_evals_repo, subdir="pref-sets/", ignore_columns=args.ignore_columns)
 
     all_results = {
-        "HERM - Overview": get_average_over_herm(hf_evals_df),
-        "HERM - Detailed": hf_evals_df,
+        "RewardBench - Overview": get_average_over_rewardbench(hf_evals_df),
+        "RewardBench - Detailed": hf_evals_df,
         "Pref Sets - Overview": hf_prefs_df,
     }
 
