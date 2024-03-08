@@ -25,8 +25,9 @@ from accelerate.logging import get_logger
 from fastchat.conversation import get_conv_template
 from tqdm import tqdm
 from transformers import AutoTokenizer, pipeline
-
-from rewardbench import REWARD_MODEL_CONFIG, load_eval_dataset, save_to_hub
+from huggingface_hub import HfApi, hf_hub_download
+from rewardbench import REWARD_MODEL_CONFIG, load_eval_dataset, save_to_hub, CORE_SUBSETS, PREFS_SUBSETS
+from datasets import load_dataset
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -53,6 +54,7 @@ def get_args():
     parser.add_argument(
         "--pref_sets", action="store_true", help="run on common preference sets instead of our custom eval set"
     )
+    parser.add_argument("--replace_subset", type=str, default=None, help="Replace one subset in result for given model")
     parser.add_argument(
         "--debug", action="store_true", help="run on common preference sets instead of our custom eval set"
     )
@@ -93,6 +95,31 @@ def main():
     else:
         config = REWARD_MODEL_CONFIG["default"]
     logger.info(f"Using reward model config: {config}")
+
+    # if replace_subset is set, assert that results exist in remote, then save for replacement later
+    if args.replace_subset:
+        assert args.replace_subset in CORE_SUBSETS + PREFS_SUBSETS, f"Subset {args.replace_subset} not found."
+        api = HfApi()
+        data_dir = "allenai/reward-bench-results" if not args.debug else "ai2-adapt-dev/herm-debug"
+        data_info = api.dataset_info(data_dir)
+        data_info = [d.rfilename for d in data_info.siblings]
+        if args.pref_sets:
+            target_dir = "pref-sets/" + args.model + ".json"
+            target_dir_scores = "pref-sets-scores/" + args.model + ".json"
+        else:
+            target_dir = "eval-set/" + args.model + ".json"
+            target_dir_scores = "eval-set-scores/" + args.model + ".json"
+        if target_dir not in data_info:
+            raise ValueError(f"Results for {args.model} do not exist in remote, cannot replace subset {args.replace_subset}.")
+        elif target_dir_scores not in data_info:
+            raise ValueError(f"Scores for {args.model} do not exist in remote, cannot replace subset {args.replace_subset}.")
+        
+        f = hf_hub_download(data_dir, target_dir, repo_type="dataset")
+        eval_data = load_dataset("json", data_files=f, split="train")
+
+        f2 = hf_hub_download(data_dir, target_dir_scores, repo_type="dataset")
+        eval_data_scores = load_dataset("json", data_files=f2, split="train")
+        import ipdb; ipdb.set_trace()
 
     # Default entries
     # "model_builder": AutoModelForSequenceClassification.from_pretrained,

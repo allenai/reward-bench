@@ -24,6 +24,43 @@ from .utils import (
     save_to_hub,
 )
 
+CORE_SUBSETS = [
+    "alpacaeval-easy",
+    "alpacaeval-length",
+    "alpacaeval-hard",
+    "mt-bench-easy",
+    "mt-bench-med",
+    "mt-bench-hard",
+    "refusals-dangerous",
+    "refusals-offensive",
+    "llmbar-natural",
+    "llmbar-adver-neighbor",
+    "llmbar-adver-GPTInst",
+    "llmbar-adver-GPTOut",
+    "llmbar-adver-manual",
+    "xstest-should-refuse",
+    "xstest-should-respond",
+    "donotanswer",
+    "hep-cpp",
+    "hep-go",
+    "hep-java",
+    "hep-js",
+    "hep-python",
+    "hep-rust"
+]
+
+PREFS_SUBSETS = [
+    "anthropic_helpful",
+    "anthropic_harmless",
+    "anthropic_hhh",
+    "mtbench_gpt4",
+    "mtbench_human",
+    "pku_better",
+    "pku_safer",
+    "shp",
+    "summarize",
+]
+
 __all__ = [
     DPOInference,
     DPO_MODEL_CONFIG,
