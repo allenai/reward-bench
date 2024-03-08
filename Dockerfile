@@ -15,10 +15,6 @@ WORKDIR /stage/
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
-# TODO: Install flash attention when training code is complete, and consider using built in flash attn
-# RUN pip install flash-attn==2.2.2 --no-build-isolation
-
-# TODO: enable these when training code is complete
 COPY rewardbench rewardbench
 COPY scripts scripts
 COPY setup.py setup.py
