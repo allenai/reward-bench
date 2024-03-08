@@ -10,8 +10,8 @@ import os
 import sys
 import warnings
 from dataclasses import dataclass, field
-from fastchat.conversation import get_conv_template
-from typing import Optional
+from fastchat.conversation import get_conv_template, Conversation
+from typing import Any, Dict, List, Optional
 
 import datasets
 import torch
@@ -174,8 +174,6 @@ class DataTrainingArguments:
 
 
 def main():
-    os.environ["WANDB_DISABLED"] = "true"
-
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         model_args, data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
@@ -355,9 +353,24 @@ def main():
             "input_ids_rejected": tokenized_rejected["input_ids"],
             "attention_mask_rejected": tokenized_rejected["attention_mask"],
         }
+    
+    def prepare_examples(
+        example: Dict[List[Any]],
+        dialogue_template: Conversation,
+    ):
+        processed = {}
+        for key in ["chosen", "rejected"]:
+            dialogue_template.messages = []
+            for elem in example[key]:
+                content = elem["content"]
+                role = elem["role"]
+                dialogue_template.messages.append([role, content])
+            processed[key] = dialogue_template.get_prompt()
+
+        return processed
 
     train_dataset = train_dataset.map(
-        prepare_dialogue,
+        prepare_examples,
         fn_kwargs={"dialogue_template": get_conv_template(data_args.chat_template)},
         num_proc=data_args.preprocessing_num_workers,
         load_from_cache_file=False,
