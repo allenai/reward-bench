@@ -22,12 +22,19 @@ import torch
 import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
+from datasets import load_dataset, Dataset
 from fastchat.conversation import get_conv_template
+from huggingface_hub import HfApi, hf_hub_download
 from tqdm import tqdm
 from transformers import AutoTokenizer, pipeline
-from huggingface_hub import HfApi, hf_hub_download
-from rewardbench import REWARD_MODEL_CONFIG, load_eval_dataset, save_to_hub, CORE_SUBSETS, PREFS_SUBSETS
-from datasets import load_dataset
+
+from rewardbench import (
+    CORE_SUBSETS,
+    PREFS_SUBSETS,
+    REWARD_MODEL_CONFIG,
+    load_eval_dataset,
+    save_to_hub,
+)
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -54,7 +61,7 @@ def get_args():
     parser.add_argument(
         "--pref_sets", action="store_true", help="run on common preference sets instead of our custom eval set"
     )
-    parser.add_argument("--replace_subset", type=str, default=None, help="Replace one subset in result for given model")
+    parser.add_argument("--subset", type=str, default=None, help="Replace one subset in result for given model")
     parser.add_argument(
         "--debug", action="store_true", help="run on common preference sets instead of our custom eval set"
     )
@@ -96,31 +103,6 @@ def main():
         config = REWARD_MODEL_CONFIG["default"]
     logger.info(f"Using reward model config: {config}")
 
-    # if replace_subset is set, assert that results exist in remote, then save for replacement later
-    if args.replace_subset:
-        assert args.replace_subset in CORE_SUBSETS + PREFS_SUBSETS, f"Subset {args.replace_subset} not found."
-        api = HfApi()
-        data_dir = "allenai/reward-bench-results" if not args.debug else "ai2-adapt-dev/herm-debug"
-        data_info = api.dataset_info(data_dir)
-        data_info = [d.rfilename for d in data_info.siblings]
-        if args.pref_sets:
-            target_dir = "pref-sets/" + args.model + ".json"
-            target_dir_scores = "pref-sets-scores/" + args.model + ".json"
-        else:
-            target_dir = "eval-set/" + args.model + ".json"
-            target_dir_scores = "eval-set-scores/" + args.model + ".json"
-        if target_dir not in data_info:
-            raise ValueError(f"Results for {args.model} do not exist in remote, cannot replace subset {args.replace_subset}.")
-        elif target_dir_scores not in data_info:
-            raise ValueError(f"Scores for {args.model} do not exist in remote, cannot replace subset {args.replace_subset}.")
-        
-        f = hf_hub_download(data_dir, target_dir, repo_type="dataset")
-        eval_data = load_dataset("json", data_files=f, split="train")
-
-        f2 = hf_hub_download(data_dir, target_dir_scores, repo_type="dataset")
-        eval_data_scores = load_dataset("json", data_files=f2, split="train")
-        import ipdb; ipdb.set_trace()
-
     # Default entries
     # "model_builder": AutoModelForSequenceClassification.from_pretrained,
     # "pipeline_builder": pipeline,
@@ -133,6 +115,7 @@ def main():
     model_type = config["model_type"]
     model_builder = config["model_builder"]
     pipeline_builder = config["pipeline_builder"]
+    do_not_save = args.do_not_save
 
     # not included in config to make user explicitly understand they are passing this
     trust_remote_code = args.trust_remote_code
@@ -162,6 +145,45 @@ def main():
         dataset = dataset.select(range(10))
         subsets = subsets[:10]
         ids = ids[:10]
+
+    ############################
+    # Filtering / loading if replacing / running one subset
+    ############################
+    # if subset is set, assert that results exist in remote, then save for replacement later
+    if args.subset:
+        assert args.subset in CORE_SUBSETS + PREFS_SUBSETS, f"Subset {args.subset} not found."
+        # filter dataset
+        # add subset and ids back to dataset
+        dataset = dataset.add_column("subset", subsets)
+        dataset = dataset.add_column("id", ids)
+        dataset = dataset.filter(lambda example: example["subset"] == args.subset)
+
+        # remove subset/id again
+        dataset = dataset.remove_columns("subset")
+        ids = dataset["id"]
+        dataset = dataset.remove_columns("id")
+
+        # load dataset from remote for seed
+        api = HfApi()
+        data_dir = "allenai/reward-bench-results" if not args.debug else "ai2-adapt-dev/herm-debug"
+        data_info = api.dataset_info(data_dir)
+        data_info = [d.rfilename for d in data_info.siblings]
+        if args.pref_sets:
+            target_dir = "pref-sets/" + args.model + ".json"
+            target_dir_scores = "pref-sets-scores/" + args.model + ".json"
+        else:
+            target_dir = "eval-set/" + args.model + ".json"
+            target_dir_scores = "eval-set-scores/" + args.model + ".json"
+
+        if (target_dir not in data_info) or (target_dir_scores not in data_info):
+            do_not_save = True
+            logger.warning(f"Previous results not found for {args.model} in {data_dir}. Skipping replacement.")
+
+        f = hf_hub_download(data_dir, target_dir, repo_type="dataset")
+        prior_eval = load_dataset("json", data_files=f, split="train")
+
+        f2 = hf_hub_download(data_dir, target_dir_scores, repo_type="dataset")
+        prior_eval_scores = load_dataset("json", data_files=f2, split="train")
 
     ############################
     # Load reward model pipeline
@@ -300,7 +322,7 @@ def main():
     out_dataset = out_dataset.add_column("scores_rejected", scores_rejected)
 
     # get core dataset
-    results_grouped = {}
+    results_grouped = {} if not args.subset else prior_eval.to_dict()
     results_grouped["model"] = args.model
     results_grouped["model_type"] = model_type
     results_grouped["chat_template"] = args.chat_template if not hasattr(tokenizer, "chat_template") else "tokenizer"
@@ -319,22 +341,59 @@ def main():
     ############################
     sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
     results_url = save_to_hub(
-        results_grouped, args.model, sub_path, args.debug, local_only=args.do_not_save, save_metrics_for_beaker=True
+        results_grouped, args.model, sub_path, args.debug, local_only=do_not_save, save_metrics_for_beaker=True
     )
-    if not args.do_not_save:
+    if not do_not_save:
         logger.info(f"Uploaded reward model results to {results_url}")
+
+    def unroll_scores(original_dict):
+        """
+        Unroll scores from dataset
+        """
+        list_length = len(next(iter(original_dict.values())))
+
+        # Create a list of dictionaries.
+        list_of_dicts = []
+        for i in range(list_length):
+            new_dict = {key: value[i] for key, value in original_dict.items()}
+            list_of_dicts.append(new_dict)
+        return list_of_dicts
+    
+    def replace_rows(old_data, new_data):
+        """
+        Replace rows in old_data with new_data
+        """
+        # Get ids to replace via new_data
+        ids_to_replace = new_data["id"]
+        # Get indices to replace
+        indices_to_replace = [old_data["id"].index(id) for id in ids_to_replace[0]]
+        # remove the rows from the old data
+        for index in indices_to_replace:
+            old_data.remove(index)
+        # add the new data to the old data
+        # TODO wrap this up, maybe
+        raise NotImplementedError("This function is not yet implemented")
+        return old_data
 
     # upload chosen-rejected with scores
     if not model_type == "Custom Classifier":  # custom classifiers do not return scores
         # create new json with scores and upload
-        scores_dict = out_dataset.to_dict()
+        if args.subset:
+            flat_results = Dataset.from_list(unroll_scores(prior_eval_scores.to_dict()))
+            new_dataset = replace_rows(out_dataset, flat_results)
+        scores_dict = out_dataset.to_dict() if not args.subset else prior_eval_scores.to_dict()
         scores_dict["model"] = args.model
         scores_dict["model_type"] = model_type
         scores_dict["chat_template"] = args.chat_template
 
+        # if replacing subset, replace the subset with the new results
+        if args.subset:
+            # replace bas on IDs
+            import ipdb; ipdb.set_trace()
+
         sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
 
-        scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug)
+        scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug, local_only=do_not_save)
         logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
     else:
         logger.info("Not uploading chosen-rejected text with scores due to model compatibility")

@@ -46,7 +46,7 @@ CORE_SUBSETS = [
     "hep-java",
     "hep-js",
     "hep-python",
-    "hep-rust"
+    "hep-rust",
 ]
 
 PREFS_SUBSETS = [
