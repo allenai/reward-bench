@@ -1,4 +1,3 @@
-
 # Copyright 2023 AllenAI. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/usr/bin/env python
+# !/usr/bin/env python
 # coding=utf-8
 """
 This file is modified from the huggingface example for finetuning language models
@@ -25,13 +24,13 @@ import os
 import sys
 import warnings
 from dataclasses import dataclass, field
-from fastchat.conversation import get_conv_template, Conversation
 from typing import Any, Dict, List, Optional
 
 import datasets
 import torch
 import transformers
 from datasets import load_dataset
+from fastchat.conversation import Conversation, get_conv_template
 from transformers import (
     AutoConfig,
     AutoModelForSequenceClassification,
@@ -44,8 +43,6 @@ from transformers import (
 )
 from transformers.trainer_utils import get_last_checkpoint
 from trl import RewardTrainer
-
-from rewardbench import prepare_dialogue
 
 logger = logging.getLogger(__name__)
 
@@ -368,7 +365,7 @@ def main():
             "input_ids_rejected": tokenized_rejected["input_ids"],
             "attention_mask_rejected": tokenized_rejected["attention_mask"],
         }
-    
+
     def prepare_examples(
         example: Dict[str, List[Any]],
         dialogue_template: Conversation,
