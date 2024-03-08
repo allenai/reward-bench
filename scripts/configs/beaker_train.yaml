@@ -1,0 +1,35 @@
+version: v2
+description: herm-train
+budget: ai2/allennlp
+tasks:
+  - name: herm-train
+    image:
+      beaker: <placeholder>
+    command: [
+      '/bin/sh', '-c'
+    ]
+    arguments: ['SCRIPT_HERE']
+    envVars:
+      - name: CUDA_DEVICE_ORDER
+        value: PCI_BUS_ID
+      - name: TRANSFORMERS_CACHE
+        value: ./cache/
+      - name: WANDB_PROJECT
+        value: open-instruct
+      - name: WANDB_WATCH
+        value: false
+      - name: WANDB_LOG_MODEL
+        value: false
+      - name: WANDB_DISABLED
+        value: true
+    datasets:
+      - mountPath: /net/nfs.cirrascale
+        source:
+          hostPath: /net/nfs.cirrascale
+    result:
+      path: /output
+    resources:
+      gpuCount: 4
+    context:
+      cluster: ai2/allennlp-cirrascale
+      priority: high
