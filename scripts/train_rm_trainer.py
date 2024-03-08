@@ -370,7 +370,7 @@ def main():
         }
     
     def prepare_examples(
-        example: Dict[List[Any]],
+        example: Dict[str, List[Any]],
         dialogue_template: Conversation,
     ):
         processed = {}
