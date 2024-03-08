@@ -10,6 +10,7 @@ import os
 import sys
 import warnings
 from dataclasses import dataclass, field
+from fastchat.conversation import get_conv_template
 from typing import Optional
 
 import datasets
@@ -28,6 +29,8 @@ from transformers import (
 )
 from transformers.trainer_utils import get_last_checkpoint
 from trl import RewardTrainer
+
+from rewardbench import prepare_dialogue
 
 logger = logging.getLogger(__name__)
 
@@ -353,61 +356,12 @@ def main():
             "attention_mask_rejected": tokenized_rejected["attention_mask"],
         }
 
-    def apply_tulu_format(messages):
-        return {
-            "chosen": apply_tulu_chat_format(messages["chosen"]),
-            "rejected": apply_tulu_chat_format(messages["rejected"]),
-        }
-
-    def apply_llama_2_format(messages):
-        return {
-            "chosen": apply_llama_2_chat_format(messages["chosen"]),
-            "rejected": apply_llama_2_chat_format(messages["rejected"]),
-        }
-
-    def apply_tulu_chat_format(messages):
-        message_text = ""
-        for message in messages:
-            if message["role"] == "system":
-                message_text += "<|system|>\n" + message["content"].strip() + "\n"
-            elif message["role"] == "user":
-                message_text += "<|user|>\n" + message["content"].strip() + "\n"
-            elif message["role"] == "assistant":
-                message_text += "<|assistant|>\n" + message["content"].strip() + "</s>" + "\n"
-            else:
-                raise ValueError("Invalid role: {}".format(message["role"]))
-        return message_text
-
-    def apply_llama_2_chat_format(messages):
-        message_text = ""
-        system_prompt = ""
-        for message in messages:
-            if message["role"] == "system":
-                system_prompt = f"<<SYS>>\n{message['content'].strip()}<</SYS>>\n\n"
-            elif message["role"] == "user":
-                if len(system_prompt) > 0:
-                    message_text += f"<s>[INST] {system_prompt} {message['content'].strip()} [/INST]"
-                    system_prompt = ""
-                else:
-                    message_text += f"<s>[INST] {message['content'].strip()} [/INST] "
-            elif message["role"] == "assistant":
-                message_text += f" {message['content'].strip()} </s>"
-            else:
-                raise ValueError("Invalid role: {}".format(message["role"]))
-        return message_text
-
-    if data_args.chat_template == "tulu":
-        train_dataset = train_dataset.map(
-            apply_tulu_format,
-            num_proc=data_args.preprocessing_num_workers,
-        )
-    elif data_args.chat_template == "llama-2":
-        train_dataset = train_dataset.map(
-            apply_llama_2_format,
-            num_proc=data_args.preprocessing_num_workers,
-        )
-    else:
-        raise ValueError(f"Unsupported chat template: {data_args.chat_template}")
+    train_dataset = train_dataset.map(
+        prepare_dialogue,
+        fn_kwargs={"dialogue_template": get_conv_template(data_args.chat_template)},
+        num_proc=data_args.preprocessing_num_workers,
+        load_from_cache_file=False,
+    )
 
     train_dataset = train_dataset.filter(
         lambda x: x["chosen"] != x["rejected"],
