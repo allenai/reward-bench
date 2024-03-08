@@ -19,7 +19,7 @@ from datetime import date
 import yaml
 
 argparser = argparse.ArgumentParser()
-argparser.add_argument("--image", type=str, default="jacobm/test_herm_local_save3", help="Beaker image to use")
+argparser.add_argument("--image", type=str, default="jacobm/rb_train", help="Beaker image to use")
 argparser.add_argument("--cluster", type=str, default="ai2/allennlp-cirrascale", help="Beaker cluster to use")
 argparser.add_argument("--model", type=str, default=None, help="Specific model to train on top of")
 argparser.add_argument("--dataset", type=str, default=None, help="Specific dataset file path for training")
