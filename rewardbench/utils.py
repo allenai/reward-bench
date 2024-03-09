@@ -116,6 +116,7 @@ def load_eval_dataset(
         raw_dataset = load_dataset(CORE_EVAL_SET, split="filtered")
     else:
         raw_dataset = load_dataset(EXTRA_PREF_SETS)
+        
         modified_datasets = []
 
         # Iterate over each subset in the DatasetDict
@@ -128,7 +129,9 @@ def load_eval_dataset(
             subdataset = subdataset.add_column("subset", [subset_name] * len(subdataset))
 
             # Append the modified dataset to the list
-            modified_datasets.append(subdataset)
+            # remove pku_safer and pku_better from the dict, no longer part of the benchmark
+            if subset_name not in ["pku_safer", "pku_better"]:
+                modified_datasets.append(subdataset)
 
         # Concatenate all the modified datasets into one dataset
         raw_dataset = concatenate_datasets(modified_datasets)
