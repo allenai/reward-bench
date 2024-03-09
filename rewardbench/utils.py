@@ -116,7 +116,6 @@ def load_eval_dataset(
         raw_dataset = load_dataset(CORE_EVAL_SET, split="filtered")
     else:
         raw_dataset = load_dataset(EXTRA_PREF_SETS)
-
         modified_datasets = []
 
         # Iterate over each subset in the DatasetDict
