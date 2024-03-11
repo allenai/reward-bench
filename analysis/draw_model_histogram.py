@@ -44,7 +44,7 @@ def get_args():
         "--figsize",
         type=int,
         nargs=2,
-        default=[12, 8],
+        default=[14, 8],
         help="Control the figure size when plotting.",
     )
     parser.add_argument(
