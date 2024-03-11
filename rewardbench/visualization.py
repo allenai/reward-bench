@@ -140,6 +140,9 @@ def print_model_statistics(
     for example in dataset:
         for key in keys:
             model = example[key]
+            if model == "unkown":
+                # Fix: https://huggingface.co/datasets/allenai/reward-bench/discussions/1
+                model = "unknown"
             models[key].append(model)
     counters = [Counter(models) for key, models in models.items()]
 
@@ -201,6 +204,9 @@ def draw_model_source_histogram(
     for example in dataset:
         for key in keys:
             model = example[key]
+            if model == "unkown":
+                # Fix: https://huggingface.co/datasets/allenai/reward-bench/discussions/1
+                model = "unknown"
             models.append(model)
     counter = Counter(models)
 
