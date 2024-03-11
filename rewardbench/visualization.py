@@ -24,6 +24,33 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+# From varnish: https://varnish.allenai.org/components/colors
+AI2_COLORS = {
+    "blue": "#265ed4",
+    "orange": "#dd6502",
+    "red": "#932222",
+    "aqua": "#054976",
+    "teal": "#078e9e",
+    "magenta": "#65295d",
+    "purple": "#5c50a4",
+    "green": "#005340",
+}
+
+# matplotlib params: use plt.rcParams.update(PLOT_PARAMS)
+FONT_SIZES = {"small": 18, "medium": 21, "large": 24}
+PLOT_PARAMS = {
+    "font.family": "Times New Roman",
+    "font.size": FONT_SIZES.get("small"),
+    "axes.titlesize": FONT_SIZES.get("small"),
+    "axes.labelsize": FONT_SIZES.get("medium"),
+    "xtick.labelsize": FONT_SIZES.get("small"),
+    "ytick.labelsize": FONT_SIZES.get("small"),
+    "legend.fontsize": FONT_SIZES.get("small"),
+    "figure.titlesize": FONT_SIZES.get("medium"),
+}
+
+plt.rcParams.update(PLOT_PARAMS)
+
 
 def draw_per_token_reward(
     tokens: List[str],
@@ -46,13 +73,6 @@ def draw_per_token_reward(
     RETURNS (matplotlib.axes.Axes): an Axes class containing the figure.
     """
     fig, ax = plt.subplots(figsize=figsize)
-    matplotlib.rcParams.update(
-        {
-            "font.size": font_size,
-            "xtick.labelsize": font_size,
-            "ytick.labelsize": font_size,
-        }
-    )
     rewards = np.array(rewards)
     if not line_chart:
         im = ax.imshow(
@@ -103,7 +123,7 @@ def draw_per_token_reward(
 
 
 def print_model_statistics(
-    dataset_name: str = "ai2-adapt-dev/rm-benchmark-dev",
+    dataset_name: str = "allenai/reward-bench",
     keys: List[str] = ["chosen_model", "rejected_model"],
     render_latex: bool = False,
 ):
@@ -153,10 +173,11 @@ def draw_model_source_histogram(
     dataset_name: str = "ai2-adapt-dev/rm-benchmark-dev",
     output_path: Optional[str] = None,
     keys: List[str] = ["chosen_model", "rejected_model"],
-    figsize: Tuple[int, int] = (12, 8),
+    figsize: Tuple[int, int] = (8, 4),
     font_size: int = 15,
     normalize: bool = False,
     log_scale: bool = False,
+    include_title: bool = False,
     top_n: Optional[int] = None,
 ) -> "matplotlib.axes.Axes":
     """Draw a histogram of the evaluation dataset that shows completion counts between models and humans.
@@ -168,15 +189,13 @@ def draw_model_source_histogram(
     normalize (bool): set to True to normalize the values based on total number completions.
     log_scale (bool): set the y-axis to logarithmic scale.
     top_n (Optional[int]): if set, then only plot the top-n models in the histogram.
+    include_title (bool): if set, then will include the title in the chart.
     RETURNS (matplotlib.axes.Axes): an Axes class containing the histogram.
     """
     dataset = datasets.load_dataset(dataset_name, split="filtered")
 
     if not all(key in dataset.features for key in keys):
         raise ValueError(f"Your dataset has missing keys. Please ensure that {keys} is/are available.")
-
-    # set font size
-    matplotlib.rcParams.update({"font.size": font_size})
 
     models = []
     for example in dataset:
@@ -201,14 +220,15 @@ def draw_model_source_histogram(
     indices = np.arange(len(labels))
     width = 1
 
-    # define colors for the bars to alternate between blue (3a9fcb) and green (66b054)
-    colors = ["#3a9fcb", "#66b054"]
+    colors = [AI2_COLORS.get("blue"), AI2_COLORS.get("teal")]
     ax.bar(indices, values, width, color=colors * (len(indices) // 2 + 1))
-    ax.set_xticks(indices, labels, rotation=90, fontsize=font_size - 2)  # font size is font_size - 2
+    ax.set_xticks(indices, labels, rotation=90)
+    ax.set_ylabel("Frequency")
+    ax.set_xlabel("Source of completion")
     ax.spines.right.set_visible(False)
     ax.spines.top.set_visible(False)
 
-    title = f"Source of completions ({', '.join(keys)})"
+    title = f"Source of completions ({', '.join([k.replace('_',' ') for k in keys])})"
 
     if normalize:
         ax.set_ylim(top=1.00)
@@ -221,7 +241,8 @@ def draw_model_source_histogram(
     if top_n:
         title += f", showing top-{top_n}"
 
-    ax.set_title(title)
+    if include_title:
+        ax.set_title(title)
     fig.tight_layout()
 
     if output_path:
