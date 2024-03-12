@@ -17,12 +17,12 @@
 import argparse
 import os
 from pathlib import Path
-from typing import List
 
 import numpy as np
 import pandas as pd
 from huggingface_hub import snapshot_download
 
+from analysis.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
 from analysis.utils import load_results
 
 LOCAL_DIR = "hf_snapshot_evals"
@@ -34,7 +34,7 @@ def get_args():
     parser.add_argument(
         "--hf_evals_repo",
         type=str,
-        default="ai2-adapt-dev/HERM-Results",
+        default="allenai/reward-bench-results",
         help="HuggingFace repository containing the evaluation results.",
     )
     parser.add_argument(
@@ -60,29 +60,47 @@ def get_args():
 
 def get_average_over_rewardbench(
     df: pd.DataFrame,
-    subsets: List[str] = ["alpacaeval", "mt-bench", "llmbar", "refusals", "hep"],
+    df_prefs: pd.DataFrame,
 ) -> pd.DataFrame:
     """Get average over a strict subset of reward models"""
     new_df = df.copy()
-    for subset in subsets:
-        if subset == "refusals":
-            subset_cols = [
-                "refusals-dangerous",
-                "refusals-offensive",
-                "donotanswer",
-                "xstest-should-refuse",
-                "xstest-should-respond",
-            ]
-        else:
-            subset_cols = [col for col in new_df.columns if subset in col]
-        new_df[subset] = np.round(np.nanmean(new_df[subset_cols].values, axis=1), 2)
+    for subset, sub_subsets in SUBSET_MAPPING.items():
+        subset_cols = [col for col in new_df.columns if col in sub_subsets]
+        sub_data = new_df[subset_cols].values  # take the relevant column values
+        sub_counts = [EXAMPLE_COUNTS[s] for s in sub_subsets]  # take the example counts
+        new_df[subset] = np.round(np.average(sub_data, axis=1, weights=sub_counts), 2)  # take the weighted average
 
-    keep_columns = ["model", "average"] + subsets
+    data_cols = list(SUBSET_MAPPING.keys())
+    keep_columns = ["model"] + ["model_type"] + data_cols
     new_df = new_df[keep_columns]
-    # Replace 'average' column with new average
-    new_df["average"] = np.round(np.nanmean(new_df[subsets].values, axis=1), 2)
-    # Rename column "hep" to "hep (code)"
-    new_df = new_df.rename(columns={"hep": "hep (code)"})
+
+    # selected average from pref_sets
+    pref_columns = ["anthropic_helpful", "anthropic_hhh", "shp", "summarize"]
+    pref_data = df_prefs[pref_columns].values
+
+    # add column test sets knowing the rows are not identical, take superset
+    df_prefs["Prior Sets"] = np.round(np.nanmean(pref_data, axis=1), 2)
+    # add column Test Sets empty to new_df
+    new_df["Prior Sets"] = np.nan
+    # per row in new_df if model is in dataframe_prefs, add the value to new_df["Prior Sets"]
+    values = []
+    for i, row in new_df.iterrows():
+        model = row["model"]
+        if model in df_prefs["model"].values:
+            values.append(df_prefs[df_prefs["model"] == model]["Prior Sets"].values[0])
+            # new_df.at[i, "Prior Sets"] = dataframe_prefs[dataframe_prefs["model"] == model]["Prior Sets"].values[0]
+        else:
+            values.append(np.nan)
+
+    new_df["Prior Sets"] = values
+
+    # add total average
+    data_cols += ["Prior Sets"]
+    new_df["average"] = np.round(np.nanmean(new_df[data_cols].values, axis=1), 2)
+
+    # make average third column
+    keep_columns = ["model", "model_type", "average"] + data_cols
+    new_df = new_df[keep_columns]
     return new_df
 
 
@@ -107,12 +125,13 @@ def main():
     hf_prefs_df = load_results(hf_evals_repo, subdir="pref-sets/", ignore_columns=args.ignore_columns)
 
     all_results = {
-        "RewardBench - Overview": get_average_over_rewardbench(hf_evals_df),
+        "RewardBench - Overview": get_average_over_rewardbench(hf_evals_df, hf_prefs_df),
         "RewardBench - Detailed": hf_evals_df,
         "Pref Sets - Overview": hf_prefs_df,
     }
 
     for name, df in all_results.items():
+        # df.insert(0, "", range(1, 1 + len(df)))
         df = df.sort_values(by="average", ascending=False).round(4)
         render_string = (
             df.round(4).astype(str).to_latex(index=False)
