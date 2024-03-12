@@ -21,6 +21,7 @@ The repository includes the following:
 The two primary scripts to generate results (more in `scripts/`):
 1. `scripts/run_rm.py`: Run evaluations for reward models.
 2. `scripts/run_dpo.py`: Run evaluations for direct preference optimization (DPO) models.
+3. `scripts/train_rm.py`: A basic RM training script built on [TRL](https://github.com/huggingface/trl).
 
 ## Installation
 Please install `torch`` on your system, and then install the following requirements.

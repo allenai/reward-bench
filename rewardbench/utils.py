@@ -130,7 +130,9 @@ def load_eval_dataset(
             subdataset = subdataset.add_column("subset", [subset_name] * len(subdataset))
 
             # Append the modified dataset to the list
-            modified_datasets.append(subdataset)
+            # remove pku_safer and pku_better from the dict, no longer part of the benchmark
+            if subset_name not in ["pku_safer", "pku_better"]:
+                modified_datasets.append(subdataset)
 
         # Concatenate all the modified datasets into one dataset
         raw_dataset = concatenate_datasets(modified_datasets)

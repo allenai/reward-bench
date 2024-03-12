@@ -130,8 +130,8 @@ class PrepareDialoguesTest(unittest.TestCase):
 class DatasetTest(unittest.TestCase):
     def test_core_dataset_lens(self):
         # must be updated whenever dataset is updated
-        dataset = load_dataset("ai2-adapt-dev/rm-benchmark-dev", split="filtered")
-        assert len(dataset) == 2538
+        dataset = load_dataset("allenai/reward-bench", split="filtered")
+        assert len(dataset) == 2985
 
     def test_test_sets_lens(self):
         # must be updated whenever dataset is updated
