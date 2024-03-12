@@ -21,7 +21,9 @@ from datasets import load_dataset
 
 
 def load_results(
-    repo_dir_path: Union[str, Path], subdir: str, ignore_columns: Optional[List[str]] = None
+    repo_dir_path: Union[str, Path],
+    subdir: str,
+    ignore_columns: Optional[List[str]] = None,
 ) -> pd.DataFrame:
     """Load results into a pandas DataFrame"""
     base_dir = Path(repo_dir_path)
@@ -43,6 +45,9 @@ def load_results(
     def _cleanup(df: pd.DataFrame) -> pd.DataFrame:
         # remove chat_template comlumn
         df = df.drop(columns=["chat_template"])
+
+        # sort columns alphabetically
+        df = df.reindex(sorted(df.columns), axis=1)
 
         # move column "model" to the front
         cols = list(df.columns)
@@ -69,6 +74,21 @@ def load_results(
             cols.remove("xstest")
             df = df.drop(columns=["xstest"])
 
+        # remove column anthropic and summarize_prompted (outdated data)
+        if "anthropic" in cols:
+            df = df.drop(columns=["anthropic"])
+            cols.remove("anthropic")
+        if "summarize_prompted" in cols:
+            df = df.drop(columns=["summarize_prompted"])
+            cols.remove("summarize_prompted")
+        # remove pku_better and pku_safer (removed from the leaderboard)
+        if "pku_better" in cols:
+            df = df.drop(columns=["pku_better"])
+            cols.remove("pku_better")
+        if "pku_safer" in cols:
+            df = df.drop(columns=["pku_safer"])
+            cols.remove("pku_safer")
+
         # round
         df[cols] = df[cols].round(2)
         avg = np.nanmean(df[cols].values, axis=1).round(2)
@@ -79,6 +99,14 @@ def load_results(
         cols = list(df.columns)
         cols.insert(1, cols.pop(cols.index("average")))
         df = df.loc[:, cols]
+
+        if "model_type" in cols:
+            cols = list(df.columns)
+            cols.insert(1, cols.pop(cols.index("model_type")))
+            df = df.loc[:, cols]
+
+        # remove models with DPO Ref. Free as type (future work)
+        df = df[~df["model_type"].str.contains("DPO Ref. Free", na=False)]
 
         # remove columns
         if ignore_columns:
