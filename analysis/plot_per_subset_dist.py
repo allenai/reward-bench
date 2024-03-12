@@ -26,6 +26,7 @@ from analysis.utils import load_results
 
 LOCAL_DIR = "./hf_snapshot_evals/"
 
+
 def get_args():
     parser = argparse.ArgumentParser()
     # optional arguments
@@ -100,7 +101,7 @@ def generate_whisker_plot(df, output_path, ncol=None, name=None, height=10, widt
 
         # Generate box and whisker plot in its subplot
         # axs[i].boxplot(subset_data.values, vert=True, patch_artist=True)
-        
+
         def adjacent_values(vals, q1, q3):
             iqr = q3 - q1
             upper_whisker = np.max(vals[vals <= q3 + 1.5 * iqr])
@@ -114,11 +115,11 @@ def generate_whisker_plot(df, output_path, ncol=None, name=None, height=10, widt
         axs[i].violinplot(subset_data, vert=True, showmedians=False, showextrema=False)
 
         # Plot median marker
-        axs[i].scatter(1, medians, marker='o', color='white', s=30, zorder=3)
+        axs[i].scatter(1, medians, marker="o", color="white", s=30, zorder=3)
 
         # Plot quartiles and whiskers
-        axs[i].vlines(1, quartile1, quartile3, color='k', linestyle='-', lw=5)
-        axs[i].vlines(1, whiskers[0], whiskers[1], color='k', linestyle='-', lw=1)
+        axs[i].vlines(1, quartile1, quartile3, color="k", linestyle="-", lw=5)
+        axs[i].vlines(1, whiskers[0], whiskers[1], color="k", linestyle="-", lw=1)
 
         axs[i].set_title(subset)
 
