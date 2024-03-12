@@ -7,7 +7,7 @@
   <a href="https://huggingface.co/datasets/allenai/reward-bench-results">Results</a> 📊 |
   Paper (coming soon) 📝
 </p>
-  <img src="https://github.com/allenai/reward-bench/assets/10695622/24ed272a-0844-451f-b414-fde57478703e" alt="RewardBench Logo" width="700" style="margin-left:'auto' margin-right:'auto' display:'block' "/>
+  <img src="https://github.com/allenai/reward-bench/assets/10695622/ac1224c3-4fde-4f04-894f-3196a60ca82e" alt="RewardBench Logo" width="700" style="margin-left:'auto' margin-right:'auto' display:'block' "/>
 </div>
 
 ---
@@ -113,9 +113,10 @@ When updating the `Dockerfile`, make sure to see the instructions at the top to 
 
 In development, we have the following docker images (most recent first as it's likely what you need).
 TODO: we should log the git commit affiliated with each of these, or delete them when outdated.
-- `nathanl/herm_v6`: chat template loading from tokenizer fixes + DPO additions.
+- `nathanl/rewardbench_v1`: release version
 
 Deprecated:
+- `nathanl/herm_v6`: chat template loading from tokenizer fixes + DPO additions.
 - `nathanl/herm_dpo`: for adding functionality with DPO sweeps, fix minor bugs (last updated 24 Feb.)
 - `nathanl/herm`: for running everything, including new Starling 34B RM (last updated 22 Feb.)
 - `nathanl/herm_bon_v2`: for running `run_bon.py` sweeps (last updated 21 Feb.) 
