@@ -26,20 +26,19 @@ from analysis.utils import load_results
 
 LOCAL_DIR = "./hf_snapshot_evals/"
 
-
 def get_args():
     parser = argparse.ArgumentParser()
     # optional arguments
     parser.add_argument(
         "--hf_evals_repo",
         type=str,
-        default="ai2-adapt-dev/HERM-Results",
+        default="allenai/reward-bench-results",
         help="HuggingFace repository containing the evaluation results.",
     )
     parser.add_argument(
         "--output_dir",
         type=Path,
-        default=None,
+        default="plots/",
         help="Directory to save the results.",
     )
     args = parser.parse_args()
@@ -63,12 +62,12 @@ def main():
         repo_type="dataset",
     )
     hf_evals_df = load_results(hf_evals_repo, subdir="eval-set/")
-    hf_prefs_df = load_results(hf_evals_repo, subdir="pref-sets/")
+    hf_prefs_df = load_results(hf_evals_repo, subdir="pref-sets/", ignore_columns=["summarize_prompted"])
     generate_whisker_plot(hf_evals_df, args.output_dir, name="eval-set")
-    generate_whisker_plot(hf_prefs_df, args.output_dir, name="pref-set")
+    generate_whisker_plot(hf_prefs_df, args.output_dir, ncol=3, height=7, width=12, name="pref-set")
 
 
-def generate_whisker_plot(df, output_path, name=None):
+def generate_whisker_plot(df, output_path, ncol=None, name=None, height=10, width=15):
     # remove the row with random in it from the df
     df = df[~df["model"].str.contains("random")]
 
@@ -77,11 +76,15 @@ def generate_whisker_plot(df, output_path, name=None):
     n_subsets = len(subsets)
 
     # Calculate the number of rows and columns for the subplot grid
-    nrows = int(n_subsets**0.5)
-    ncols = int(n_subsets / nrows) + (n_subsets % nrows > 0)
+    if ncol is not None:
+        ncols = ncol
+        nrows = int(n_subsets / ncols) + (n_subsets % ncols > 0)
+    else:
+        nrows = int(n_subsets**0.5)
+        ncols = int(n_subsets / nrows) + (n_subsets % nrows > 0)
 
     # Create a single figure and multiple subplots
-    fig, axs = plt.subplots(nrows, ncols, figsize=(15, 10))
+    fig, axs = plt.subplots(nrows, ncols, figsize=(width, height))
     axs = axs.flatten()  # Flatten the array to iterate easily if it's 2D
 
     # Generate plots for each subset
@@ -97,13 +100,32 @@ def generate_whisker_plot(df, output_path, name=None):
 
         # Generate box and whisker plot in its subplot
         # axs[i].boxplot(subset_data.values, vert=True, patch_artist=True)
-        axs[i].violinplot(subset_data, vert=True, showmedians=True)  # , showextrema=True
+        
+        def adjacent_values(vals, q1, q3):
+            iqr = q3 - q1
+            upper_whisker = np.max(vals[vals <= q3 + 1.5 * iqr])
+            lower_whisker = np.min(vals[vals >= q1 - 1.5 * iqr])
+            return lower_whisker, upper_whisker
+
+        # Calculate quartiles
+        quartile1, medians, quartile3 = np.percentile(subset_data, [25, 50, 75])
+        whiskers = np.array(adjacent_values(np.sort(subset_data), quartile1, quartile3))
+
+        axs[i].violinplot(subset_data, vert=True, showmedians=False, showextrema=False)
+
+        # Plot median marker
+        axs[i].scatter(1, medians, marker='o', color='white', s=30, zorder=3)
+
+        # Plot quartiles and whiskers
+        axs[i].vlines(1, quartile1, quartile3, color='k', linestyle='-', lw=5)
+        axs[i].vlines(1, whiskers[0], whiskers[1], color='k', linestyle='-', lw=1)
+
         axs[i].set_title(subset)
 
         # turn off x-axis labels tick marks
         axs[i].set_xticks([])
 
-        # axs[i].set_ylabel("Scores")
+        axs[i].set_ylabel("")
         axs[i].tick_params(axis="x", which="both", bottom=False, top=False, labelbottom=False)  # Remove x-tick labels
 
     # Adjusting spines and setting ticks visibility
@@ -122,9 +144,12 @@ def generate_whisker_plot(df, output_path, name=None):
         # Only show y-axis labels for leftmost column subplots
         ax.tick_params(axis="y", labelleft=is_left)
 
+    # global y axis label
+    fig.text(0.015, 0.5, "Distribution Over Model Accuracies", va="center", rotation="vertical")
+
     # Adjust layout and aesthetics
-    plt.suptitle("Per subset accuracy distribution", fontsize=16)
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjust layout to make room for the title
+    # plt.suptitle("Per subset accuracy distribution", fontsize=16)
+    plt.tight_layout(rect=[0.02, 0.01, 1, 1])  # Adjust layout to make room for the title
     plt.grid(False)
 
     # Handle any empty subplots
