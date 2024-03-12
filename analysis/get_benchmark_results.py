@@ -133,11 +133,32 @@ def main():
     for name, df in all_results.items():
         # df.insert(0, "", range(1, 1 + len(df)))
         df = df.sort_values(by="average", ascending=False).round(4)
-        render_string = (
-            df.round(4).astype(str).to_latex(index=False)
-            if args.render_latex
-            else df.to_markdown(index=False, tablefmt="github")
-        )
+        if args.render_latex:
+            # Prettify: we're using openmojis instead of a model_type column
+            def _prettify_model_name(row):
+                model_type = row["model_type"]
+                orig_name = row["model"]
+                openmoji_map = {
+                    "Seq. Classifier": "\sequenceclf",  # noqa
+                    "Custom Classifier": "\customclf",  # noqa
+                    "DPO": "\dpo",  # noqa
+                }
+                emoji = openmoji_map[model_type] if model_type in openmoji_map else "\\random"
+                latex_name = (
+                    f"\href{{https://huggingface.co/{orig_name}}}"  # noqa
+                    + f"{{{emoji} {orig_name}}}".replace("_", "\_")  # noqa
+                    if orig_name != "random"
+                    else f"{emoji} {orig_name}"
+                )
+
+                return latex_name
+
+            reward_model_names = df.apply(lambda x: _prettify_model_name(x), axis=1).to_list()
+            df.insert(0, "Reward Model", reward_model_names)
+            df = df.drop(columns=["model", "model_type"]).rename(columns={"average": "Average"})
+            render_string = df.to_latex(index=False, float_format="%.2f").replace("NaN", "-")
+        else:
+            render_string = df.to_markdown(index=False, tablefmt="github")
         render_string = render_string.replace("NaN", "")
         render_string = render_string.replace("nan", "")
         print(name)
