@@ -224,16 +224,21 @@ def draw_model_source_histogram(
         labels = labels[:top_n]
         values = values[:top_n]
 
-    indices = np.arange(len(labels))
+    indices = list(reversed(np.arange(len(labels))))
     width = 1
 
     colors = [AI2_COLORS.get("blue"), AI2_COLORS.get("teal")]
-    ax.bar(indices, values, width, color=colors * (len(indices) // 2 + 1))
-    ax.set_xticks(indices, labels, rotation=90)
-    ax.set_ylabel("Frequency")
-    ax.set_xlabel("Source of completion")
+    ax.barh(indices, values, width, color=colors * (len(indices) // 2 + 1))
+    # ax.set_xticks(indices, labels, rotation=90)
+    ax.set_yticks(indices, labels)
+    ax.set_xlabel("Frequency")
+    ax.set_ylabel("Source of completion")
     ax.spines.right.set_visible(False)
-    ax.spines.top.set_visible(False)
+    ax.spines.bottom.set_visible(False)
+    ax.xaxis.tick_top()
+    ax.xaxis.set_label_position("top")
+    # plt.margins(0, 0.05)
+    plt.margins(0.05, 0)
 
     title = f"Source of completions ({', '.join([k.replace('_',' ') for k in keys])})"
 
@@ -242,7 +247,7 @@ def draw_model_source_histogram(
         title += " , normalized"
 
     if log_scale:
-        ax.set_yscale("log")
+        ax.set_xscale("log")
         title += ", log-scale"
 
     if top_n:
