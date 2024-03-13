@@ -17,6 +17,7 @@
 import argparse
 import os
 from pathlib import Path
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -68,7 +69,7 @@ def get_average_over_rewardbench(
         subset_cols = [col for col in new_df.columns if col in sub_subsets]
         sub_data = new_df[subset_cols].values  # take the relevant column values
         sub_counts = [EXAMPLE_COUNTS[s] for s in sub_subsets]  # take the example counts
-        new_df[subset] = np.round(np.average(sub_data, axis=1, weights=sub_counts), 2)  # take the weighted average
+        new_df[subset] = np.average(sub_data, axis=1, weights=sub_counts)
 
     data_cols = list(SUBSET_MAPPING.keys())
     keep_columns = ["model"] + ["model_type"] + data_cols
@@ -79,7 +80,7 @@ def get_average_over_rewardbench(
     pref_data = df_prefs[pref_columns].values
 
     # add column test sets knowing the rows are not identical, take superset
-    df_prefs["Prior Sets"] = np.round(np.nanmean(pref_data, axis=1), 2)
+    df_prefs["Prior Sets"] = np.nanmean(pref_data, axis=1)
     # add column Test Sets empty to new_df
     new_df["Prior Sets"] = np.nan
     # per row in new_df if model is in dataframe_prefs, add the value to new_df["Prior Sets"]
@@ -96,7 +97,7 @@ def get_average_over_rewardbench(
 
     # add total average
     data_cols += ["Prior Sets"]
-    new_df["average"] = np.round(np.nanmean(new_df[data_cols].values, axis=1), 2)
+    new_df["average"] = np.nanmean(new_df[data_cols].values, axis=1)
 
     # make average third column
     keep_columns = ["model", "model_type", "average"] + data_cols
@@ -124,15 +125,22 @@ def main():
     hf_evals_df = load_results(hf_evals_repo, subdir="eval-set/", ignore_columns=args.ignore_columns)
     hf_prefs_df = load_results(hf_evals_repo, subdir="pref-sets/", ignore_columns=args.ignore_columns)
 
+    def _multiply_numbered_cols_by(n, df, ignore: List[str] = []):
+        numbered_cols = df.select_dtypes("number").columns
+        df[numbered_cols] *= n
+        return df
+
     all_results = {
-        "RewardBench - Overview": get_average_over_rewardbench(hf_evals_df, hf_prefs_df),
-        "RewardBench - Detailed": hf_evals_df,
-        "Pref Sets - Overview": hf_prefs_df,
+        "RewardBench - Overview": _multiply_numbered_cols_by(
+            100, get_average_over_rewardbench(hf_evals_df, hf_prefs_df)
+        ),
+        "RewardBench - Detailed": _multiply_numbered_cols_by(100, hf_evals_df),
+        "Pref Sets - Overview": _multiply_numbered_cols_by(100, hf_prefs_df),
     }
 
     for name, df in all_results.items():
         # df.insert(0, "", range(1, 1 + len(df)))
-        df = df.sort_values(by="average", ascending=False).round(4)
+        df = df.sort_values(by="average", ascending=False).round(1)
         if args.render_latex:
             # Prettify: we're using openmojis instead of a model_type column
             def _prettify_model_name(row):
@@ -156,7 +164,7 @@ def main():
             reward_model_names = df.apply(lambda x: _prettify_model_name(x), axis=1).to_list()
             df.insert(0, "Reward Model", reward_model_names)
             df = df.drop(columns=["model", "model_type"]).rename(columns={"average": "Average"})
-            render_string = df.to_latex(index=False, float_format="%.2f").replace("NaN", "-")
+            render_string = df.to_latex(index=False, float_format="%.1f").replace("NaN", "-")
         else:
             render_string = df.to_markdown(index=False, tablefmt="github")
         render_string = render_string.replace("NaN", "")

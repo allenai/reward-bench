@@ -90,8 +90,8 @@ def load_results(
             cols.remove("pku_safer")
 
         # round
-        df[cols] = df[cols].round(2)
-        avg = np.nanmean(df[cols].values, axis=1).round(2)
+        df[cols] = df[cols]
+        avg = np.nanmean(df[cols].values, axis=1)
         # add average column
         df["average"] = avg
 
