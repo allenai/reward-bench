@@ -30,6 +30,7 @@ AI2_COLORS = {
     "orange": "#dd6502",
     "red": "#932222",
     "aqua": "#054976",
+    "light_aqua": "#b5f0ff",
     "teal": "#078e9e",
     "magenta": "#65295d",
     "purple": "#5c50a4",
