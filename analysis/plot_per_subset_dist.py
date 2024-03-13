@@ -118,7 +118,7 @@ def generate_whisker_plot(df, output_path, ncol=None, name=None, height=10, widt
         parts = axs[i].violinplot(subset_data, vert=True, showmedians=False, showextrema=False)
 
         for pc in parts["bodies"]:
-            pc.set_facecolor(AI2_COLORS.get("aqua"))
+            pc.set_facecolor(AI2_COLORS.get("blue"))
             pc.set_alpha(1)
 
         # Plot median marker
