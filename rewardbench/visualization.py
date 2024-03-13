@@ -16,13 +16,16 @@
 
 from collections import Counter
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import datasets
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from datasets import load_dataset, Dataset
+from transformers import AutoTokenizer
+
 
 # From varnish: https://varnish.allenai.org/components/colors
 AI2_COLORS = {
@@ -262,3 +265,170 @@ def draw_model_source_histogram(
         plt.savefig(output_path, transparent=True, dpi=120)
 
     return ax
+
+
+def draw_subtoken_statistics(
+    category_subsets: Dict[str, List[str]],
+    output_path: Optional[Path] = None,
+    dataset_name: str = "ai2-adapt-dev/rm-benchmark-dev",
+    tokenizer_name: str = "oobabooga/llama-tokenizer",
+    figsize: Tuple[int, int] = (8, 4),
+    render_latex: bool = False,
+) -> Tuple["matplotlib.axes.Axes", "pd.DataFrame"]:
+
+    subsets = get_dataset_tokens_per_subset(
+        tokenizer_name=tokenizer_name,
+        dataset_name=dataset_name,
+        split="filtered",
+    )
+
+    # We will always include the prompt when computing the token lengths for the
+    # chosen and rejected responses
+    def _get_statistics(dataset: Dataset) -> Dict[str, Any]:
+        keys = ("chosen_lens", "rejected_lens", "chosen_unique_lens", "rejected_unique_lens")
+        stats = {k: [] for k in keys}
+        for eg in dataset:
+            prompt_tokens = eg.get("prompt_tokens")
+            chosen_tokens = eg.get("chosen_tokens")
+            rejected_tokens = eg.get("rejected_tokens")
+
+            stats["chosen_lens"].append(len(prompt_tokens) + len(chosen_tokens))
+            stats["rejected_lens"].append(len(prompt_tokens) + len(rejected_tokens))
+            # We compute the uniqueness across the whole instruction, NOT individually
+            stats["chosen_unique_lens"].append(len(set(prompt_tokens + chosen_tokens)))
+            stats["rejected_unique_lens"].append(len(set(prompt_tokens + rejected_tokens)))
+
+        return stats
+
+    subtoken_statistics = {name: _get_statistics(subset) for name, subset in subsets.items()}
+
+    def _get_category(name: str):
+        for category, subsets in category_subsets.items():
+            if name in subsets:
+                return category
+
+    # Create report table
+    df = pd.DataFrame(
+        [
+            {
+                "category": _get_category(name),
+                "subset": name,
+                "chosen_avg": np.mean(stats["chosen_lens"]),
+                "chosen_max": np.max(stats["chosen_lens"]),
+                "chosen_min": np.min(stats["chosen_lens"]),
+                "chosen_std": np.std(stats["chosen_lens"]),
+                "chosen_unique_avg": np.mean(stats["chosen_unique_lens"]),
+                "chosen_unique_max": np.max(stats["chosen_unique_lens"]),
+                "chosen_unique_min": np.min(stats["chosen_unique_lens"]),
+                "rejected_avg": np.mean(stats["rejected_lens"]),
+                "rejected_max": np.max(stats["rejected_lens"]),
+                "rejected_min": np.min(stats["rejected_lens"]),
+                "rejected_std": np.std(stats["rejected_lens"]),
+                "rejected_unique_avg": np.mean(stats["rejected_unique_lens"]),
+                "rejected_unique_max": np.max(stats["rejected_unique_lens"]),
+                "rejected_unique_min": np.min(stats["rejected_unique_lens"]),
+            }
+            for name, stats in subtoken_statistics.items()
+        ]
+    )
+
+    df = df.sort_values(by=["category", "subset"]).reset_index(drop=True)
+    render_string = (
+        df.round(4).astype(str).to_latex(index=False)
+        if render_latex
+        else df.to_markdown(index=False, tablefmt="github")
+    )
+    render_string = render_string.replace("NaN", "")
+    render_string = render_string.replace("nan", "")
+    print(render_string)
+
+    # Plotting
+    n_categories = df["category"].nunique()
+    # fig, ax = plt.subplots(figsize=figsize)
+    fig, axs = plt.subplots(2, 2, figsize=figsize)
+
+    axs = np.ravel(axs)
+    for ax, (category, df) in zip(axs, df.groupby("category")):
+        labels = df["subset"].to_list()
+        chosen_avgs = df["chosen_avg"].to_list()
+        chosen_stds = df["chosen_std"].to_list()
+        rejected_avgs = df["rejected_avg"].to_list()
+        rejected_stds = df["rejected_std"].to_list()
+        indices = list(reversed(np.arange(0, len(labels))))
+        # Chosen stats
+        ax.errorbar(
+            chosen_avgs,
+            indices,
+            xerr=chosen_stds,
+            color=AI2_COLORS.get("blue"),
+            fmt="o",
+            elinewidth=2,
+            capsize=2,
+            markersize=10,
+            label="Chosen",
+        )
+        # Rejected stats
+        ax.errorbar(
+            rejected_avgs,
+            indices,
+            xerr=rejected_stds,
+            color=AI2_COLORS.get("orange"),
+            fmt="o",
+            markersize=10,
+            elinewidth=2,
+            capsize=2,
+            label="Rejected",
+        )
+
+        ax.spines.right.set_visible(False)
+        ax.spines.top.set_visible(False)
+        ax.set_yticks(indices, labels)
+        ax.set_title(category)
+        ax.set_xlim([0, 1000])
+        ax.set_xlabel("Prompt length")
+
+    # Assign everything to last
+    # axs[2].legend(loc=(1.0, -0.55), frameon=False, ncol=2)
+    # ax.set_xlabel("Prompt length")
+    handles, labels = ax.get_legend_handles_labels()
+    fig.legend(handles, labels, loc="lower center", ncol=2, frameon=False, bbox_to_anchor=(0.5, -0.05))
+
+    fig.tight_layout()
+    if output_path:
+        print(f"Saving to {output_path}")
+        plt.savefig(output_path, transparent=True, dpi=120, bbox_inches="tight")
+
+    return ax, df
+
+
+def get_dataset_tokens_per_subset(
+    tokenizer_name: str,
+    dataset_name: str,
+    split: str,
+) -> Dict[str, Dataset]:
+    """Get subtokens from a dataset
+
+    Expects that the dataset contains a 'prompt', 'chosen' and 'rejected'
+    columns. It will then assign the tokenized list in the 'prompt_tokens',
+    'chosen_tokens', and 'rejected_tokens', respectively.
+    """
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+    dataset = load_dataset(
+        dataset_name,
+        download_mode="force_redownload",
+        split=split,
+    )
+
+    subset_names = set(dataset["subset"])
+    subsets = {s: dataset.filter(lambda x: x["subset"] == s) for s in subset_names}
+
+    # Tokenize the text/s: some tokenizers like oobabooga adds a '1' padding
+    # when calling the tokenizer() function directly---that's why we're
+    # tokenizing it first to str, then calling convert_tokens_to_ids()
+    def _tokenize(example):
+        example["prompt_tokens"] = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(example["prompt"]))
+        example["chosen_tokens"] = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(example["chosen"]))
+        example["rejected_tokens"] = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(example["rejected"]))
+        return example
+
+    return {s: d.map(_tokenize) for s, d in subsets.items()}
