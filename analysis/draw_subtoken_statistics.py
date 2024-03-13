@@ -14,13 +14,6 @@
 
 import argparse
 from pathlib import Path
-from typing import Any, Dict
-
-import numpy as np
-import pandas as pd
-from datasets import Dataset, load_dataset
-import matplotlib.pyplot as plt
-from transformers import AutoTokenizer
 
 from analysis.constants import SUBSET_MAPPING
 from rewardbench.visualization import draw_subtoken_statistics

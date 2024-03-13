@@ -23,9 +23,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from datasets import load_dataset, Dataset
+from datasets import Dataset, load_dataset
 from transformers import AutoTokenizer
-
 
 # From varnish: https://varnish.allenai.org/components/colors
 AI2_COLORS = {
@@ -275,7 +274,6 @@ def draw_subtoken_statistics(
     figsize: Tuple[int, int] = (8, 4),
     render_latex: bool = False,
 ) -> Tuple["matplotlib.axes.Axes", "pd.DataFrame"]:
-
     subsets = get_dataset_tokens_per_subset(
         tokenizer_name=tokenizer_name,
         dataset_name=dataset_name,
@@ -343,7 +341,7 @@ def draw_subtoken_statistics(
     print(render_string)
 
     # Plotting
-    n_categories = df["category"].nunique()
+    # n_categories = df["category"].nunique()
     # fig, ax = plt.subplots(figsize=figsize)
     fig, axs = plt.subplots(2, 2, figsize=figsize)
 
