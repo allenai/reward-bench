@@ -23,6 +23,9 @@ import numpy as np
 from huggingface_hub import snapshot_download
 
 from analysis.utils import load_results
+from rewardbench.visualization import AI2_COLORS, PLOT_PARAMS
+
+plt.rcParams.update(PLOT_PARAMS)
 
 LOCAL_DIR = "./hf_snapshot_evals/"
 
