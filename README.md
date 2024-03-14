@@ -24,7 +24,7 @@ The two primary scripts to generate results (more in `scripts/`):
 3. `scripts/train_rm.py`: A basic RM training script built on [TRL](https://github.com/huggingface/trl).
 
 ## Installation
-Please install `torch`` on your system, and then install the following requirements.
+Please install `torch` on your system, and then install the following requirements.
 ```
 pip install -e .
 ```
