@@ -109,4 +109,11 @@ SUBSET_NAME_TO_PAPER_READY = {
     "hep-js": "HumanEvalPack Javascript",
     "hep-python": "HumanEvalPack Python",
     "hep-rust": "HumanEvalPack Rust",
+    "anthropic_harmless": "Anthropic Harmless",
+    "anthropic_helpful": "Anthropic Helpful",
+    "anthropic_hhh": "Anthropic HHH",
+    "mtbench_gpt4": "MT Bench GPT-4",
+    "mtbench_human": "MT Bench Human",
+    "shp": "Stanford SHP",
+    "summarize": "OpenAI Summarize",
 }

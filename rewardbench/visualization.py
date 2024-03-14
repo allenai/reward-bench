@@ -26,11 +26,16 @@ import pandas as pd
 from datasets import Dataset, load_dataset
 from transformers import AutoTokenizer
 
+from analysis.constants import SUBSET_NAME_TO_PAPER_READY
+
 # From varnish: https://varnish.allenai.org/components/colors
 AI2_COLORS = {
     "blue": "#265ed4",
+    "light_blue": "#80bdff",
     "orange": "#dd6502",
+    "light_orange": "#ffd45d",
     "red": "#932222",
+    "light_red": "#ff9f9e",
     "aqua": "#054976",
     "light_aqua": "#b5f0ff",
     "teal": "#078e9e",
@@ -229,7 +234,7 @@ def draw_model_source_histogram(
     indices = list(reversed(np.arange(len(labels))))
     width = 1
 
-    colors = [AI2_COLORS.get("blue"), AI2_COLORS.get("teal")]
+    colors = [AI2_COLORS.get("light_blue"), AI2_COLORS.get("light_aqua")]
     ax.barh(indices, values, width, color=colors * (len(indices) // 2 + 1))
     # ax.set_xticks(indices, labels, rotation=90)
     ax.set_yticks(indices, labels)
@@ -310,7 +315,7 @@ def draw_subtoken_statistics(
         [
             {
                 "category": _get_category(name),
-                "subset": name,
+                "subset": SUBSET_NAME_TO_PAPER_READY[name],
                 "chosen_avg": np.mean(stats["chosen_lens"]),
                 "chosen_max": np.max(stats["chosen_lens"]),
                 "chosen_min": np.min(stats["chosen_lens"]),
@@ -358,7 +363,7 @@ def draw_subtoken_statistics(
             chosen_avgs,
             indices,
             xerr=chosen_stds,
-            color=AI2_COLORS.get("blue"),
+            color=AI2_COLORS.get("light_blue"),
             fmt="o",
             elinewidth=2,
             capsize=2,
@@ -370,7 +375,7 @@ def draw_subtoken_statistics(
             rejected_avgs,
             indices,
             xerr=rejected_stds,
-            color=AI2_COLORS.get("orange"),
+            color=AI2_COLORS.get("light_red"),
             fmt="o",
             markersize=10,
             elinewidth=2,
