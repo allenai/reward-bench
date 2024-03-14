@@ -23,6 +23,9 @@ import numpy as np
 from huggingface_hub import snapshot_download
 
 from analysis.utils import load_results
+from rewardbench.visualization import AI2_COLORS, PLOT_PARAMS
+
+plt.rcParams.update(PLOT_PARAMS)
 
 LOCAL_DIR = "./hf_snapshot_evals/"
 
@@ -74,6 +77,7 @@ def generate_whisker_plot(df, output_path, ncol=None, name=None, height=10, widt
 
     # Exclude 'model' and 'average' from the subsets
     subsets = [col for col in df.columns if col not in ["model", "average", "model_type", "xstest", "anthropic"]]
+    breakpoint()
     n_subsets = len(subsets)
 
     # Calculate the number of rows and columns for the subplot grid
@@ -112,7 +116,11 @@ def generate_whisker_plot(df, output_path, ncol=None, name=None, height=10, widt
         quartile1, medians, quartile3 = np.percentile(subset_data, [25, 50, 75])
         whiskers = np.array(adjacent_values(np.sort(subset_data), quartile1, quartile3))
 
-        axs[i].violinplot(subset_data, vert=True, showmedians=False, showextrema=False)
+        parts = axs[i].violinplot(subset_data, vert=True, showmedians=False, showextrema=False)
+
+        for pc in parts["bodies"]:
+            pc.set_facecolor(AI2_COLORS.get("blue"))
+            pc.set_alpha(1)
 
         # Plot median marker
         axs[i].scatter(1, medians, marker="o", color="white", s=30, zorder=3)
@@ -158,13 +166,13 @@ def generate_whisker_plot(df, output_path, ncol=None, name=None, height=10, widt
         fig.delaxes(axs[j])
 
     # Show and/or save the plot
-    plt.show()
     if output_path:
         print(f"Saving figure to {output_path}")
         # if output path doesn't exist, make it
         if not output_path.exists():
             output_path.mkdir(parents=True, exist_ok=True)
         plt.savefig(output_path / (name + ".pdf"), transparent=True)
+    plt.show()
 
 
 if __name__ == "__main__":

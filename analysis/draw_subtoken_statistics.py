@@ -12,74 +12,56 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Script to draw the distribution of model counts in a histogram
-
 import argparse
 from pathlib import Path
 
-from rewardbench.visualization import (
-    draw_model_source_histogram,
-    print_model_statistics,
-)
+from analysis.constants import SUBSET_MAPPING
+from rewardbench.visualization import draw_subtoken_statistics
 
 
 def get_args():
     parser = argparse.ArgumentParser()
     # positional arguments
-    parser.add_argument("output_path", type=Path, help="Filepath to save the generated figure.")
+    parser.add_argument("output_path", type=Path, help="Path to save the generated figure.")
     # optional arguments
+    parser.add_argument(
+        "--tokenizer_name",
+        type=str,
+        default="oobabooga/llama-tokenizer",
+        help="Pointer to the HuggingFace repository to source the tokenizer.",
+    )
     parser.add_argument(
         "--dataset_name",
         type=str,
-        default="ai2-adapt-dev/rm-benchmark-dev",
-        help="The HuggingFace dataset name to source the eval dataset.",
-    )
-    parser.add_argument(
-        "--keys",
-        type=lambda x: x.split(","),
-        default="chosen_model,rejected_model",
-        help="Comma-separated columns to include in the histogram.",
+        default="allenai/reward-bench",
+        help="Pointer to the HuggingFace repository that contains the benchmark dataset.",
     )
     parser.add_argument(
         "--figsize",
         type=int,
         nargs=2,
-        default=[14, 8],
+        default=[6, 12],
         help="Control the figure size when plotting.",
     )
     parser.add_argument(
-        "--normalize",
+        "--render_latex",
         action="store_true",
-        help="Normalize the values based on the total number of completions.",
+        help="If set, then it will render a LaTeX string instead of Markdown.",
     )
-    parser.add_argument(
-        "--log_scale",
-        action="store_true",
-        help="Set the y-axis to a logarithmic scale.",
-    )
-    parser.add_argument(
-        "--top_n",
-        type=int,
-        default=None,
-        help="Only plot the top-n models in the histogram.",
-    )
-
     args = parser.parse_args()
     return args
 
 
 def main():
     args = get_args()
-    draw_model_source_histogram(
+
+    draw_subtoken_statistics(
+        category_subsets=SUBSET_MAPPING,
         dataset_name=args.dataset_name,
+        tokenizer_name=args.tokenizer_name,
         output_path=args.output_path,
-        keys=args.keys,
         figsize=args.figsize,
-        normalize=args.normalize,
-        log_scale=args.log_scale,
-        top_n=args.top_n,
     )
-    print_model_statistics()
 
 
 if __name__ == "__main__":

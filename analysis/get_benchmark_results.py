@@ -23,6 +23,7 @@ import numpy as np
 import pandas as pd
 from huggingface_hub import snapshot_download
 
+from analysis.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
 from analysis.utils import load_results
 
 LOCAL_DIR = "hf_snapshot_evals"
@@ -34,7 +35,7 @@ def get_args():
     parser.add_argument(
         "--hf_evals_repo",
         type=str,
-        default="ai2-adapt-dev/HERM-Results",
+        default="allenai/reward-bench-results",
         help="HuggingFace repository containing the evaluation results.",
     )
     parser.add_argument(
@@ -60,29 +61,47 @@ def get_args():
 
 def get_average_over_rewardbench(
     df: pd.DataFrame,
-    subsets: List[str] = ["alpacaeval", "mt-bench", "llmbar", "refusals", "hep"],
+    df_prefs: pd.DataFrame,
 ) -> pd.DataFrame:
     """Get average over a strict subset of reward models"""
     new_df = df.copy()
-    for subset in subsets:
-        if subset == "refusals":
-            subset_cols = [
-                "refusals-dangerous",
-                "refusals-offensive",
-                "donotanswer",
-                "xstest-should-refuse",
-                "xstest-should-respond",
-            ]
-        else:
-            subset_cols = [col for col in new_df.columns if subset in col]
-        new_df[subset] = np.round(np.nanmean(new_df[subset_cols].values, axis=1), 2)
+    for subset, sub_subsets in SUBSET_MAPPING.items():
+        subset_cols = [col for col in new_df.columns if col in sub_subsets]
+        sub_data = new_df[subset_cols].values  # take the relevant column values
+        sub_counts = [EXAMPLE_COUNTS[s] for s in sub_subsets]  # take the example counts
+        new_df[subset] = np.average(sub_data, axis=1, weights=sub_counts)
 
-    keep_columns = ["model", "average"] + subsets
+    data_cols = list(SUBSET_MAPPING.keys())
+    keep_columns = ["model"] + ["model_type"] + data_cols
     new_df = new_df[keep_columns]
-    # Replace 'average' column with new average
-    new_df["average"] = np.round(np.nanmean(new_df[subsets].values, axis=1), 2)
-    # Rename column "hep" to "hep (code)"
-    new_df = new_df.rename(columns={"hep": "hep (code)"})
+
+    # selected average from pref_sets
+    pref_columns = ["anthropic_helpful", "anthropic_hhh", "shp", "summarize"]
+    pref_data = df_prefs[pref_columns].values
+
+    # add column test sets knowing the rows are not identical, take superset
+    df_prefs["Prior Sets"] = np.nanmean(pref_data, axis=1)
+    # add column Test Sets empty to new_df
+    new_df["Prior Sets"] = np.nan
+    # per row in new_df if model is in dataframe_prefs, add the value to new_df["Prior Sets"]
+    values = []
+    for i, row in new_df.iterrows():
+        model = row["model"]
+        if model in df_prefs["model"].values:
+            values.append(df_prefs[df_prefs["model"] == model]["Prior Sets"].values[0])
+            # new_df.at[i, "Prior Sets"] = dataframe_prefs[dataframe_prefs["model"] == model]["Prior Sets"].values[0]
+        else:
+            values.append(np.nan)
+
+    new_df["Prior Sets"] = values
+
+    # add total average
+    data_cols += ["Prior Sets"]
+    new_df["average"] = np.nanmean(new_df[data_cols].values, axis=1)
+
+    # make average third column
+    keep_columns = ["model", "model_type", "average"] + data_cols
+    new_df = new_df[keep_columns]
     return new_df
 
 
@@ -106,19 +125,48 @@ def main():
     hf_evals_df = load_results(hf_evals_repo, subdir="eval-set/", ignore_columns=args.ignore_columns)
     hf_prefs_df = load_results(hf_evals_repo, subdir="pref-sets/", ignore_columns=args.ignore_columns)
 
+    def _multiply_numbered_cols_by(n, df, ignore: List[str] = []):
+        numbered_cols = df.select_dtypes("number").columns
+        df[numbered_cols] *= n
+        return df
+
     all_results = {
-        "RewardBench - Overview": get_average_over_rewardbench(hf_evals_df),
-        "RewardBench - Detailed": hf_evals_df,
-        "Pref Sets - Overview": hf_prefs_df,
+        "RewardBench - Overview": _multiply_numbered_cols_by(
+            100, get_average_over_rewardbench(hf_evals_df, hf_prefs_df)
+        ),
+        "RewardBench - Detailed": _multiply_numbered_cols_by(100, hf_evals_df),
+        "Pref Sets - Overview": _multiply_numbered_cols_by(100, hf_prefs_df),
     }
 
     for name, df in all_results.items():
-        df = df.sort_values(by="average", ascending=False).round(4)
-        render_string = (
-            df.round(4).astype(str).to_latex(index=False)
-            if args.render_latex
-            else df.to_markdown(index=False, tablefmt="github")
-        )
+        # df.insert(0, "", range(1, 1 + len(df)))
+        df = df.sort_values(by="average", ascending=False).round(1)
+        if args.render_latex:
+            # Prettify: we're using openmojis instead of a model_type column
+            def _prettify_model_name(row):
+                model_type = row["model_type"]
+                orig_name = row["model"]
+                openmoji_map = {
+                    "Seq. Classifier": "\sequenceclf",  # noqa
+                    "Custom Classifier": "\customclf",  # noqa
+                    "DPO": "\dpo",  # noqa
+                }
+                emoji = openmoji_map[model_type] if model_type in openmoji_map else "\\random"
+                latex_name = (
+                    f"\href{{https://huggingface.co/{orig_name}}}"  # noqa
+                    + f"{{{emoji} {orig_name}}}".replace("_", "\_")  # noqa
+                    if orig_name != "random"
+                    else f"{emoji} {orig_name}"
+                )
+
+                return latex_name
+
+            reward_model_names = df.apply(lambda x: _prettify_model_name(x), axis=1).to_list()
+            df.insert(0, "Reward Model", reward_model_names)
+            df = df.drop(columns=["model", "model_type"]).rename(columns={"average": "Average"})
+            render_string = df.to_latex(index=False, float_format="%.1f").replace("NaN", "-")
+        else:
+            render_string = df.to_markdown(index=False, tablefmt="github")
         render_string = render_string.replace("NaN", "")
         render_string = render_string.replace("nan", "")
         print(name)
