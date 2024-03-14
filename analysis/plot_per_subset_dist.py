@@ -79,6 +79,7 @@ def generate_whisker_plot(df, output_path, ncol=None, name=None, height=10, widt
 
     # Exclude 'model' and 'average' from the subsets
     subsets = [col for col in df.columns if col not in ["model", "average", "model_type", "xstest", "anthropic"]]
+    breakpoint()
     n_subsets = len(subsets)
 
     # Calculate the number of rows and columns for the subplot grid
