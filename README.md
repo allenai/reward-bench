@@ -1,7 +1,7 @@
 <div align="center">
   <h1>RewardBench: Evaluating Reward Models</h1>
   <p>
-  <a href="https://huggingface.co/spaces/allenai/reward-bench">Leaderbord</a> 📐 |
+  <a href="https://huggingface.co/spaces/allenai/reward-bench">Leaderboard</a> 📐 |
   <a href="https://huggingface.co/datasets/allenai/reward-bench">RewardBench Dataset</a> |
   <a href="https://huggingface.co/datasets/allenai/preference-test-sets">Existing Test Sets</a> |
   <a href="https://huggingface.co/datasets/allenai/reward-bench-results">Results</a> 📊 |
