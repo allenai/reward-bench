@@ -24,7 +24,7 @@ from huggingface_hub import snapshot_download
 
 from analysis.constants import SUBSET_NAME_TO_PAPER_READY
 from analysis.utils import load_results
-from rewardbench.visualization import AI2_COLORS, PLOT_PARAMS
+from analysis.visualization import AI2_COLORS, PLOT_PARAMS
 
 plt.rcParams.update(PLOT_PARAMS)
 

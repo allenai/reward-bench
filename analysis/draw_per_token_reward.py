@@ -23,7 +23,7 @@ from typing import List
 import numpy as np
 import spacy_alignments as tokenizations
 
-from rewardbench.visualization import draw_per_token_reward
+from analysis.visualization import draw_per_token_reward
 
 DEFAULT_DIRNAME = "per-token-reward"
 
