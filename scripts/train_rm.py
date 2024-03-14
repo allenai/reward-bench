@@ -31,16 +31,9 @@ import torch
 import transformers
 from datasets import load_dataset
 from fastchat.conversation import Conversation, get_conv_template
-from transformers import (
-    AutoConfig,
-    AutoModelForSequenceClassification,
-    AutoTokenizer,
-    HfArgumentParser,
-    LlamaTokenizer,
-    LlamaTokenizerFast,
-    TrainingArguments,
-    set_seed,
-)
+from transformers import AutoConfig, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, HfArgumentParser, LlamaTokenizer
+from transformers import LlamaTokenizerFast, TrainingArguments, set_seed
 from transformers.trainer_utils import get_last_checkpoint
 from trl import RewardTrainer
 

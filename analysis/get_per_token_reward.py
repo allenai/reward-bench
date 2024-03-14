@@ -28,12 +28,8 @@ from accelerate import Accelerator
 from accelerate.logging import get_logger
 from datasets import Dataset
 from tqdm import tqdm
-from transformers import (
-    AutoModelForSequenceClassification,
-    AutoTokenizer,
-    T5ForConditionalGeneration,
-    pipeline,
-)
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import T5ForConditionalGeneration, pipeline
 
 from rewardbench import models
 
