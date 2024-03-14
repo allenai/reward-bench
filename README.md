@@ -85,7 +85,7 @@ python scripts/run_bon.py --model=OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2
 ```
 ├── README.md                   <- The top-level README for researchers using this project
 ├── analysis/                   <- Directory of tools to analyze RewardBench results or other reward model properties
-├── rewardbench/                       <- Core utils and modeling files
+├── rewardbench/                <- Core utils and modeling files
 |   ├── models/                     ├── Standalone files for running existing reward models
 |   └── *.py                        └── RewardBench tools and utilities
 ├── scripts/                    <- Scripts and configs to train and evaluate reward models
