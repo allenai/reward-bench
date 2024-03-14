@@ -74,6 +74,7 @@ def get_dataset_tokens_per_subset(
         dataset_name,
         download_mode="force_redownload",
         split=split,
+        ignore_verifications=True,
     )
 
     subset_names = set(dataset["subset"])
@@ -124,22 +125,25 @@ def main():
         [
             {
                 "subset": name,
-                "chosen_avg": np.mean(stats["chosen_lens"]),
-                "chosen_max": np.max(stats["chosen_lens"]),
-                "chosen_min": np.min(stats["chosen_lens"]),
-                "chosen_unique_avg": np.mean(stats["chosen_unique_lens"]),
-                "chosen_unique_max": np.max(stats["chosen_unique_lens"]),
-                "chosen_unique_min": np.min(stats["chosen_unique_lens"]),
-                "rejected_avg": np.mean(stats["rejected_lens"]),
-                "rejected_max": np.max(stats["rejected_lens"]),
-                "rejected_min": np.min(stats["rejected_lens"]),
-                "rejected_unique_avg": np.mean(stats["rejected_unique_lens"]),
-                "rejected_unique_max": np.max(stats["rejected_unique_lens"]),
-                "rejected_unique_min": np.min(stats["rejected_unique_lens"]),
+                "Chosen Mean Tokens": np.mean(stats["chosen_lens"]),
+                "Rejected Mean Tokens": np.mean(stats["rejected_lens"]),
+                "Chosen Max Tokens": np.max(stats["chosen_lens"]),
+                "Rejected Max Tokens": np.max(stats["rejected_lens"]),
+                "Chosen Min Tokens": np.min(stats["chosen_lens"]),
+                "Rejected Min Tokens": np.min(stats["rejected_lens"]),
+                "Chosen Mean Unique Tokens": np.mean(stats["chosen_unique_lens"]),
+                "Rejected Mean Unique Tokens": np.mean(stats["rejected_unique_lens"]),
+                "Chosen Max Unique Tokens": np.max(stats["chosen_unique_lens"]),
+                "Rejected Max Unique Tokens": np.max(stats["rejected_unique_lens"]),
+                "Chosen Min Unique Tokens": np.min(stats["chosen_unique_lens"]),
+                "Rejected Min Unique Tokens": np.min(stats["rejected_unique_lens"]),
             }
             for name, stats in subtoken_statistics.items()
         ]
     )
+
+    # sort by subset
+    df = df.sort_values(by="subset")
 
     render_string = (
         df.round(4).astype(str).to_latex(index=False)
