@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 from huggingface_hub import snapshot_download
 
-from analysis.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
+from analysis.constants import EXAMPLE_COUNTS, SUBSET_MAPPING, SUBSET_NAME_TO_PAPER_READY
 from analysis.utils import load_results
 
 LOCAL_DIR = "hf_snapshot_evals"
@@ -141,6 +141,7 @@ def main():
     for name, df in all_results.items():
         # df.insert(0, "", range(1, 1 + len(df)))
         df = df.sort_values(by="average", ascending=False).round(1)
+        df = df.rename(columns=SUBSET_NAME_TO_PAPER_READY)
         if args.render_latex:
             # Prettify: we're using openmojis instead of a model_type column
             def _prettify_model_name(row):
