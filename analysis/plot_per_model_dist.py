@@ -19,17 +19,14 @@ import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 from huggingface_hub import snapshot_download
 
-from analysis.constants import SUBSET_NAME_TO_PAPER_READY
 from analysis.utils import load_scores
 from rewardbench.visualization import AI2_COLORS, PLOT_PARAMS
 
 plt.rcParams.update(PLOT_PARAMS)
 
 LOCAL_DIR = "./hf_snapshot_evals/"
-
 
 
 def get_args():
@@ -68,77 +65,79 @@ def main():
         repo_type="dataset",
     )
     hf_evals_df = load_scores(hf_evals_repo, subdir="eval-set-scores/")
-    hf_prefs_df = load_scores(hf_evals_repo, subdir="pref-sets-scores/", ignore_columns=["summarize_prompted"])
-    generate_whisker_plot(hf_evals_df, args.output_dir, height=10, width=20, name="dist-core")
-    generate_whisker_plot(hf_prefs_df, args.output_dir, ncol=3, height=7, width=10, name="dist-pref")
+    generate_whisker_plot(
+        hf_evals_df,
+        args.output_dir,
+        model_type="Seq. Classifier",
+        ncol=4,
+        height=10,
+        width=20,
+        name="score-dist-seq-core",
+    )
+    generate_whisker_plot(
+        hf_evals_df, args.output_dir, model_type="DPO", height=10, width=20, name="score-dist-dpo-core"
+    )
+    hf_prefs_df = load_scores(hf_evals_repo, subdir="pref-sets-scores/")
+    generate_whisker_plot(
+        hf_prefs_df,
+        args.output_dir,
+        model_type="Seq. Classifier",
+        ncol=4,
+        height=10,
+        width=20,
+        name="score-dist-seq-pref",
+    )
+    generate_whisker_plot(
+        hf_prefs_df, args.output_dir, model_type="DPO", height=10, width=20, name="score-dist-dpo-pref"
+    )
 
 
-def generate_whisker_plot(df, output_path, ncol=None, name=None, height=10, width=18):
-    # remove the row with random in it from the df
-    df = df[~df["model"].str.contains("random")]
-    df = df.rename(columns=SUBSET_NAME_TO_PAPER_READY)
+def generate_whisker_plot(df, output_path, model_type="Seq. Classifier", ncol=None, name=None, height=10, width=18):
+    # select only the correct model type
+    df = df[df["model_type"] == model_type]
 
-    # Exclude 'model' and 'average' from the subsets
-    subsets = [col for col in df.columns if col not in ["model", "average", "model_type", "xstest", "anthropic"]]
-    breakpoint()
-    n_subsets = len(subsets)
+    # get num_models
+    models = df["model"].unique()
+    n_models = len(models)
 
     # Calculate the number of rows and columns for the subplot grid
     if ncol is not None:
         ncols = ncol
-        nrows = int(n_subsets / ncols) + (n_subsets % ncols > 0)
+        nrows = int(n_models / ncols) + (n_models % ncols > 0)
     else:
-        nrows = int(n_subsets**0.5)
-        ncols = int(n_subsets / nrows) + (n_subsets % nrows > 0)
+        nrows = int(n_models**0.5)
+        ncols = int(n_models / nrows) + (n_models % nrows > 0)
 
     # Create a single figure and multiple subplots
     fig, axs = plt.subplots(nrows, ncols, figsize=(width, height))
     axs = axs.flatten()  # Flatten the array to iterate easily if it's 2D
 
     # Generate plots for each subset
-    for i, subset in enumerate(subsets):
+    for i, model in enumerate(models):
+        print(model)
         # if subset in ["donotanswer", "hep-cpp"]:
         #     import ipdb; ipdb.set_trace()
         # Filter data for the current subset
-        subset_data = df[[subset]].values
-        subset_data = subset_data[~np.isnan(subset_data)]
+        subset_data = df[df["model"] == model]
 
-        # set axis ylim from 0 to 1
-        axs[i].set_ylim(0, 1)
+        # take data from scores_chosen and scores_rejected and put into one scores array
+        data_chosen = subset_data["scores_chosen"].values.tolist()
+        data_rejected = subset_data["scores_rejected"].values.tolist()
+        # flatten data if list of lists
+        if isinstance(data_chosen[0], list):
+            data_chosen = [item for sublist in data_chosen for item in sublist]
+            data_rejected = [item for sublist in data_rejected for item in sublist]
 
-        # Generate box and whisker plot in its subplot
-        # axs[i].boxplot(subset_data.values, vert=True, patch_artist=True)
+        # print(len(data))
 
-        def adjacent_values(vals, q1, q3):
-            iqr = q3 - q1
-            upper_whisker = np.max(vals[vals <= q3 + 1.5 * iqr])
-            lower_whisker = np.min(vals[vals >= q1 - 1.5 * iqr])
-            return lower_whisker, upper_whisker
+        # for ax[i] draw a histogram of the data
+        axs[i].hist([data_chosen, data_rejected], bins=20, color=[AI2_COLORS["blue"], AI2_COLORS["orange"]], alpha=0.7)
 
-        # Calculate quartiles
-        quartile1, medians, quartile3 = np.percentile(subset_data, [25, 50, 75])
-        whiskers = np.array(adjacent_values(np.sort(subset_data), quartile1, quartile3))
+        # ax title is model name (after /)
+        axs[i].set_title(model.split("/")[-1])
 
-        parts = axs[i].violinplot(subset_data, vert=True, showmedians=False, showextrema=False)
-
-        for pc in parts["bodies"]:
-            pc.set_facecolor(AI2_COLORS.get("light_blue"))
-            pc.set_alpha(1)
-
-        # Plot median marker
-        axs[i].scatter(1, medians, marker="o", color="white", s=30, zorder=3)
-
-        # Plot quartiles and whiskers
-        axs[i].vlines(1, quartile1, quartile3, color="k", linestyle="-", lw=5)
-        axs[i].vlines(1, whiskers[0], whiskers[1], color="k", linestyle="-", lw=1)
-
-        axs[i].set_title(subset)
-
-        # turn off x-axis labels tick marks
-        axs[i].set_xticks([])
-
-        axs[i].set_ylabel("")
-        axs[i].tick_params(axis="x", which="both", bottom=False, top=False, labelbottom=False)  # Remove x-tick labels
+    # global legend
+    fig.legend(["Chosen", "Rejected"], loc="lower right")
 
     # Adjusting spines and setting ticks visibility
     for ax_idx, ax in enumerate(axs):
@@ -147,17 +146,20 @@ def generate_whisker_plot(df, output_path, ncol=None, name=None, height=10, widt
         ax.spines["top"].set_visible(False)
 
         # Determine if the subplot is on the bottom row or the leftmost column
-        is_bottom = (ax_idx // ncols) == (nrows - 1) or nrows == 1
+        # is_bottom = (ax_idx // ncols) == (nrows - 1) or nrows == 1
         is_left = (ax_idx % ncols) == 0
 
-        # Only show x-axis labels for bottom row subplots
-        ax.tick_params(axis="x", labelbottom=is_bottom)
+        # # Only show x-axis labels for bottom row subplots
+        # ax.tick_params(axis="x", labelbottom=is_bottom)
 
         # Only show y-axis labels for leftmost column subplots
         ax.tick_params(axis="y", labelleft=is_left)
 
     # global y axis label
-    fig.text(0.015, 0.5, "Distribution Over Model Accuracies", va="center", rotation="vertical")
+    fig.text(0.015, 0.5, "Density", va="center", rotation="vertical")
+
+    # global x axis label
+    fig.text(0.5, 0.015, "Reward Model Score", ha="center")
 
     # Adjust layout and aesthetics
     # plt.suptitle("Per subset accuracy distribution", fontsize=16)

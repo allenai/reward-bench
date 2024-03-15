@@ -19,10 +19,11 @@ import numpy as np
 import pandas as pd
 from datasets import load_dataset
 
+
 def load_scores(
     repo_dir_path: Union[str, Path],
     subdir: str,
-    ignore_columns: Optional[List[str]] = None,
+    # ignore_columns: Optional[List[str]] = None,
 ) -> pd.DataFrame:
     """Load results into a pandas DataFrame"""
     base_dir = Path(repo_dir_path)
@@ -34,10 +35,11 @@ def load_scores(
     _results: List[pd.DataFrame] = []  # will merge later
     for org, filepaths in model_result_files.items():
         for filepath in filepaths:
-            if "nfs.cirrascale" not in str(filepath).split("scores/")[-1]: # ignore internal ai2 data
+            if "nfs.cirrascale" not in str(filepath).split("scores/")[-1]:  # ignore internal ai2 data
                 _results.append(pd.read_json(filepath, orient="records"))
     results_df = pd.concat(_results)
     return results_df
+
 
 def load_results(
     repo_dir_path: Union[str, Path],
