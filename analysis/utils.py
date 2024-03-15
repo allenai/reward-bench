@@ -19,6 +19,25 @@ import numpy as np
 import pandas as pd
 from datasets import load_dataset
 
+def load_scores(
+    repo_dir_path: Union[str, Path],
+    subdir: str,
+    ignore_columns: Optional[List[str]] = None,
+) -> pd.DataFrame:
+    """Load results into a pandas DataFrame"""
+    base_dir = Path(repo_dir_path)
+    data_dir = base_dir / subdir
+    orgs_dir = {d.name: d for d in data_dir.iterdir() if d.is_dir()}
+    # Get all files within the subfolder orgs
+    model_result_files = {d: list(path.glob("*.json")) for d, path in orgs_dir.items()}
+
+    _results: List[pd.DataFrame] = []  # will merge later
+    for org, filepaths in model_result_files.items():
+        for filepath in filepaths:
+            if "nfs.cirrascale" not in str(filepath).split("scores/")[-1]: # ignore internal ai2 data
+                _results.append(pd.read_json(filepath, orient="records"))
+    results_df = pd.concat(_results)
+    return results_df
 
 def load_results(
     repo_dir_path: Union[str, Path],
