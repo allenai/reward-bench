@@ -185,6 +185,8 @@ def main():
             reward_model_names = df.apply(lambda x: _prettify_model_name(x), axis=1).to_list()
             df.insert(0, "Reward Model", reward_model_names)
             df = df.drop(columns=["model", "model_type"]).rename(columns={"average": "Average"})
+            # Rotate column names using custom LaTeX command \rot
+            df = df.rename(columns={col: "\\rot{" + col + "}" for col in df.columns})
             render_string = df.to_latex(index=False, float_format="%.1f").replace("NaN", "-")
         else:
             render_string = df.to_markdown(index=False, tablefmt="github")
