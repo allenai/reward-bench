@@ -6,3 +6,5 @@ python3 -m analysis.draw_model_histogram source_completions_chosen_hori.pdf --lo
 python3 -m analysis.draw_subtoken_statistics prompt_length.pdf --figsize 16 10
 # Violit plot of subset score distribution
 python3 -m analysis.plot_per_subset_dist
+# Make tables
+python3 -m analysis.get_benchmark_results --render_latex
