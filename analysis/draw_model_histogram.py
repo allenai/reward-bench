@@ -17,8 +17,7 @@
 import argparse
 from pathlib import Path
 
-from analysis.visualization import draw_model_source_histogram
-from analysis.visualization import print_model_statistics
+from analysis.visualization import draw_model_source_histogram, print_model_statistics
 
 
 def get_args():
