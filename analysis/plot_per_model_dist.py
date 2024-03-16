@@ -69,26 +69,38 @@ def main():
         hf_evals_df,
         args.output_dir,
         model_type="Seq. Classifier",
-        ncol=4,
-        height=10,
-        width=20,
+        ncol=3,
+        height=12,
+        width=12,
         name="score-dist-seq-core",
     )
     generate_whisker_plot(
-        hf_evals_df, args.output_dir, model_type="DPO", height=10, width=20, name="score-dist-dpo-core"
+        hf_evals_df,
+        args.output_dir,
+        model_type="DPO",
+        ncol=3,
+        height=16,
+        width=12,
+        name="score-dist-dpo-core",
     )
     hf_prefs_df = load_scores(hf_evals_repo, subdir="pref-sets-scores/")
     generate_whisker_plot(
         hf_prefs_df,
         args.output_dir,
         model_type="Seq. Classifier",
-        ncol=4,
-        height=10,
-        width=20,
+        ncol=3,
+        height=9,
+        width=12,
         name="score-dist-seq-pref",
     )
     generate_whisker_plot(
-        hf_prefs_df, args.output_dir, model_type="DPO", height=10, width=20, name="score-dist-dpo-pref"
+        hf_prefs_df,
+        args.output_dir,
+        model_type="DPO",
+        ncol=3,
+        height=16,
+        width=12,
+        name="score-dist-dpo-pref",
     )
 
 
@@ -136,9 +148,6 @@ def generate_whisker_plot(df, output_path, model_type="Seq. Classifier", ncol=No
         # ax title is model name (after /)
         axs[i].set_title(model.split("/")[-1])
 
-    # global legend
-    fig.legend(["Chosen", "Rejected"], loc="lower right", frameon=False)
-
     # Adjusting spines and setting ticks visibility
     for ax_idx, ax in enumerate(axs):
         # Hide the right and top spines
@@ -161,6 +170,16 @@ def generate_whisker_plot(df, output_path, model_type="Seq. Classifier", ncol=No
     # global x axis label
     fig.text(0.5, 0.015, "Reward Model Score", ha="center")
 
+    bbox_anchor_y = -0.050 if name == "score-dist-seq-pref" else -0.040
+    # global legend
+    fig.legend(
+        ["Chosen", "Rejected"],
+        loc="lower center",
+        frameon=False,
+        ncols=2,
+        bbox_to_anchor=(0.5, bbox_anchor_y),
+    )
+
     # Adjust layout and aesthetics
     # plt.suptitle("Per subset accuracy distribution", fontsize=16)
     plt.tight_layout(rect=[0.02, 0.01, 1, 1])  # Adjust layout to make room for the title
@@ -176,7 +195,7 @@ def generate_whisker_plot(df, output_path, model_type="Seq. Classifier", ncol=No
         # if output path doesn't exist, make it
         if not output_path.exists():
             output_path.mkdir(parents=True, exist_ok=True)
-        plt.savefig(output_path / (name + ".pdf"), transparent=True)
+        plt.savefig(output_path / (name + ".pdf"), transparent=True, bbox_inches="tight")
     plt.show()
 
 
