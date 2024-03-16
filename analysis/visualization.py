@@ -91,8 +91,8 @@ def draw_per_token_reward(
 
     tokens (List[str]): the canonical tokens that was used as reference during alignment.
     rewards (List[List[float]]): list of rewards-per-token for each model.
-    model_names (List[str]): list of models
-    font_size (int)
+    model_names (List[str]): list of models.
+    font_size (int): set the font size.
     output_path (Optional[Path]): if set, then save the figure in the specified path.
     figsize (Tuple[int, int]): control the figure size when plotting.
     line_chart (bool): if set, will draw a line chart instead of a figure.
@@ -215,6 +215,7 @@ def draw_model_source_histogram(
     output_path (Optional[Path]): if set, then save the figure in the specified path.
     keys (List[str]): the dataset columns to include in the histogram.
     figsize (Tuple[int, int]): control the figure size when plotting.
+    font_size (int): set the font size.
     normalize (bool): set to True to normalize the values based on total number completions.
     log_scale (bool): set the y-axis to logarithmic scale.
     top_n (Optional[int]): if set, then only plot the top-n models in the histogram.
