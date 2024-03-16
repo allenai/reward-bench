@@ -142,10 +142,26 @@ def main():
         "Pref Sets - Overview": _multiply_numbered_cols_by(100, hf_prefs_df),
     }
 
+    for category, subsets in SUBSET_MAPPING.items():
+        df_per_category = hf_evals_df[subsets]
+        df_per_category.insert(0, "model", hf_evals_df["model"].to_list())
+        df_per_category.insert(1, "model_type", hf_evals_df["model_type"].to_list())
+
+        wt_average = []
+        for _, row in hf_evals_df[subsets].iterrows():
+            scores = [row[s] for s in subsets]
+            weights = [EXAMPLE_COUNTS.get(s) for s in subsets]
+            wt_average.append(np.average(scores, weights=weights))
+
+        df_per_category.insert(2, "average", wt_average)
+        all_results[category] = df_per_category
+
     for name, df in all_results.items():
         # df.insert(0, "", range(1, 1 + len(df)))
+        print(f"==================== {name} ====================")
         df = df.sort_values(by="average", ascending=False).round(1)
         df = df.rename(columns=SUBSET_NAME_TO_PAPER_READY)
+
         if args.render_latex:
             # Prettify: we're using openmojis instead of a model_type column
             def _prettify_model_name(row):

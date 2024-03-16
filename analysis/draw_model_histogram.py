@@ -17,10 +17,7 @@
 import argparse
 from pathlib import Path
 
-from rewardbench.visualization import (
-    draw_model_source_histogram,
-    print_model_statistics,
-)
+from analysis.visualization import draw_model_source_histogram, print_model_statistics
 
 
 def get_args():
