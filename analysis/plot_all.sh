@@ -8,3 +8,5 @@ python3 -m analysis.draw_subtoken_statistics prompt_length.pdf --figsize 16 10
 python3 -m analysis.plot_per_subset_dist
 # Plot per model
 python3 -m analysis.plot_per_model_dist.py
+# Make tables
+python3 -m analysis.get_benchmark_results --render_latex
