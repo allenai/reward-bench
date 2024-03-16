@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import datasets
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.font_manager
 import numpy as np
 import pandas as pd
 from datasets import Dataset, load_dataset
@@ -46,8 +47,24 @@ AI2_COLORS = {
 
 # matplotlib params: use plt.rcParams.update(PLOT_PARAMS)
 FONT_SIZES = {"small": 18, "medium": 21, "large": 24}
+
+
+def _get_font() -> Optional[str]:
+    system_fonts = matplotlib.font_manager.findSystemFonts()
+    available_fonts = [matplotlib.font_manager.get_font(font).family_name for font in system_fonts]
+    if "Times New Roman" in available_fonts:
+        return "Times New Roman"
+    else:
+        print("Font 'Times New Roman' not found, trying 'STIX'")
+        if "STIX" in available_fonts:
+            return "STIX"
+        else:
+            print("Font 'STIX' not found. To install, see: https://www.stixfonts.org/")
+            print("Will use default fonts")
+            return None
+
+
 PLOT_PARAMS = {
-    "font.family": "Times New Roman",
     "font.size": FONT_SIZES.get("small"),
     "axes.titlesize": FONT_SIZES.get("small"),
     "axes.labelsize": FONT_SIZES.get("medium"),
@@ -56,7 +73,8 @@ PLOT_PARAMS = {
     "legend.fontsize": FONT_SIZES.get("small"),
     "figure.titlesize": FONT_SIZES.get("medium"),
 }
-
+if _get_font():
+    PLOT_PARAMS["font.family"] = _get_font()
 plt.rcParams.update(PLOT_PARAMS)
 
 
