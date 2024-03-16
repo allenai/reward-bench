@@ -137,7 +137,7 @@ def generate_whisker_plot(df, output_path, model_type="Seq. Classifier", ncol=No
         axs[i].set_title(model.split("/")[-1])
 
     # global legend
-    fig.legend(["Chosen", "Rejected"], loc="lower right")
+    fig.legend(["Chosen", "Rejected"], loc="lower right", frameon=False)
 
     # Adjusting spines and setting ticks visibility
     for ax_idx, ax in enumerate(axs):
