@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from huggingface_hub import snapshot_download
 
 from analysis.utils import load_scores
-from rewardbench.visualization import AI2_COLORS, PLOT_PARAMS
+from analysis.visualization import AI2_COLORS, PLOT_PARAMS
 
 plt.rcParams.update(PLOT_PARAMS)
 
