@@ -33,6 +33,11 @@ Add the following to your `.bashrc`:
 export HF_TOKEN="{your_token}"
 ```
 
+## Contribute Your Model
+
+For now, in order to contribute your model to the leaderboard, open an issue with the model name.
+If custom code is needed, please open a PR that enables it in our inference stack (see [`rewardbench/models`](https://github.com/allenai/reward-bench/tree/main/rewardbench/models) for more information).
+
 # Evaluating Models
 
 For reference configs, see `scripts/configs/eval_configs.yaml`.
