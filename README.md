@@ -35,7 +35,7 @@ export HF_TOKEN="{your_token}"
 
 ## Contribute Your Model
 
-For now, in order to contribute your model to the leaderboard, open an issue with the model name.
+For now, in order to contribute your model to the leaderboard, open an issue with the model name on HuggingFace (you can still evaluate local models with RewardBench, see below).
 If custom code is needed, please open a PR that enables it in our inference stack (see [`rewardbench/models`](https://github.com/allenai/reward-bench/tree/main/rewardbench/models) for more information).
 
 # Evaluating Models
