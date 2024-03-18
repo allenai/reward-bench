@@ -23,6 +23,8 @@ COPY README.md README.md
 RUN pip install -e .
 RUN chmod +x scripts/*
 RUN pip install flash-attn==2.5.0 --no-build-isolation
+RUN pip install ai2-olmo 
+# TODO remove above when olmo supported in Transformers verion
 
 # for interactive session
 RUN chmod -R 777 /stage/

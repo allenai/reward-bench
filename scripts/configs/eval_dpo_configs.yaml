@@ -106,3 +106,9 @@ allenai/tulu-2-dpo-7b:
   chat_template: tulu
   batch_size: 2
   trust_remote_code: False
+allenai/OLMo-7B-Instruct:
+  ref_model: allenai/OLMo-7B-SFT
+  tokenizer: allenai/OLMo-7B-Instruct
+  chat_template:
+  batch_size: 2
+  trust_remote_code: True
