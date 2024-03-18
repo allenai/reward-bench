@@ -51,7 +51,12 @@ FONT_SIZES = {"small": 18, "medium": 21, "large": 24}
 
 def _get_font() -> Optional[str]:
     system_fonts = matplotlib.font_manager.findSystemFonts()
-    available_fonts = [matplotlib.font_manager.get_font(font).family_name for font in system_fonts]
+    available_fonts = []
+    try:
+        for font in system_fonts:
+            available_fonts.append(matplotlib.font_manager.get_font(font))
+    except Exception:
+        pass  # do nothing, we just want to get the fonts that work.
     if "Times New Roman" in available_fonts:
         return "Times New Roman"
     else:
@@ -65,6 +70,7 @@ def _get_font() -> Optional[str]:
 
 
 PLOT_PARAMS = {
+    "font.family": "Times New Roman",
     "font.size": FONT_SIZES.get("small"),
     "axes.titlesize": FONT_SIZES.get("small"),
     "axes.labelsize": FONT_SIZES.get("medium"),
