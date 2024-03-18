@@ -35,7 +35,7 @@ export HF_TOKEN="{your_token}"
 
 ## Contribute Your Model
 
-For now, in order to contribute your model to the leaderboard, open an issue with the model name.
+For now, in order to contribute your model to the leaderboard, open an issue with the model name on HuggingFace (you can still evaluate local models with RewardBench, see below).
 If custom code is needed, please open a PR that enables it in our inference stack (see [`rewardbench/models`](https://github.com/allenai/reward-bench/tree/main/rewardbench/models) for more information).
 
 # Evaluating Models
@@ -103,7 +103,10 @@ python scripts/run_bon.py --model=OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2
 
 ## Maintenance
 
-### Updating the docker image (consider removing this section when we publicly release RewardBench)
+This section is designed for AI2 usage, but may help others evaluating models with Docker.
+
+### Updating the docker image 
+
 When updating this repo, the docker image should be rebuilt to include those changes. 
 For AI2 members, please update the list below with any images you use regularly.
 For example, if you update `scripts/run_rm.py` and include a new package (or change a package version), you should rebuild the image and verify it still works on known models.
@@ -117,7 +120,6 @@ Notes: Do not use the character - in image names for beaker,
 When updating the `Dockerfile`, make sure to see the instructions at the top to update the base cuda version. 
 
 In development, we have the following docker images (most recent first as it's likely what you need).
-TODO: we should log the git commit affiliated with each of these, or delete them when outdated.
 - `nathanl/rewardbench_v1`: release version
 
 Deprecated:
