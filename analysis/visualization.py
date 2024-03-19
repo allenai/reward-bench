@@ -20,8 +20,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import datasets
 import matplotlib
-import matplotlib.pyplot as plt
 import matplotlib.font_manager
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from datasets import Dataset, load_dataset
