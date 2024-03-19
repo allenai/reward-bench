@@ -7,8 +7,9 @@
   <a href="https://huggingface.co/datasets/allenai/reward-bench-results">Results</a> 📊 |
   Paper (coming soon) 📝
 </p>
-  <img src="https://github.com/allenai/reward-bench/assets/10695622/ac1224c3-4fde-4f04-894f-3196a60ca82e" alt="RewardBench Logo" width="700" style="margin-left:'auto' margin-right:'auto' display:'block' "/>
+  <img width="1280" alt="Github RewardBench Logo" src="https://github.com/allenai/reward-bench/assets/10695622/39b213ba-9971-4338-b5f9-8e042d22d8fc" style="margin-left:'auto' margin-right:'auto' display:'block' "/>
 </div>
+
 
 ---
 
