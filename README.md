@@ -128,3 +128,14 @@ Deprecated:
 - `nathanl/herm`: for running everything, including new Starling 34B RM (last updated 22 Feb.)
 - `nathanl/herm_bon_v2`: for running `run_bon.py` sweeps (last updated 21 Feb.) 
 - `jacobm/herm`: for running `run_rm.py` sweeps (last updated 14 Feb.)
+
+## Citation
+Please cite our work with the following:
+```
+@misc{RewardBench,
+    title={RewardBench: Evaluating Reward Models for Language Modeling},
+    author={Lambert, Nathan and Pyatkin, Valentina and Morrison, Jacob and Miranda, LJ and Lin, Bill Yuchen and Chandu, Khyathi and Dziri, Nouha and Kumar, Sachin and Zick, Tom and Choi, Yejin and Smith, Noah A. and Hajishirzi, Hannaneh},
+    year={2024},
+    howpublished={\url{https://huggingface.co/spaces/allenai/reward-bench}
+}
+```
