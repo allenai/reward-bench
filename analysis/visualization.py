@@ -70,17 +70,17 @@ def _get_font() -> Optional[str]:
 
 
 PLOT_PARAMS = {
-    "font.family": "Times New Roman",
-    "font.size": FONT_SIZES.get("small"),
-    "axes.titlesize": FONT_SIZES.get("small"),
+    "font.family": "STIX",
+    "font.size": FONT_SIZES.get("large"),
+    "axes.titlesize": FONT_SIZES.get("large"),
     "axes.labelsize": FONT_SIZES.get("medium"),
     "xtick.labelsize": FONT_SIZES.get("small"),
     "ytick.labelsize": FONT_SIZES.get("small"),
-    "legend.fontsize": FONT_SIZES.get("small"),
-    "figure.titlesize": FONT_SIZES.get("medium"),
+    "legend.fontsize": FONT_SIZES.get("medium"),
+    "figure.titlesize": FONT_SIZES.get("large"),
 }
-if _get_font():
-    PLOT_PARAMS["font.family"] = _get_font()
+# if _get_font():
+#     PLOT_PARAMS["font.family"] = _get_font()
 plt.rcParams.update(PLOT_PARAMS)
 
 

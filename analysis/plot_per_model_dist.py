@@ -69,39 +69,39 @@ def main():
         hf_evals_df,
         args.output_dir,
         model_type="Seq. Classifier",
-        ncol=3,
-        height=12,
-        width=12,
+        ncol=5,
+        height=8,
+        width=21,
         name="score-dist-seq-core",
     )
-    generate_whisker_plot(
-        hf_evals_df,
-        args.output_dir,
-        model_type="DPO",
-        ncol=3,
-        height=16,
-        width=12,
-        name="score-dist-dpo-core",
-    )
-    hf_prefs_df = load_scores(hf_evals_repo, subdir="pref-sets-scores/")
-    generate_whisker_plot(
-        hf_prefs_df,
-        args.output_dir,
-        model_type="Seq. Classifier",
-        ncol=3,
-        height=9,
-        width=12,
-        name="score-dist-seq-pref",
-    )
-    generate_whisker_plot(
-        hf_prefs_df,
-        args.output_dir,
-        model_type="DPO",
-        ncol=3,
-        height=16,
-        width=12,
-        name="score-dist-dpo-pref",
-    )
+    # generate_whisker_plot(
+    #     hf_evals_df,
+    #     args.output_dir,
+    #     model_type="DPO",
+    #     ncol=3,
+    #     height=16,
+    #     width=12,
+    #     name="score-dist-dpo-core",
+    # )
+    # hf_prefs_df = load_scores(hf_evals_repo, subdir="pref-sets-scores/")
+    # generate_whisker_plot(
+    #     hf_prefs_df,
+    #     args.output_dir,
+    #     model_type="Seq. Classifier",
+    #     ncol=3,
+    #     height=9,
+    #     width=12,
+    #     name="score-dist-seq-pref",
+    # )
+    # generate_whisker_plot(
+    #     hf_prefs_df,
+    #     args.output_dir,
+    #     model_type="DPO",
+    #     ncol=3,
+    #     height=16,
+    #     width=12,
+    #     name="score-dist-dpo-pref",
+    # )
 
 
 def generate_whisker_plot(df, output_path, model_type="Seq. Classifier", ncol=None, name=None, height=10, width=18):
@@ -145,8 +145,10 @@ def generate_whisker_plot(df, output_path, model_type="Seq. Classifier", ncol=No
         # for ax[i] draw a histogram of the data
         axs[i].hist([data_chosen, data_rejected], bins=20, color=[AI2_COLORS["blue"], AI2_COLORS["orange"]], alpha=0.7)
 
+        from textwrap import wrap
+
         # ax title is model name (after /)
-        axs[i].set_title(model.split("/")[-1])
+        axs[i].set_title("\n".join(wrap(model.split("/")[-1], width=24)))
 
     # Adjusting spines and setting ticks visibility
     for ax_idx, ax in enumerate(axs):
@@ -177,7 +179,7 @@ def generate_whisker_plot(df, output_path, model_type="Seq. Classifier", ncol=No
         loc="lower center",
         frameon=False,
         ncols=2,
-        bbox_to_anchor=(0.5, bbox_anchor_y),
+        bbox_to_anchor=(0.5, -0.070),
     )
 
     # Adjust layout and aesthetics
