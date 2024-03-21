@@ -477,7 +477,8 @@ class BeaverPipeline:
         with torch.no_grad():
             outputs = self.model(**inputs)
         return outputs.end_scores
-    
+
+
 # Pipeline addition
 class BeaverCostPipeline:
     # init loads task, tokenizer and model

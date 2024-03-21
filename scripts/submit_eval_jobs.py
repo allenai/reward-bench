@@ -80,7 +80,7 @@ if args.model is not None:
 
 for model in models_to_evaluate:
     model_config = configs[model]
-    eval_dpo = model_config['dpo']
+    eval_dpo = model_config["dpo"]
 
     if eval_on_bon:
         experiment_group = "rewardebench-bon"
@@ -91,7 +91,7 @@ for model in models_to_evaluate:
     else:
         experiment_group = "rewardebench-seq"
         script = "run_rm.py"
-    
+
     if eval_on_pref_sets:
         experiment_group += "-pref-sets"
 
