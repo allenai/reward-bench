@@ -403,7 +403,7 @@ def main():
         num_proc=data_args.preprocessing_num_workers,
     )
 
-    # initalize a trainer
+    # initialize a trainer
     trainer = RewardTrainer(
         model=model,
         args=training_args,
