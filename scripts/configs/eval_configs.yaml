@@ -227,20 +227,20 @@ weqweasdas/RM-Gemma-2B:
   model: weqweasdas/RM-Gemma-2B
   tokenizer: weqweasdas/RM-Gemma-2B
   chat_template: # empty for tokenizer
-  batch_size: 8
+  batch_size: 16
   trust_remote_code: False
   dpo: False
 weqweasdas/RM-Gemma-7B:
   model: weqweasdas/RM-Gemma-7B
   tokenizer: weqweasdas/RM-Gemma-7B
   chat_template: # empty for tokenizer
-  batch_size: 8
+  batch_size: 16
   trust_remote_code: False
   dpo: False
 Ray2333/reward-model-Mistral-7B-instruct-Unified-Feedback:
   model: Ray2333/reward-model-Mistral-7B-instruct-Unified-Feedback
   tokenizer: Ray2333/reward-model-Mistral-7B-instruct-Unified-Feedback
   chat_template: # empty for tokenizer
-  batch_size: 8
+  batch_size: 16
   trust_remote_code: False
   dpo: False
