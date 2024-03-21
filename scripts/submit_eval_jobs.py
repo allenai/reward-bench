@@ -47,13 +47,9 @@ num_gpus = 1
 upload_to_hub = args.upload_to_hub
 eval_on_pref_sets = args.eval_on_pref_sets
 eval_on_bon = args.eval_on_bon
-eval_dpo = args.eval_dpo
 
 if eval_on_bon:
     with open("scripts/configs/eval_bon_configs.yaml", "r") as f:
-        configs = yaml.load(f.read(), Loader=yaml.FullLoader)
-elif eval_dpo:
-    with open("scripts/configs/eval_dpo_configs.yaml", "r") as f:
         configs = yaml.load(f.read(), Loader=yaml.FullLoader)
 else:
     with open("scripts/configs/eval_configs.yaml", "r") as f:
@@ -63,7 +59,6 @@ print(configs)
 
 # assert only one of eval_on_pref_sets and eval_on_bon is True
 assert not (eval_on_pref_sets and eval_on_bon), "Only one of eval_on_pref_sets and eval_on_bon can be True"
-assert not (eval_on_bon and eval_dpo), "Only one of BoN and DPO can be True (separate scripts for now not implemented)"
 
 HF_TOKEN = os.getenv("HF_TOKEN")
 assert HF_TOKEN is not None, "HF Token does not exist -- run `Export HF_TOKEN=<your_write_token_here>'"
@@ -85,18 +80,21 @@ if args.model is not None:
 
 for model in models_to_evaluate:
     model_config = configs[model]
-    if eval_on_pref_sets:
-        experiment_group = "common-preference-sets"
-        script = "run_dpo.py" if eval_dpo else "run_rm.py"
-    elif eval_on_bon:
-        experiment_group = "bon-preference-sets"
+    eval_dpo = model_config['dpo']
+
+    if eval_on_bon:
+        experiment_group = "rewardebench-bon"
         script = "run_bon.py"
     elif eval_dpo:
-        experiment_group = "dpo-eval"
+        experiment_group = "rewardebench-dpo"
         script = "run_dpo.py"
     else:
-        experiment_group = "rewardbench-preference-sets"
+        experiment_group = "rewardebench-seq"
         script = "run_rm.py"
+    
+    if eval_on_pref_sets:
+        experiment_group += "-pref-sets"
+
     print(f"Submitting evaluation for model: {model} on {experiment_group}")
     d = copy.deepcopy(d1)
 

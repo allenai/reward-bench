@@ -1,80 +1,246 @@
 # This file contains default evaluation parameters assuming access to a single A100-80GB
-openbmb/UltraRM-13b:
-  model: 'openbmb/UltraRM-13b'
-  tokenizer: 'openbmb/UltraRM-13b'
-  chat_template: 'openbmb'
-  batch_size: 8
-  trust_remote_code: False
-OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5:
-  model: 'OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5'
-  tokenizer: 'OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5'
-  chat_template: 'oasst_pythia'
-  batch_size: 64
-  trust_remote_code: False
-OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1:
-  model: 'OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1'
-  tokenizer: 'OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1'
-  chat_template: 'oasst_pythia'
-  batch_size: 16
-  trust_remote_code: False
-OpenAssistant/reward-model-deberta-v3-large-v2:
-  model: 'OpenAssistant/reward-model-deberta-v3-large-v2'
-  tokenizer: 'OpenAssistant/reward-model-deberta-v3-large-v2'
-  chat_template: 'raw'
-  batch_size: 64
-  trust_remote_code: False
-weqweasdas/hh_rlhf_rm_open_llama_3b:
-  model: 'weqweasdas/hh_rlhf_rm_open_llama_3b'
-  tokenizer: 'weqweasdas/hh_rlhf_rm_open_llama_3b'
-  chat_template: 'Robin'
-  batch_size: 64
-  trust_remote_code: False
-llm-blender/PairRM-hf:
-  model: 'llm-blender/PairRM-hf'
-  tokenizer: 'llm-blender/PairRM-hf'
-  chat_template: 'tulu'
-  batch_size: 64
-  trust_remote_code: False
-berkeley-nest/Starling-RM-7B-alpha:
-  model: 'berkeley-nest/Starling-RM-7B-alpha'
-  tokenizer: 'meta-llama/Llama-2-7b-chat-hf'
-  chat_template: 'llama-2'
-  batch_size: 16
-  trust_remote_code: False
-stanfordnlp/SteamSHP-flan-t5-xl:
-  model: 'stanfordnlp/SteamSHP-flan-t5-xl'
-  tokenizer: 'stanfordnlp/SteamSHP-flan-t5-xl'
-  chat_template: 'tulu'
-  batch_size: 32
-  trust_remote_code: False
-stanfordnlp/SteamSHP-flan-t5-large:
-  model: 'stanfordnlp/SteamSHP-flan-t5-large'
-  tokenizer: 'stanfordnlp/SteamSHP-flan-t5-large'
-  chat_template: 'tulu'
-  batch_size: 32
-  trust_remote_code: False
-PKU-Alignment/beaver-7b-v1.0-reward:
-  model: 'PKU-Alignment/beaver-7b-v1.0-reward'
-  tokenizer: 'PKU-Alignment/beaver-7b-v1.0-reward'
-  chat_template: 'pku-align'
-  batch_size: 16
-  trust_remote_code: False
+# openbmb/UltraRM-13b:
+#   model: 'openbmb/UltraRM-13b'
+#   tokenizer: 'openbmb/UltraRM-13b'
+#   chat_template: 'openbmb'
+#   batch_size: 8
+#   trust_remote_code: False
+#   dpo: False
+# OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5:
+#   model: 'OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5'
+#   tokenizer: 'OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5'
+#   chat_template: 'oasst_pythia'
+#   batch_size: 64
+#   trust_remote_code: False
+#   dpo: False
+# OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1:
+#   model: 'OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1'
+#   tokenizer: 'OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1'
+#   chat_template: 'oasst_pythia'
+#   batch_size: 16
+#   trust_remote_code: False
+#   dpo: False
+# OpenAssistant/reward-model-deberta-v3-large-v2:
+#   model: 'OpenAssistant/reward-model-deberta-v3-large-v2'
+#   tokenizer: 'OpenAssistant/reward-model-deberta-v3-large-v2'
+#   chat_template: 'raw'
+#   batch_size: 64
+#   trust_remote_code: False
+#   dpo: False
+# weqweasdas/hh_rlhf_rm_open_llama_3b:
+#   model: 'weqweasdas/hh_rlhf_rm_open_llama_3b'
+#   tokenizer: 'weqweasdas/hh_rlhf_rm_open_llama_3b'
+#   chat_template: 'Robin'
+#   batch_size: 64
+#   trust_remote_code: False
+#   dpo: False
+# llm-blender/PairRM-hf:
+#   model: 'llm-blender/PairRM-hf'
+#   tokenizer: 'llm-blender/PairRM-hf'
+#   chat_template: 'tulu'
+#   batch_size: 64
+#   trust_remote_code: False
+#   dpo: False
+# berkeley-nest/Starling-RM-7B-alpha:
+#   model: 'berkeley-nest/Starling-RM-7B-alpha'
+#   tokenizer: 'meta-llama/Llama-2-7b-chat-hf'
+#   chat_template: 'llama-2'
+#   batch_size: 16
+#   trust_remote_code: False
+#   dpo: False
+# stanfordnlp/SteamSHP-flan-t5-xl:
+#   model: 'stanfordnlp/SteamSHP-flan-t5-xl'
+#   tokenizer: 'stanfordnlp/SteamSHP-flan-t5-xl'
+#   chat_template: 'tulu'
+#   batch_size: 32
+#   trust_remote_code: False
+#   dpo: False
+# stanfordnlp/SteamSHP-flan-t5-large:
+#   model: 'stanfordnlp/SteamSHP-flan-t5-large'
+#   tokenizer: 'stanfordnlp/SteamSHP-flan-t5-large'
+#   chat_template: 'tulu'
+#   batch_size: 32
+#   trust_remote_code: False
+#   dpo: False
+# PKU-Alignment/beaver-7b-v1.0-reward:
+#   model: 'PKU-Alignment/beaver-7b-v1.0-reward'
+#   tokenizer: 'PKU-Alignment/beaver-7b-v1.0-reward'
+#   chat_template: 'pku-align'
+#   batch_size: 16
+#   trust_remote_code: False
+#   dpo: False
 PKU-Alignment/beaver-7b-v1.0-cost:
   model: 'PKU-Alignment/beaver-7b-v1.0-cost'
   tokenizer: 'PKU-Alignment/beaver-7b-v1.0-cost'
   chat_template: 'pku-align'
   batch_size: 16
   trust_remote_code: False
-IDEA-CCNL/Ziya-LLaMA-7B-Reward:
-  model: 'IDEA-CCNL/Ziya-LLaMA-7B-Reward'
-  tokenizer: 'IDEA-CCNL/Ziya-LLaMA-7B-Reward'
-  chat_template: 'Ziya'
-  batch_size: 16
-  trust_remote_code: True
-berkeley-nest/Starling-RM-34B:
-  model: 'berkeley-nest/Starling-RM-34B'
-  tokenizer: '01-ai/Yi-34B-Chat'
-  chat_template: 'Yi-34b-chat'
-  num_gpus: 2
-  batch_size: 2
+  dpo: False
+# IDEA-CCNL/Ziya-LLaMA-7B-Reward:
+#   model: 'IDEA-CCNL/Ziya-LLaMA-7B-Reward'
+#   tokenizer: 'IDEA-CCNL/Ziya-LLaMA-7B-Reward'
+#   chat_template: 'Ziya'
+#   batch_size: 16
+#   trust_remote_code: True
+#   dpo: False
+# berkeley-nest/Starling-RM-34B:
+#   model: 'berkeley-nest/Starling-RM-34B'
+#   tokenizer: '01-ai/Yi-34B-Chat'
+#   chat_template: 'Yi-34b-chat'
+#   num_gpus: 2
+#   batch_size: 2
+#   trust_remote_code: False
+#   dpo: False
+# stabilityai/stablelm-zephyr-3b:
+#   ref_model: stabilityai/stablelm-3b-4e1t
+#   tokenizer: stabilityai/stablelm-zephyr-3b
+#   chat_template:
+#   batch_size: 12
+#   trust_remote_code: False
+#   dpo: True
+# stabilityai/stablelm-2-zephyr-1_6b:
+#   ref_model: stabilityai/stablelm-2-1_6b
+#   tokenizer: stabilityai/stablelm-2-zephyr-1_6b
+#   chat_template:
+#   batch_size: 6
+#   trust_remote_code: True
+#   dpo: True
+# HuggingFaceH4/zephyr-7b-beta:
+#   ref_model: HuggingFaceH4/mistral-7b-sft-beta
+#   tokenizer: HuggingFaceH4/zephyr-7b-beta
+#   chat_template:
+#   batch_size: 4
+#   trust_remote_code: False
+#   dpo: True
+# HuggingFaceH4/zephyr-7b-alpha:
+#   ref_model: HuggingFaceH4/mistral-7b-sft-alpha
+#   tokenizer: HuggingFaceH4/zephyr-7b-alpha
+#   chat_template:
+#   batch_size: 4
+#   trust_remote_code: False
+#   dpo: True
+# Qwen/Qwen1.5-0.5B-Chat:
+#   ref_model: Qwen/Qwen1.5-0.5B
+#   tokenizer: Qwen/Qwen1.5-0.5B-Chat
+#   chat_template:
+#   batch_size: 6
+#   trust_remote_code: False
+#   dpo: True
+# Qwen/Qwen1.5-1.8B-Chat:
+#   ref_model: Qwen/Qwen1.5-1.8B
+#   tokenizer: Qwen/Qwen1.5-1.8B-Chat
+#   chat_template:
+#   batch_size: 3
+#   trust_remote_code: False
+#   dpo: True
+# Qwen/Qwen1.5-4B-Chat:
+#   ref_model: Qwen/Qwen1.5-4B
+#   tokenizer: Qwen/Qwen1.5-4B-Chat
+#   chat_template:
+#   batch_size: 2
+#   trust_remote_code: False
+#   dpo: True
+# Qwen/Qwen1.5-7B-Chat:
+#   ref_model: Qwen/Qwen1.5-7B
+#   tokenizer: Qwen/Qwen1.5-7B-Chat
+#   chat_template:
+#   batch_size: 2
+#   trust_remote_code: False
+#   dpo: True
+# Qwen/Qwen1.5-14B-Chat:
+#   ref_model: Qwen/Qwen1.5-14B
+#   tokenizer: Qwen/Qwen1.5-14B-Chat
+#   chat_template:
+#   batch_size: 2
+#   num_gpus: 2
+#   trust_remote_code: False
+#   dpo: True
+# Qwen/Qwen1.5-72B-Chat:
+#   ref_model: Qwen/Qwen1.5-72B
+#   tokenizer: Qwen/Qwen1.5-72B-Chat
+#   chat_template:
+#   batch_size: 1
+#   num_gpus: 4
+#   trust_remote_code: False
+#   dpo: True
+# mistralai/Mixtral-8x7B-Instruct-v0.1:
+#   ref_model: mistralai/Mixtral-8x7B-v0.1
+#   tokenizer: mistralai/Mixtral-8x7B-Instruct-v0.1
+#   chat_template:
+#   batch_size: 1
+#   num_gpus: 4
+#   trust_remote_code: False
+#   dpo: True
+# NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO:
+#   ref_model: NousResearch/Nous-Hermes-2-Mixtral-8x7B-SFT
+#   tokenizer: NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO
+#   chat_template:
+#   batch_size: 1
+#   num_gpus: 4
+#   trust_remote_code: True
+#   dpo: True
+# NousResearch/Nous-Hermes-2-Mistral-7B-DPO:
+#   ref_model: teknium/OpenHermes-2.5-Mistral-7B
+#   tokenizer: NousResearch/Nous-Hermes-2-Mistral-7B-DPO
+#   chat_template:
+#   batch_size: 4
+#   trust_remote_code: False
+#   dpo: True
+# HuggingFaceH4/zephyr-7b-gemma-v0.1:
+#   ref_model: HuggingFaceH4/zephyr-7b-gemma-sft-v0.1
+#   tokenizer: HuggingFaceH4/zephyr-7b-gemma-v0.1
+#   chat_template:
+#   batch_size: 2
+#   trust_remote_code: False
+#   dpo: True
+# allenai/tulu-2-dpo-70b:
+#   ref_model: allenai/tulu-2-70b
+#   tokenizer: allenai/tulu-2-dpo-70b
+#   chat_template: tulu
+#   num_gpus: 4
+#   batch_size: 2
+#   trust_remote_code: False
+#   dpo: True
+# allenai/tulu-2-dpo-13b:
+#   ref_model: allenai/tulu-2-13b
+#   tokenizer: allenai/tulu-2-dpo-13b
+#   chat_template: tulu
+#   num_gpus: 2
+#   batch_size: 2
+#   trust_remote_code: False
+#   dpo: True
+# allenai/tulu-2-dpo-7b:
+#   ref_model: allenai/tulu-2-7b
+#   tokenizer: allenai/tulu-2-dpo-7b
+#   chat_template: tulu
+#   batch_size: 2
+#   trust_remote_code: False
+#   dpo: True
+# allenai/OLMo-7B-Instruct:
+#   ref_model: allenai/OLMo-7B-SFT
+#   tokenizer: allenai/OLMo-7B-Instruct
+#   chat_template:
+#   batch_size: 2
+#   trust_remote_code: True
+#   dpo: True
+weqweasdas/RM-Gemma-2B:
+  model: weqweasdas/RM-Gemma-2B
+  tokenizer: weqweasdas/RM-Gemma-2B
+  chat_template: # empty for tokenizer
+  batch_size: 8
   trust_remote_code: False
+  dpo: False
+weqweasdas/RM-Gemma-7B:
+  model: weqweasdas/RM-Gemma-7B
+  tokenizer: weqweasdas/RM-Gemma-7B
+  chat_template: # empty for tokenizer
+  batch_size: 8
+  trust_remote_code: False
+  dpo: False
+Ray2333/reward-model-Mistral-7B-instruct-Unified-Feedback:
+  model: Ray2333/reward-model-Mistral-7B-instruct-Unified-Feedback
+  tokenizer: Ray2333/reward-model-Mistral-7B-instruct-Unified-Feedback
+  chat_template: # empty for tokenizer
+  batch_size: 8
+  trust_remote_code: False
+  dpo: False
