@@ -5,7 +5,7 @@
   <a href="https://huggingface.co/datasets/allenai/reward-bench">RewardBench Dataset</a> |
   <a href="https://huggingface.co/datasets/allenai/preference-test-sets">Existing Test Sets</a> |
   <a href="https://huggingface.co/datasets/allenai/reward-bench-results">Results</a> 📊 |
-  <a href="https://github.com/allenai/reward-bench/blob/main/rewardbench.pdf"> Paper (Arxiv soon) 📝</a>
+  <a href="https://arxiv.org/abs/2403.13787"> Paper📝</a>
 </p>
   <img width="1280" alt="Github RewardBench Logo" src="https://github.com/allenai/reward-bench/assets/10695622/39b213ba-9971-4338-b5f9-8e042d22d8fc" style="margin-left:'auto' margin-right:'auto' display:'block' "/>
 </div>
