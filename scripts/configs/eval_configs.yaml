@@ -69,13 +69,13 @@
 #   batch_size: 16
 #   trust_remote_code: False
 #   dpo: False
-PKU-Alignment/beaver-7b-v1.0-cost:
-  model: 'PKU-Alignment/beaver-7b-v1.0-cost'
-  tokenizer: 'PKU-Alignment/beaver-7b-v1.0-cost'
-  chat_template: 'pku-align'
-  batch_size: 16
-  trust_remote_code: False
-  dpo: False
+# PKU-Alignment/beaver-7b-v1.0-cost:
+#   model: 'PKU-Alignment/beaver-7b-v1.0-cost'
+#   tokenizer: 'PKU-Alignment/beaver-7b-v1.0-cost'
+#   chat_template: 'pku-align'
+#   batch_size: 16
+#   trust_remote_code: False
+#   dpo: False
 # IDEA-CCNL/Ziya-LLaMA-7B-Reward:
 #   model: 'IDEA-CCNL/Ziya-LLaMA-7B-Reward'
 #   tokenizer: 'IDEA-CCNL/Ziya-LLaMA-7B-Reward'

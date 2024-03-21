@@ -121,22 +121,18 @@ Notes: Do not use the character - in image names for beaker,
 When updating the `Dockerfile`, make sure to see the instructions at the top to update the base cuda version. 
 
 In development, we have the following docker images (most recent first as it's likely what you need).
+- `nathanl/rewardbench_v2`: fix beaver cost model
 - `nathanl/rewardbench_v1`: release version
-
-Deprecated:
-- `nathanl/herm_v6`: chat template loading from tokenizer fixes + DPO additions.
-- `nathanl/herm_dpo`: for adding functionality with DPO sweeps, fix minor bugs (last updated 24 Feb.)
-- `nathanl/herm`: for running everything, including new Starling 34B RM (last updated 22 Feb.)
-- `nathanl/herm_bon_v2`: for running `run_bon.py` sweeps (last updated 21 Feb.) 
-- `jacobm/herm`: for running `run_rm.py` sweeps (last updated 14 Feb.)
 
 ## Citation
 Please cite our work with the following:
 ```
-@misc{RewardBench,
-    title={RewardBench: Evaluating Reward Models for Language Modeling},
-    author={Lambert, Nathan and Pyatkin, Valentina and Morrison, Jacob and Miranda, LJ and Lin, Bill Yuchen and Chandu, Khyathi and Dziri, Nouha and Kumar, Sachin and Zick, Tom and Choi, Yejin and Smith, Noah A. and Hajishirzi, Hannaneh},
-    year={2024},
-    howpublished={\url{https://huggingface.co/spaces/allenai/reward-bench}
+@misc{lambert2024rewardbench,
+      title={RewardBench: Evaluating Reward Models for Language Modeling}, 
+      author={Nathan Lambert and Valentina Pyatkin and Jacob Morrison and LJ Miranda and Bill Yuchen Lin and Khyathi Chandu and Nouha Dziri and Sachin Kumar and Tom Zick and Yejin Choi and Noah A. Smith and Hannaneh Hajishirzi},
+      year={2024},
+      eprint={2403.13787},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
 }
 ```
