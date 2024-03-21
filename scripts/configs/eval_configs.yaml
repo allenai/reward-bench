@@ -237,6 +237,13 @@ weqweasdas/RM-Gemma-7B:
   batch_size: 16
   trust_remote_code: False
   dpo: False
+weqweasdas/RM-Gemma-7B-4096:
+  model: weqweasdas/RM-Gemma-7B-4096
+  tokenizer: weqweasdas/RM-Gemma-7B-4096
+  chat_template: # empty for tokenizer
+  batch_size: 16
+  trust_remote_code: False
+  dpo: False
 Ray2333/reward-model-Mistral-7B-instruct-Unified-Feedback:
   model: Ray2333/reward-model-Mistral-7B-instruct-Unified-Feedback
   tokenizer: Ray2333/reward-model-Mistral-7B-instruct-Unified-Feedback
