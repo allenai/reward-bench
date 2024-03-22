@@ -251,3 +251,17 @@ Ray2333/reward-model-Mistral-7B-instruct-Unified-Feedback:
   batch_size: 16
   trust_remote_code: False
   dpo: False
+hendrydong/Mistral-RM-for-RAFT-GSHF-v0:
+  model: hendrydong/Mistral-RM-for-RAFT-GSHF-v0
+  tokenizer: hendrydong/Mistral-RM-for-RAFT-GSHF-v0
+  chat_template: # empty for tokenizer
+  batch_size: 16
+  trust_remote_code: False
+  dpo: False
+weqweasdas/RM-Mistral-7B:
+  model: weqweasdas/RM-Mistral-7B
+  tokenizer: weqweasdas/RM-Mistral-7B
+  chat_template: # empty for tokenizer
+  batch_size: 16
+  trust_remote_code: False
+  dpo: False
