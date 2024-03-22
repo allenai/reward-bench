@@ -477,3 +477,28 @@ class BeaverPipeline:
         with torch.no_grad():
             outputs = self.model(**inputs)
         return outputs.end_scores
+
+
+# Pipeline addition
+class BeaverCostPipeline:
+    # init loads task, tokenizer and model
+    def __init__(self, task, model, tokenizer):
+        self.task = task
+        self.model = model
+        self.tokenizer = tokenizer
+
+    def __call__(self, samples, **kwargs):
+        _ = kwargs.get("batch_size", 1)
+        truncation = kwargs.get("truncation", True)
+        padding = kwargs.get("padding", True)
+        max_length = kwargs.get("max_length", 2048)
+        inputs = self.tokenizer(
+            samples,
+            truncation=truncation,
+            max_length=max_length,
+            padding=padding,
+            return_tensors="pt",
+        ).to("cuda")
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+        return -outputs.end_scores

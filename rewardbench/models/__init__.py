@@ -22,7 +22,7 @@ from transformers import (
     pipeline,
 )
 
-from .beaver import BeaverPipeline, LlamaForScore
+from .beaver import BeaverCostPipeline, BeaverPipeline, LlamaForScore
 from .openassistant import *  # noqa
 from .openbmb import LlamaRewardModel, OpenBMBPipeline
 from .pairrm import DebertaV2PairRM, PairRMPipeline
@@ -101,7 +101,7 @@ REWARD_MODEL_CONFIG = {
     },
     "PKU-Alignment/beaver-7b-v1.0-cost": {
         "model_builder": LlamaForScore.from_pretrained,
-        "pipeline_builder": BeaverPipeline,
+        "pipeline_builder": BeaverCostPipeline,
         "quantized": True,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
