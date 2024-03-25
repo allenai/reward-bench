@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # run a generative RM. For now, this requires openai to be installed
-# TODO support more API calls
+# TODO support more API calls, this file is WIP
 
 import argparse
 import logging
@@ -23,8 +23,9 @@ import sys
 import numpy as np
 from fastchat.conversation import get_conv_template
 from tqdm import tqdm
+
+from rewardbench import load_eval_dataset, save_to_hub
 from rewardbench.generative import run_judge_pair
-from rewardbench.utils import load_eval_dataset
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -40,7 +41,9 @@ def get_args():
     Parse arguments strings model and chat_template
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, required=True, help="name of OpenAI model to use (TODO add more providers/models)")
+    parser.add_argument(
+        "--model", type=str, required=True, help="name of OpenAI model to use (TODO add more providers/models)"
+    )
     parser.add_argument("--chat_template", type=str, default="chatgpt", help="path to chat template")
     parser.add_argument(
         "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
@@ -76,7 +79,7 @@ def main():
     chat_template = args.chat_template
     conv = get_conv_template(chat_template)
 
-    custom_dialogue = True # to mirror other scripts
+    custom_dialogue = True  # to mirror other scripts
     model_type = "Generative RM"
 
     ############################
@@ -114,37 +117,14 @@ def main():
         prompt = batch["text_chosen"][0]["content"]
         answer_a = batch["text_chosen"]
         answer_b = batch["text_rejected"]
-        import ipdb; ipdb.set_trace()
-        out, _, _ = run_judge_pair(prompt, answer_a, answer_b, args.model, multi_turn=mult_turn)
-        if model_type == "Custom Classifier":
-            text_rejected = [b["text_rejected"] for b in batch]
-            text_chosen = [b["text_chosen"] for b in batch]
-            results_sub = reward_pipe(text_chosen, text_rejected, **reward_pipeline_kwargs)
-            [results.append(1) if result else results.append(0) for result in results_sub.cpu().numpy().tolist()]
-            scores_chosen.extend([None] * len(results_sub))
-            scores_rejected.extend([None] * len(results_sub))
-        else:
-            rewards_chosen = reward_pipe(batch["text_chosen"], **reward_pipeline_kwargs)
-            rewards_rejected = reward_pipe(batch["text_rejected"], **reward_pipeline_kwargs)
 
-            # for each item in batch, record 1 if chosen > rejected
-            # extra score from dict within batched results (e.g. logits)
-            # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
-            if isinstance(rewards_chosen[0], dict):
-                score_chosen_batch = [result["score"] for result in rewards_chosen]
-                score_rejected_batch = [result["score"] for result in rewards_rejected]
-            # for classes that directly output scores (custom code)
-            else:
-                score_chosen_batch = rewards_chosen.cpu().numpy().tolist()
-                score_rejected_batch = rewards_rejected.cpu().numpy().tolist()
-
-            # log results
-            [
-                results.append(1) if chosen > rejected else results.append(0)
-                for chosen, rejected in zip(score_chosen_batch, score_rejected_batch)
-            ]
-            scores_chosen.extend(score_chosen_batch)
-            scores_rejected.extend(score_rejected_batch)
+        winner, _, _ = run_judge_pair(prompt, answer_a, answer_b, args.model, multi_turn=mult_turn)
+        if winner == "A":
+            results.append(1)
+        elif winner == "B":
+            results.append(0)
+        else:  # if "error"
+            results.append(0.5)  # effectively a tie
 
     ############################
     # Print & process results
@@ -164,7 +144,7 @@ def main():
     results_grouped = {}
     results_grouped["model"] = args.model
     results_grouped["model_type"] = model_type
-    results_grouped["chat_template"] = args.chat_template if not hasattr(tokenizer, "chat_template") else "tokenizer"
+    results_grouped["chat_template"] = args.chat_template
 
     # print per subset and log into results_grouped file
     present_subsets = np.unique(subsets)
@@ -178,27 +158,14 @@ def main():
     ############################
     # Upload results to hub
     # ############################
-    # sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
-    # results_url = save_to_hub(
-    #     results_grouped, args.model, sub_path, args.debug, local_only=args.do_not_save, save_metrics_for_beaker=True
-    # )
-    # if not args.do_not_save:
-    #     logger.info(f"Uploaded reward model results to {results_url}")
+    sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
+    results_url = save_to_hub(
+        results_grouped, args.model, sub_path, args.debug, local_only=args.do_not_save, save_metrics_for_beaker=True
+    )
+    if not args.do_not_save:
+        logger.info(f"Uploaded reward model results to {results_url}")
 
-    # # upload chosen-rejected with scores
-    # if not model_type == "Custom Classifier":  # custom classifiers do not return scores
-    #     # create new json with scores and upload
-    #     scores_dict = out_dataset.to_dict()
-    #     scores_dict["model"] = args.model
-    #     scores_dict["model_type"] = model_type
-    #     scores_dict["chat_template"] = args.chat_template
-
-    #     sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
-
-    #     scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug)
-    #     logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
-    # else:
-    #     logger.info("Not uploading chosen-rejected text with scores due to model compatibility")
+    logger.info("Not uploading chosen-rejected text with scores due to model compatibility")
 
 
 if __name__ == "__main__":

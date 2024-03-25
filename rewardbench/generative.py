@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # Prompts and other tools for running RewardBench with generative RMs
+# pip install openai>=1.0
 
 import time as time
 
@@ -125,28 +126,24 @@ def chat_completion_openai(model, conv, temperature, max_tokens, api_dict=None):
     for _ in range(API_MAX_RETRY):
         try:
             messages = conv.to_openai_api_messages()
-            response = openai.ChatCompletion.create(
-                model=model,
-                messages=messages,
-                n=1,
-                temperature=temperature,
-                max_tokens=max_tokens,
+            response = client.chat.completions.create(
+                model=model, messages=messages, n=1, temperature=temperature, max_tokens=max_tokens
             )
-            output = response["choices"][0]["message"]["content"]
+            output = response.choices[0].message.content
             break
         except openai.APIError as e:
-            #Handle API error here, e.g. retry or log
+            # Handle API error here, e.g. retry or log
             print(f"OpenAI API returned an API Error: {e}")
             time.sleep(API_RETRY_SLEEP)
 
         except openai.APIConnectionError as e:
-            #Handle connection error here
+            # Handle connection error here
             print(f"Failed to connect to OpenAI API: {e}")
             time.sleep(API_RETRY_SLEEP)
-            
+
         except openai.RateLimitError as e:
-            #Handle rate limit error (we recommend using exponential backoff)
+            # Handle rate limit error (we recommend using exponential backoff)
             print(f"OpenAI API request exceeded rate limit: {e}")
-            time.sleep(API_RETRY_SLEEP)            
+            time.sleep(API_RETRY_SLEEP)
 
     return output
