@@ -118,10 +118,20 @@ def main():
         answer_a = batch["text_chosen"]
         answer_b = batch["text_rejected"]
 
+        # shuffle a and b randomly for position bias
+        is_shuffled = np.random.rand() > 0.5
+        if is_shuffled:
+            answer_a, answer_b = answer_b, answer_a
+            winner_text = "B"
+            loser_text = "A"
+        else:
+            winner_text = "A"
+            loser_text = "B"
+
         winner, _, _ = run_judge_pair(prompt, answer_a, answer_b, args.model, multi_turn=mult_turn)
-        if winner == "A":
+        if winner == winner_text:
             results.append(1)
-        elif winner == "B":
+        elif winner == loser_text:
             results.append(0)
         else:  # if "error"
             results.append(0.5)  # effectively a tie
