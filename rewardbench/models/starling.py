@@ -28,7 +28,7 @@ from transformers import (
     LlamaPreTrainedModel,
 )
 
-SUPPORTED_STARLING_MODELS = ["berkeley-nest/Starling-RM-7B-alpha", "berkeley-nest/Starling-RM-34B"]
+SUPPORTED_STARLING_MODELS = ["berkeley-nest/Starling-RM-7B-alpha", "Nexusflow/Starling-RM-34B"]
 
 
 def build_starling_rm(model_name, **kwargs):

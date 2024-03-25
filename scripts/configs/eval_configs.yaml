@@ -83,8 +83,8 @@ IDEA-CCNL/Ziya-LLaMA-7B-Reward:
   batch_size: 16
   trust_remote_code: True
   dpo: False
-berkeley-nest/Starling-RM-34B:
-  model: 'berkeley-nest/Starling-RM-34B'
+Nexusflow/Starling-RM-34B:
+  model: 'Nexusflow/Starling-RM-34B'
   tokenizer: '01-ai/Yi-34B-Chat'
   chat_template: 'Yi-34b-chat'
   num_gpus: 2
