@@ -19,6 +19,7 @@ import argparse
 import logging
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
 from fastchat.conversation import get_conv_template
@@ -54,6 +55,9 @@ def get_args():
     )
     parser.add_argument(
         "--debug", action="store_true", help="run on common preference sets instead of our custom eval set"
+    )
+    parser.add_argument(
+        "--num_threads", type=int, default=10, help="number of threads to use for parallel processing of examples"
     )
     args = parser.parse_args()
     return args
@@ -107,13 +111,14 @@ def main():
     ############################
     # Run inference via API
     ############################
-    results = []
-    scores_chosen = []
-    scores_rejected = []
-    for step, batch in enumerate(tqdm(dataset, desc="RM batch steps")):
-        logger.info(f"RM inference step {step}/{len(dataset)}")
+    def update_progress_bar(done, total):
+        # Simple text-based progress bar
+        progress = int(50 * done / total)  # Calculate progress (50 chars width)
+        sys.stdout.write("\r[{}{}] {}/{}".format("#" * progress, "." * (50 - progress), done, total))
+        sys.stdout.flush()
 
-        mult_turn = False
+    def get_judgement(batch, debug=args.debug):
+        mult_turn = True if len(batch["text_chosen"]) > 2 else False
         prompt = batch["text_chosen"][0]["content"]
         answer_a = batch["text_chosen"]
         answer_b = batch["text_rejected"]
@@ -128,13 +133,70 @@ def main():
             winner_text = "A"
             loser_text = "B"
 
-        winner, _, _ = run_judge_pair(prompt, answer_a, answer_b, args.model, multi_turn=mult_turn)
-        if winner == winner_text:
-            results.append(1)
-        elif winner == loser_text:
-            results.append(0)
-        else:  # if "error"
-            results.append(0.5)  # effectively a tie
+        if len(batch["text_chosen"]) <= 4:  # set up only for 1 or 2 turns
+            winner, request, judgement = run_judge_pair(prompt, answer_a, answer_b, args.model, multi_turn=mult_turn)
+            if debug:
+                print(f"Prompt: {request}")
+                print(f"Judgement: {judgement}")
+            if winner == winner_text:
+                return 1
+            elif winner == loser_text:
+                return 0
+            else:  # if "error"
+                return 0.5  # effectively a tie
+        else:
+            return 0.5
+
+    with ThreadPoolExecutor(max_workers=args.num_threads) as executor:
+        # Map 'my_function' across the vector, executing in parallel using threads
+        # results = list(executor.map(get_judgement, dataset))
+
+        # Progress bar version
+        results = [None] * len(dataset)  # Preallocate results list
+        done_tasks = 0  # Counter for completed tasks
+
+        with ThreadPoolExecutor(max_workers=args.num_threads) as executor:
+            # Submit all tasks and hold their futures in a list
+            future_to_index = {executor.submit(get_judgement, x): i for i, x in enumerate(dataset)}
+
+            # As tasks complete, update progress and store results in the original order
+            for future in as_completed(future_to_index):
+                index = future_to_index[future]
+                results[index] = future.result()
+                done_tasks += 1
+                update_progress_bar(done_tasks, len(dataset))
+
+        # Print newline after progress bar
+        print()
+
+    ############################
+    # Placehold for loop for non API models
+    ############################
+    # for step, batch in enumerate(tqdm(dataset, desc="RM batch steps")):
+    #     logger.info(f"RM inference step {step}/{len(dataset)}")
+
+    # mult_turn = False
+    # prompt = batch["text_chosen"][0]["content"]
+    # answer_a = batch["text_chosen"]
+    # answer_b = batch["text_rejected"]
+
+    # # shuffle a and b randomly for position bias
+    # is_shuffled = np.random.rand() > 0.5
+    # if is_shuffled:
+    #     answer_a, answer_b = answer_b, answer_a
+    #     winner_text = "B"
+    #     loser_text = "A"
+    # else:
+    #     winner_text = "A"
+    #     loser_text = "B"
+
+    # winner, _, _ = run_judge_pair(prompt, answer_a, answer_b, args.model, multi_turn=mult_turn)
+    # if winner == winner_text:
+    #     results.append(1)
+    # elif winner == loser_text:
+    #     results.append(0)
+    # else:  # if "error"
+    #     results.append(0.5)  # effectively a tie
 
     ############################
     # Print & process results
@@ -145,10 +207,6 @@ def main():
     # add subsets back (removed so it's not handled by cuda)
     out_dataset = out_dataset.add_column("subset", subsets)
     out_dataset = out_dataset.add_column("id", ids)
-
-    # add scores_chosen and scores_rejected to the dataset
-    out_dataset = out_dataset.add_column("scores_chosen", scores_chosen)
-    out_dataset = out_dataset.add_column("scores_rejected", scores_rejected)
 
     # get core dataset
     results_grouped = {}

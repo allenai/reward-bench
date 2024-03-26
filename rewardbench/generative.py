@@ -83,15 +83,14 @@ def run_judge_pair(question, answer_a, answer_b, model_name, multi_turn=False):
     model = model_name
 
     if multi_turn:
-        raise NotImplementedError("Multi-turn not supported yet")
         system_prompt = MTBENCH_MULTI_V2["system_prompt"]
         user_prompt = MTBENCH_MULTI_V2["prompt_template"].format(
-            question_1=question["turns"][0],
-            question_2=question["turns"][1],
-            answer_a_1=answer_a["choices"][0]["turns"][0],
-            answer_b_1=answer_b["choices"][0]["turns"][0],
-            answer_a_2=answer_a["choices"][0]["turns"][1],
-            answer_b_2=answer_b["choices"][0]["turns"][1],
+            question_1=question,
+            question_2=answer_a[2]["content"],
+            answer_a_1=answer_a[1]["content"],
+            answer_b_1=answer_b[1]["content"],
+            answer_a_2=answer_a[3]["content"],
+            answer_b_2=answer_b[3]["content"],
             **kwargs,
         )
     else:
