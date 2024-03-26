@@ -23,7 +23,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
 from fastchat.conversation import get_conv_template
-from tqdm import tqdm
 
 from rewardbench import load_eval_dataset, save_to_hub
 from rewardbench.generative import run_judge_pair
