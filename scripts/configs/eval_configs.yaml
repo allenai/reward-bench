@@ -83,8 +83,8 @@ IDEA-CCNL/Ziya-LLaMA-7B-Reward:
   batch_size: 16
   trust_remote_code: True
   dpo: False
-berkeley-nest/Starling-RM-34B:
-  model: 'berkeley-nest/Starling-RM-34B'
+Nexusflow/Starling-RM-34B:
+  model: 'Nexusflow/Starling-RM-34B'
   tokenizer: '01-ai/Yi-34B-Chat'
   chat_template: 'Yi-34b-chat'
   num_gpus: 2
@@ -223,6 +223,7 @@ allenai/OLMo-7B-Instruct:
   batch_size: 2
   trust_remote_code: True
   dpo: True
+# Added March 21st 2024
 weqweasdas/RM-Gemma-2B:
   model: weqweasdas/RM-Gemma-2B
   tokenizer: weqweasdas/RM-Gemma-2B
@@ -265,3 +266,138 @@ weqweasdas/RM-Mistral-7B:
   batch_size: 16
   trust_remote_code: False
   dpo: False
+# Added March 25th 2024 KTO / Archangel models follow
+ContextualAI/archangel_sft-kto_llama7b:
+  model: ContextualAI/archangel_sft-kto_llama7b
+  ref_model: ContextualAI/archangel_sft_llama7b
+  tokenizer: ContextualAI/archangel_sft-kto_llama7b
+  chat_template: tulu
+  batch_size: 4
+  trust_remote_code: False
+  dpo: True
+ContextualAI/archangel_sft-dpo_llama7b:
+  model: ContextualAI/archangel_sft-dpo_llama7b
+  ref_model: ContextualAI/archangel_sft_llama7b
+  tokenizer: ContextualAI/archangel_sft-dpo_llama7b
+  chat_template: tulu
+  batch_size: 4
+  trust_remote_code: False
+  dpo: True
+ContextualAI/archangel_sft-kto_llama13b:
+  model: ContextualAI/archangel_sft-kto_llama13b
+  ref_model: ContextualAI/archangel_sft_llama13b
+  tokenizer: ContextualAI/archangel_sft-kto_llama13b
+  chat_template: tulu
+  batch_size: 2
+  num_gpus: 2
+  trust_remote_code: False
+  dpo: True
+ContextualAI/archangel_sft-dpo_llama13b:
+  model: ContextualAI/archangel_sft-dpo_llama13b
+  ref_model: ContextualAI/archangel_sft_llama13b
+  tokenizer: ContextualAI/archangel_sft-dpo_llama13b
+  chat_template: tulu
+  batch_size: 2
+  num_gpus: 2
+  trust_remote_code: False
+  dpo: True
+ContextualAI/archangel_sft-kto_llama30b:
+  model: ContextualAI/archangel_sft-kto_llama30b
+  ref_model: ContextualAI/archangel_sft_llama30b
+  tokenizer: ContextualAI/archangel_sft-kto_llama30b
+  chat_template: tulu
+  batch_size: 1
+  num_gpus: 4
+  trust_remote_code: False
+  dpo: True
+ContextualAI/archangel_sft-dpo_llama30b:
+  model: ContextualAI/archangel_sft-dpo_llama30b
+  ref_model: ContextualAI/archangel_sft_llama30b
+  tokenizer: ContextualAI/archangel_sft-dpo_llama30b
+  chat_template: tulu
+  batch_size: 1
+  num_gpus: 4
+  trust_remote_code: False
+  dpo: True
+ContextualAI/archangel_sft-dpo_pythia1-4b:
+  model: ContextualAI/archangel_sft-dpo_pythia1-4b
+  ref_model: ContextualAI/archangel_sft_pythia1-4b
+  tokenizer: ContextualAI/archangel_sft-dpo_pythia1-4b
+  chat_template: tulu
+  batch_size: 6
+  trust_remote_code: False
+  dpo: True
+ContextualAI/archangel_sft-kto_pythia1-4b:
+  model: ContextualAI/archangel_sft-kto_pythia1-4b
+  ref_model: ContextualAI/archangel_sft_pythia1-4b
+  tokenizer: ContextualAI/archangel_sft-kto_pythia1-4b
+  chat_template: tulu
+  batch_size: 6
+  trust_remote_code: False
+  dpo: True
+ContextualAI/archangel_sft-dpo_pythia2-8b:
+  model: ContextualAI/archangel_sft-dpo_pythia2-8b
+  ref_model: ContextualAI/archangel_sft_pythia2-8b
+  tokenizer: ContextualAI/archangel_sft-dpo_pythia2-8b
+  chat_template: tulu
+  batch_size: 4
+  trust_remote_code: False
+  dpo: True
+ContextualAI/archangel_sft-kto_pythia2-8b:
+  model: ContextualAI/archangel_sft-kto_pythia2-8b
+  ref_model: ContextualAI/archangel_sft_pythia2-8b
+  tokenizer: ContextualAI/archangel_sft-kto_pythia2-8b
+  chat_template: tulu
+  batch_size: 4
+  trust_remote_code: False
+  dpo: True
+ContextualAI/archangel_sft-dpo_pythia6-9b:
+  model: ContextualAI/archangel_sft-dpo_pythia6-9b
+  ref_model: ContextualAI/archangel_sft_pythia6-9b
+  tokenizer: ContextualAI/archangel_sft-dpo_pythia6-9b
+  chat_template: tulu
+  batch_size: 4
+  trust_remote_code: False
+  dpo: True
+ContextualAI/archangel_sft-kto_pythia6-9b:
+  model: ContextualAI/archangel_sft-kto_pythia6-9b
+  ref_model: ContextualAI/archangel_sft_pythia6-9b
+  tokenizer: ContextualAI/archangel_sft-kto_pythia6-9b
+  chat_template: tulu
+  batch_size: 4
+  trust_remote_code: False
+  dpo: True
+ContextualAI/archangel_sft-dpo_pythia12-0b:
+  model: ContextualAI/archangel_sft-dpo_pythia12-0b
+  ref_model: ContextualAI/archangel_sft_pythia12-0b
+  tokenizer: ContextualAI/archangel_sft-dpo_pythia12-0b
+  chat_template: tulu
+  batch_size: 4
+  num_gpus: 2
+  trust_remote_code: False
+  dpo: True
+ContextualAI/archangel_sft-kto_pythia12-0b:
+  model: ContextualAI/archangel_sft-kto_pythia12-0b
+  ref_model: ContextualAI/archangel_sft_pythia12-0b
+  tokenizer: ContextualAI/archangel_sft-kto_pythia12-0b
+  chat_template: tulu
+  batch_size: 4
+  num_gpus: 2
+  trust_remote_code: False
+  dpo: True
+0-hero/Matter-0.1-7B-DPO-preview:
+  model: 0-hero/Matter-0.1-7B-DPO-preview
+  ref_model: 0-hero/Matter-0.1-7B
+  tokenizer: 0-hero/Matter-0.1-7B-DPO-preview
+  chat_template: # none for tokenizer
+  batch_size: 4
+  trust_remote_code: False
+  dpo: True
+0-hero/Matter-0.1-7B-boost-DPO-preview:
+  model: 0-hero/Matter-0.1-7B-boost-DPO-preview
+  ref_model: 0-hero/Matter-0.1-7B-boost
+  tokenizer: 0-hero/Matter-0.1-7B-boost-DPO-preview
+  chat_template: # none for tokenizer
+  batch_size: 4
+  trust_remote_code: False
+  dpo: True
