@@ -38,7 +38,7 @@ api = HfApi(token=HF_TOKEN)
 
 def check_tokenizer_chat_template(tokenizer):
     """
-    Check if tokenizer has chat_template attribute.
+    Check if tokenizer has non none chat_template attribute.
     """
     if hasattr(tokenizer, "chat_template"):
         if tokenizer.chat_template is not None:
