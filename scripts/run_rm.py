@@ -176,7 +176,7 @@ def main():
     # if using fastchat template (no template in tokenizer), make the RM tokenizer output an EOS token
     if not hasattr(reward_pipe.tokenizer, "chat_template"):
         reward_pipe.tokenizer.add_eos_token = True
-        
+
     ############################
     # Run inference [1/2]" built in transformers
     ############################

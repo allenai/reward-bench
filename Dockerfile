@@ -3,7 +3,7 @@
 # To get the latest id, run `beaker image pull ai2/cuda11.8-cudnn8-dev-ubuntu20.04` 
 # and then `docker image list`, to verify docker image is pulled
 # e.g. `Image is up to date for gcr.io/ai2-beaker-core/public/cncl3kcetc4q9nvqumrg:latest`
-FROM gcr.io/ai2-beaker-core/public/cntl21gr2bs3fhh2sdh0:latest
+FROM gcr.io/ai2-beaker-core/public/co2v4u6a1d7h4i0mf5v0:latest
 
 RUN apt update && apt install -y openjdk-8-jre-headless
 
