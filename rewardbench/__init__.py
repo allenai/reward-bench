@@ -17,6 +17,7 @@ from .chattemplates import *  # noqa
 from .dpo import DPOInference
 from .models import DPO_MODEL_CONFIG, REWARD_MODEL_CONFIG
 from .utils import (
+    check_tokenizer_chat_template,
     load_bon_dataset,
     load_eval_dataset,
     prepare_dialogue,
@@ -25,6 +26,7 @@ from .utils import (
 )
 
 __all__ = [
+    check_tokenizer_chat_template,
     DPOInference,
     DPO_MODEL_CONFIG,
     load_bon_dataset,
