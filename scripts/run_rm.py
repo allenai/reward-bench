@@ -173,6 +173,10 @@ def main():
         reward_pipe.model.config.pad_token_id = reward_pipe.tokenizer.eos_token_id
         reward_pipe.tokenizer.pad_token_id = reward_pipe.tokenizer.eos_token_id
 
+    # if using fastchat template (no template in tokenizer), make the RM tokenizer output an EOS token
+    if not hasattr(reward_pipe.tokenizer, "chat_template"):
+        reward_pipe.tokenizer.add_eos_token = True
+        
     ############################
     # Run inference [1/2]" built in transformers
     ############################
