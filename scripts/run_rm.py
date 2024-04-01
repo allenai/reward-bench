@@ -26,7 +26,12 @@ from fastchat.conversation import get_conv_template
 from tqdm import tqdm
 from transformers import AutoTokenizer, pipeline
 
-from rewardbench import REWARD_MODEL_CONFIG, load_eval_dataset, save_to_hub
+from rewardbench import (
+    REWARD_MODEL_CONFIG,
+    check_tokenizer_chat_template,
+    load_eval_dataset,
+    save_to_hub,
+)
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -173,6 +178,10 @@ def main():
         reward_pipe.model.config.pad_token_id = reward_pipe.tokenizer.eos_token_id
         reward_pipe.tokenizer.pad_token_id = reward_pipe.tokenizer.eos_token_id
 
+    # if using fastchat template (no template in tokenizer), make the RM tokenizer output an EOS token
+    if not check_tokenizer_chat_template(tokenizer):
+        reward_pipe.tokenizer.add_eos_token = True
+
     ############################
     # Run inference [1/2]" built in transformers
     ############################
@@ -276,7 +285,9 @@ def main():
     results_grouped = {}
     results_grouped["model"] = args.model
     results_grouped["model_type"] = model_type
-    results_grouped["chat_template"] = args.chat_template if not hasattr(tokenizer, "chat_template") else "tokenizer"
+    results_grouped["chat_template"] = (
+        args.chat_template if not check_tokenizer_chat_template(tokenizer) else "tokenizer"
+    )
 
     # print per subset and log into results_grouped file
     present_subsets = np.unique(subsets)

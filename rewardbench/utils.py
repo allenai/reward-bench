@@ -36,6 +36,16 @@ HF_TOKEN = os.getenv("HF_TOKEN", None)
 api = HfApi(token=HF_TOKEN)
 
 
+def check_tokenizer_chat_template(tokenizer):
+    """
+    Check if tokenizer has non none chat_template attribute.
+    """
+    if hasattr(tokenizer, "chat_template"):
+        if tokenizer.chat_template is not None:
+            return True
+    return False
+
+
 def save_to_hub(
     results_dict: Union[Dict, List],
     model_name: str,
@@ -139,10 +149,7 @@ def load_eval_dataset(
 
     # Apply chat template
     if not custom_dialogue_formatting:
-        usable_tokenizer = False
-        if hasattr(tokenizer, "chat_template"):
-            if tokenizer.chat_template is not None:
-                usable_tokenizer = True
+        usable_tokenizer = check_tokenizer_chat_template(tokenizer)
 
         # assert either conv is passed or tokenizer has chat_template
         assert conv is not None or usable_tokenizer
@@ -278,10 +285,7 @@ def load_bon_dataset(
 
     # Apply chat template
     if not custom_dialogue_formatting:
-        usable_tokenizer = False
-        if hasattr(tokenizer, "chat_template"):
-            if tokenizer.chat_template is not None:
-                usable_tokenizer = True
+        usable_tokenizer = check_tokenizer_chat_template(tokenizer)
 
         # assert either conv is passed or tokenizer has chat_template
         assert conv is not None or usable_tokenizer

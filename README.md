@@ -174,6 +174,7 @@ Notes: Do not use the character - in image names for beaker,
 When updating the `Dockerfile`, make sure to see the instructions at the top to update the base cuda version. 
 
 In development, we have the following docker images (most recent first as it's likely what you need).
+- `nathanl/rewardbench_v4`: fix EOS token bug on FastChat models (GH #90)
 - `nathanl/rewardbench_v2`: fix beaver cost model
 - `nathanl/rewardbench_v1`: release version
 
