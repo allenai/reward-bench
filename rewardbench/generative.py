@@ -14,14 +14,44 @@
 
 # Prompts and other tools for running RewardBench with generative RMs
 # pip install openai>=1.0
+# pip install anthropic>=0.21.3
 
+import os
 import time as time
 
+import anthropic
 import openai
-from fastchat.model.model_adapter import get_conversation_template
+from fastchat.conversation import get_conv_template
 from openai import OpenAI
 
 client = OpenAI()
+
+ANTHROPIC_MODEL_LIST = (
+    "claude-1",
+    "claude-2",
+    "claude-2.0",
+    "claude-2.1",
+    "claude-instant-1",
+    "claude-instant-1.2",
+    "claude-3-opus-20240229",
+    "claude-3-sonnet-20240229",
+    "claude-3-haiku-20240307",
+)
+
+OPENAI_MODEL_LIST = (
+    "gpt-3.5-turbo",
+    "gpt-3.5-turbo-0301",
+    "gpt-3.5-turbo-0613",
+    "gpt-3.5-turbo-1106",
+    "gpt-3.5-turbo-0125",
+    "gpt-4",
+    "gpt-4-0314",
+    "gpt-4-0613",
+    "gpt-4-turbo",
+    "gpt-4-1106-preview",
+    "gpt-4-0125-preview",
+)
+
 
 # API setting constants
 API_MAX_RETRY = 16
@@ -78,9 +108,8 @@ MTBENCH_MULTI_V2 = {
 
 
 # noqa adapted from FastChat https://github.com/lm-sys/FastChat/blob/b015f21cb9d0cf3c87d2a5e53008074c537e8be0/fastchat/llm_judge/common.py#L235C1-L312C1
-def run_judge_pair(question, answer_a, answer_b, model_name, multi_turn=False):
+def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False):
     kwargs = {}
-    model = model_name
 
     if multi_turn:
         system_prompt = MTBENCH_MULTI_V2["system_prompt"]
@@ -104,12 +133,27 @@ def run_judge_pair(question, answer_a, answer_b, model_name, multi_turn=False):
 
     winner = "error"
 
-    conv = get_conversation_template(model)
-    conv.append_message(conv.roles[0], user_prompt)
-    conv.append_message(conv.roles[1], None)
+    if model in OPENAI_MODEL_LIST:
+        template = "chatgpt"
+        conv = get_conv_template(template)
 
-    conv.set_system_message(system_prompt)
-    judgment = chat_completion_openai(model, conv, temperature=0, max_tokens=2048)
+        conv.append_message(conv.roles[0], user_prompt)
+        conv.append_message(conv.roles[1], None)
+        conv.set_system_message(system_prompt)
+
+        judgment = chat_completion_openai(model, conv, temperature=0, max_tokens=2048)
+    elif model in ANTHROPIC_MODEL_LIST:
+        template = "claude"
+        conv = get_conv_template(template)
+
+        conv.set_system_message(system_prompt)
+        conv.append_message(conv.roles[0], user_prompt)
+        conv.append_message(conv.roles[1], None)
+        conv.messages = conv.to_openai_api_messages()
+
+        judgment = chat_completion_anthropic(model, conv, temperature=0, max_tokens=1024)
+    else:
+        raise ValueError(f"Model {model} not supported")
 
     if "[[A]]" in judgment:
         winner = "A"
@@ -118,6 +162,39 @@ def run_judge_pair(question, answer_a, answer_b, model_name, multi_turn=False):
     else:
         winner = "error"
     return winner, user_prompt, judgment
+
+
+# also uses ArenaHard code
+# noqa https://github.com/lm-sys/arena-hard/blob/51c04e5a6449e920c01d4159f56a051216af6bd9/utils.py#L166
+def chat_completion_anthropic(model, conv, temperature, max_tokens, api_dict=None):
+    if api_dict is not None and "api_key" in api_dict:
+        api_key = api_dict["api_key"]
+    else:
+        api_key = os.environ["ANTHROPIC_API_KEY"]
+
+    sys_msg = ""
+    if conv.messages[0]["role"] == "system":
+        sys_msg = conv.messages[0]["content"]
+        conv.messages = conv.messages[1:]
+
+    output = API_ERROR_OUTPUT
+    for _ in range(API_MAX_RETRY):
+        try:
+            c = anthropic.Anthropic(api_key=api_key)
+            response = c.messages.create(
+                model=model,
+                messages=conv.messages,
+                stop_sequences=[anthropic.HUMAN_PROMPT],
+                max_tokens=max_tokens,
+                temperature=temperature,
+                system=sys_msg,
+            )
+            output = response.content[0].text
+            break
+        except anthropic.APIError as e:
+            print(type(e), e)
+            time.sleep(API_RETRY_SLEEP)
+    return output.strip()
 
 
 def chat_completion_openai(model, conv, temperature, max_tokens, api_dict=None):

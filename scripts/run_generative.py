@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# run a generative RM. For now, this requires openai to be installed
-# TODO support more API calls, this file is WIP
+# run a generative RM. For now, this requires openai and anthropic to be installed
+# Examples:
+# python scripts/run_generative.py --model gpt-3.5-turbo
+# python scripts/run_generative.py --model=claude-3-haiku-20240307
 
 import argparse
 import logging
@@ -79,10 +81,8 @@ def main():
     logger.info(f"Running reward model on {args.model} with chat template {args.chat_template}")
 
     # load chat template
-    chat_template = args.chat_template
-    conv = get_conv_template(chat_template)
-
-    custom_dialogue = True  # to mirror other scripts
+    conv = get_conv_template("raw")  # not used
+    custom_dialogue = True  # to mirror other scripts, required here
     model_type = "Generative RM"
 
     ############################
