@@ -32,7 +32,17 @@ argparser.add_argument("--image", type=str, default="nathanl/rewardbench_v4", he
 argparser.add_argument("--cluster", type=str, default="ai2/allennlp-cirrascale", help="Beaker cluster to use")
 argparser.add_argument("--upload_to_hub", action="store_false", default=True, help="Upload to results to HF hub")
 argparser.add_argument("--model", type=str, default=None, help="Specific model to evaluate if not sweep")
+argparser.add_argument(
+    "--ref_free", action="store_true", default=False, help="If true, runs DPO models without reference"
+)
+argparser.add_argument(
+    "--eval_dpo_only", action="store_true", default=False, help="If true, only evaluates DPO models"
+)
+argparser.add_argument("--eval_rm_only", action="store_true", default=False, help="If true, only evaluates RM models")
 args = argparser.parse_args()
+
+# assert that only one of eval_dpo_only and eval_rm_only is True at a time
+assert not (args.eval_dpo_only and args.eval_rm_only), "Only one of eval_dpo_only and eval_rm_only can be True"
 
 today = date.today().strftime("%m%d%Y")
 
@@ -81,6 +91,14 @@ for model in models_to_evaluate:
     model_config = configs[model]
     eval_dpo = model_config["dpo"]
 
+    # ignore models depending on eval_dpo_only and eval_rm_only
+    if args.eval_dpo_only:
+        if not eval_dpo:
+            continue
+    elif args.eval_rm_only:
+        if eval_dpo:
+            continue
+
     if eval_on_bon:
         experiment_group = "rewardebench-bon"
         script = "run_bon.py"
@@ -119,8 +137,9 @@ for model in models_to_evaluate:
     if eval_on_pref_sets:
         d["tasks"][0]["arguments"][0] += " --pref_sets"
     if "ref_model" in model_config:
-        d["tasks"][0]["arguments"][0] += f" --ref_model {model_config['ref_model']}"
-        # TODO add logic for ref free
+        if not args.ref_free:  # if passed, ignore logic in eval configs
+            d["tasks"][0]["arguments"][0] += f" --ref_model {model_config['ref_model']}"
+
     # use os to check if beaker_configs/auto_created exists
     if not os.path.exists("beaker_configs/auto_created"):
         os.makedirs("beaker_configs/auto_created")
