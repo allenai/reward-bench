@@ -28,7 +28,7 @@ argparser.add_argument(
     "--eval_on_pref_sets", action="store_true", default=False, help="Evaluate on preference sets rather than core set"
 )
 argparser.add_argument("--eval_on_bon", action="store_true", default=False, help="Evaluate on BON preference sets")
-argparser.add_argument("--image", type=str, default="nathanl/rewardbench_v4", help="Beaker image to use")
+argparser.add_argument("--image", type=str, default="nathanl/rewardbench_v5", help="Beaker image to use")
 argparser.add_argument("--cluster", type=str, default="ai2/allennlp-cirrascale", help="Beaker cluster to use")
 argparser.add_argument("--upload_to_hub", action="store_false", default=True, help="Upload to results to HF hub")
 argparser.add_argument("--model", type=str, default=None, help="Specific model to evaluate if not sweep")
