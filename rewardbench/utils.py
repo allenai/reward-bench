@@ -135,6 +135,7 @@ def load_eval_dataset(
 
     Returns:
         dataset: loaded dataset with required properties.
+        subsets: list of subsets for the corresponding samples in the dataset.
     """
     if core_set:
         raw_dataset = load_dataset(CORE_EVAL_SET, split="filtered")
