@@ -58,6 +58,9 @@ def get_args():
         "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
     )
     parser.add_argument("--debug", type=bool, default=False, help="use only 10 examples")
+    parser.add_argument(
+        "--disable_beaker_save", action="store_true", help="disable saving the main results in a file for AI2 Beaker"
+    )
 
     args = parser.parse_args()
     return args
@@ -257,7 +260,7 @@ def main():
         sub_path,
         args.debug,
         local_only=args.do_not_save,
-        save_metrics_for_beaker=True,
+        save_metrics_for_beaker=not args.disable_beaker_save,
     )
     if not args.do_not_save:
         logger.info(f"Uploaded reward model results to {results_url}")
@@ -270,7 +273,9 @@ def main():
     scores_dict["chat_template"] = args.chat_template
     sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
 
-    scores_url = save_to_hub(scores_dict, args.model + save_modifier, sub_path_scores, args.debug)
+    scores_url = save_to_hub(
+        scores_dict, args.model + save_modifier, sub_path_scores, args.debug, local_only=args.do_not_save
+    )
     logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
 
 
