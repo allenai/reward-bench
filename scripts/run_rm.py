@@ -244,10 +244,7 @@ def main():
                 text_rejected = [b["text_rejected"] for b in batch]
                 text_chosen = [b["text_chosen"] for b in batch]
                 results_sub = reward_pipe(text_chosen, text_rejected, **reward_pipeline_kwargs)
-                [
-                    results.append(1) if result else results.append(0)
-                    for result in results_sub.cpu().numpy().tolist()
-                ]
+                [results.append(1) if result else results.append(0) for result in results_sub.cpu().numpy().tolist()]
                 scores_chosen.extend([None] * len(results_sub))
                 scores_rejected.extend([None] * len(results_sub))
             else:
