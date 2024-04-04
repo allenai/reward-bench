@@ -56,11 +56,19 @@ def save_to_hub(
 ):
     """
     Utility for saving results in dict to the hub in programatic organization.
+
+    Args:
+        results_dict: dictionary of results to save.
+        model_name: name of the model (including organization).
+        target_path: path to save the results in the hub. Usually set in script (e.g. eval-set/, eval-set-scores/).
+        debug: if True, save to debug repo on HF.
+        local_only: if True, do not save to HF (for most non-AI2 users).
+        save_metrics_for_beaker: if True, save metrics for AI2 beaker visualization.
+
+    Returns:
+        scores_url: URL to the saved scores (optional).
     """
-    if "scores" in target_path:
-        scores_path = f"results/scores/{model_name}.json"
-    else:
-        scores_path = f"results/metrics/{model_name}.json"
+    scores_path = f"results/{target_path}/{model_name}.json"
 
     if save_metrics_for_beaker:
         # ai2 internal visualization, not needed external
