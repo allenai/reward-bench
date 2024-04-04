@@ -61,6 +61,9 @@ def get_args():
     parser.add_argument(
         "--debug", action="store_true", help="run on common preference sets instead of our custom eval set"
     )
+    parser.add_argument(
+        "--disable_beaker_save", action="store_true", help="disable saving the main results in a file for AI2 Beaker"
+    )
     args = parser.parse_args()
     return args
 
@@ -303,7 +306,7 @@ def main():
     ############################
     sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
     results_url = save_to_hub(
-        results_grouped, args.model, sub_path, args.debug, local_only=args.do_not_save, save_metrics_for_beaker=True
+        results_grouped, args.model, sub_path, args.debug, local_only=args.do_not_save, save_metrics_for_beaker=args.disable_beaker_save
     )
     if not args.do_not_save:
         logger.info(f"Uploaded reward model results to {results_url}")
