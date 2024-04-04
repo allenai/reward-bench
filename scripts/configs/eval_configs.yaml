@@ -401,3 +401,18 @@ ContextualAI/archangel_sft-kto_pythia12-0b:
   batch_size: 4
   trust_remote_code: False
   dpo: True
+openbmb/Eurus-RM-7b:
+  model: openbmb/Eurus-RM-7b
+  tokenizer: openbmb/Eurus-RM-7b
+  chat_template: mistral
+  batch_size: 16
+  trust_remote_code: True
+  dpo: False
+openbmb/Eurus-7b-kto:
+  model: openbmb/Eurus-7b-kto
+  ref_model: openbmb/Eurus-7b-sft
+  tokenizer: openbmb/Eurus-7b-kto
+  chat_template: mistral
+  batch_size: 4
+  trust_remote_code: True
+  dpo: True
