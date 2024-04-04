@@ -277,6 +277,7 @@ class DPOInference:
         elif self.ref_free_norm == "sum":
             average_log_prob = False
             norm_log_prob = False
+        # handles when reference model exists
         elif self.ref_free_norm == "none":
             average_log_prob = False
             norm_log_prob = False

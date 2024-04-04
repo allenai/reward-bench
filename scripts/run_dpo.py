@@ -23,7 +23,6 @@ import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from fastchat.conversation import get_conv_template
-from huggingface_hub import HfApi
 from tqdm import tqdm
 from trl.trainer.utils import DPODataCollatorWithPadding
 
@@ -31,10 +30,11 @@ from rewardbench import DPO_MODEL_CONFIG, DPOInference, load_eval_dataset, save_
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
-api = HfApi(token=HF_TOKEN)
+# this is necessary to automatically log in when running this script in docker/batch beaker jobs
+if HF_TOKEN is not None:
+    from huggingface_hub._login import _login
 
-# data repo to upload results
-EVAL_REPO = "ai2-adapt-dev/HERM-Results"
+    _login(token=HF_TOKEN, add_to_git_credential=False)
 
 
 def get_args():
