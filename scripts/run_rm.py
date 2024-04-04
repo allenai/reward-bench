@@ -318,7 +318,7 @@ def main():
 
         sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
 
-        scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug)
+        scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug, local_only=args.do_not_save)
         logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
     else:
         logger.info("Not uploading chosen-rejected text with scores due to model compatibility")
