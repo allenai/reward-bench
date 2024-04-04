@@ -188,91 +188,90 @@ def main():
     ############################
     # Run inference [1/2]" built in transformers
     ############################
-    with torch.no_grad():  # We don't need grads for inference
-        # if using HF pipeline, can pass entire dataset and get results
-        # first, handle custom pipelines that we must batch normally
-        if pipeline_builder == pipeline:
-            logger.info("*** Running forward pass via built in pipeline abstraction ***")
-            # this setup can be optimized slightly with one pipeline call
-            # prepare for inference
-            reward_pipe = accelerator.prepare(reward_pipe)
+    # if using HF pipeline, can pass entire dataset and get results
+    # first, handle custom pipelines that we must batch normally
+    if pipeline_builder == pipeline:
+        logger.info("*** Running forward pass via built in pipeline abstraction ***")
+        # this setup can be optimized slightly with one pipeline call
+        # prepare for inference
+        reward_pipe = accelerator.prepare(reward_pipe)
 
-            results_rej = reward_pipe(dataset["text_rejected"], **reward_pipeline_kwargs)
-            results_cho = reward_pipe(dataset["text_chosen"], **reward_pipeline_kwargs)
+        results_rej = reward_pipe(dataset["text_rejected"], **reward_pipeline_kwargs)
+        results_cho = reward_pipe(dataset["text_chosen"], **reward_pipeline_kwargs)
 
-            # extract scores from results which is list of dicts, e.g. [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
-            scores_chosen = [result["score"] for result in results_cho]
-            scores_rejected = [result["score"] for result in results_rej]
+        # extract scores from results which is list of dicts, e.g. [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
+        scores_chosen = [result["score"] for result in results_cho]
+        scores_rejected = [result["score"] for result in results_rej]
 
-            # pairwise comparison list comprehension
-            results = [1 if chosen > rejected else 0 for chosen, rejected in zip(scores_chosen, scores_rejected)]
+        # pairwise comparison list comprehension
+        results = [1 if chosen > rejected else 0 for chosen, rejected in zip(scores_chosen, scores_rejected)]
 
-        ############################
-        # Run inference [2/2] custom pipelines
-        ############################
-        else:
-            logger.info("*** Running dataloader to collect results ***")
-            # TODO make more custom pipelines work with pre-tokenized data
-            from torch.utils.data.dataloader import default_collate
+    ############################
+    # Run inference [2/2] custom pipelines
+    ############################
+    else:
+        logger.info("*** Running dataloader to collect results ***")
+        # TODO make more custom pipelines work with pre-tokenized data
+        from torch.utils.data.dataloader import default_collate
 
-            # for PairRM, hmm, will move all of this later
-            def custom_collate_fn(batch):
-                # check if ['text_chosen'] is in first batch element
-                # Check if the first element of the batch is a dictionary
-                if isinstance(batch[0]["text_chosen"][0], dict):
-                    return batch  # Return the batch as-is if it's a list of dicts
+        # for PairRM, hmm, will move all of this later
+        def custom_collate_fn(batch):
+            # check if ['text_chosen'] is in first batch element
+            # Check if the first element of the batch is a dictionary
+            if isinstance(batch[0]["text_chosen"][0], dict):
+                return batch  # Return the batch as-is if it's a list of dicts
+            else:
+                return default_collate(batch)  # Use the default collate behavior otherwise
+
+        dataloader = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=BATCH_SIZE,
+            collate_fn=custom_collate_fn,  # if not args.pref_sets else None,
+            shuffle=False,
+            drop_last=False,
+        )
+
+        dataloader, model = accelerator.prepare(dataloader, reward_pipe.model)
+        reward_pipe.model = model
+
+        results = []
+        scores_chosen = []
+        scores_rejected = []
+        for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
+            logger.info(f"RM inference step {step}/{len(dataloader)}")
+
+            if model_type == "Custom Classifier":
+                text_rejected = [b["text_rejected"] for b in batch]
+                text_chosen = [b["text_chosen"] for b in batch]
+                results_sub = reward_pipe(text_chosen, text_rejected, **reward_pipeline_kwargs)
+                [
+                    results.append(1) if result else results.append(0)
+                    for result in results_sub.cpu().numpy().tolist()
+                ]
+                scores_chosen.extend([None] * len(results_sub))
+                scores_rejected.extend([None] * len(results_sub))
+            else:
+                rewards_chosen = reward_pipe(batch["text_chosen"], **reward_pipeline_kwargs)
+                rewards_rejected = reward_pipe(batch["text_rejected"], **reward_pipeline_kwargs)
+
+                # for each item in batch, record 1 if chosen > rejected
+                # extra score from dict within batched results (e.g. logits)
+                # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
+                if isinstance(rewards_chosen[0], dict):
+                    score_chosen_batch = [result["score"] for result in rewards_chosen]
+                    score_rejected_batch = [result["score"] for result in rewards_rejected]
+                # for classes that directly output scores (custom code)
                 else:
-                    return default_collate(batch)  # Use the default collate behavior otherwise
+                    score_chosen_batch = rewards_chosen.cpu().numpy().tolist()
+                    score_rejected_batch = rewards_rejected.cpu().numpy().tolist()
 
-            dataloader = torch.utils.data.DataLoader(
-                dataset,
-                batch_size=BATCH_SIZE,
-                collate_fn=custom_collate_fn,  # if not args.pref_sets else None,
-                shuffle=False,
-                drop_last=False,
-            )
-
-            dataloader, model = accelerator.prepare(dataloader, reward_pipe.model)
-            reward_pipe.model = model
-
-            results = []
-            scores_chosen = []
-            scores_rejected = []
-            for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
-                logger.info(f"RM inference step {step}/{len(dataloader)}")
-
-                if model_type == "Custom Classifier":
-                    text_rejected = [b["text_rejected"] for b in batch]
-                    text_chosen = [b["text_chosen"] for b in batch]
-                    results_sub = reward_pipe(text_chosen, text_rejected, **reward_pipeline_kwargs)
-                    [
-                        results.append(1) if result else results.append(0)
-                        for result in results_sub.cpu().numpy().tolist()
-                    ]
-                    scores_chosen.extend([None] * len(results_sub))
-                    scores_rejected.extend([None] * len(results_sub))
-                else:
-                    rewards_chosen = reward_pipe(batch["text_chosen"], **reward_pipeline_kwargs)
-                    rewards_rejected = reward_pipe(batch["text_rejected"], **reward_pipeline_kwargs)
-
-                    # for each item in batch, record 1 if chosen > rejected
-                    # extra score from dict within batched results (e.g. logits)
-                    # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
-                    if isinstance(rewards_chosen[0], dict):
-                        score_chosen_batch = [result["score"] for result in rewards_chosen]
-                        score_rejected_batch = [result["score"] for result in rewards_rejected]
-                    # for classes that directly output scores (custom code)
-                    else:
-                        score_chosen_batch = rewards_chosen.cpu().numpy().tolist()
-                        score_rejected_batch = rewards_rejected.cpu().numpy().tolist()
-
-                    # log results
-                    [
-                        results.append(1) if chosen > rejected else results.append(0)
-                        for chosen, rejected in zip(score_chosen_batch, score_rejected_batch)
-                    ]
-                    scores_chosen.extend(score_chosen_batch)
-                    scores_rejected.extend(score_rejected_batch)
+                # log results
+                [
+                    results.append(1) if chosen > rejected else results.append(0)
+                    for chosen, rejected in zip(score_chosen_batch, score_rejected_batch)
+                ]
+                scores_chosen.extend(score_chosen_batch)
+                scores_rejected.extend(score_rejected_batch)
 
     ############################
     # Print & process results
