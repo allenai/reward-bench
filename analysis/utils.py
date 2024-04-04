@@ -45,6 +45,8 @@ def load_results(
     repo_dir_path: Union[str, Path],
     subdir: str,
     ignore_columns: Optional[List[str]] = None,
+    filepath_filter: Optional[str] = None,
+    remove_ref_free: bool = True,
 ) -> pd.DataFrame:
     """Load results into a pandas DataFrame"""
     base_dir = Path(repo_dir_path)
@@ -56,6 +58,10 @@ def load_results(
     _results: List[pd.DataFrame] = []  # will merge later
     for org, filepaths in model_result_files.items():
         for filepath in filepaths:
+            # optionally filter to only files including a specific string
+            if filepath_filter is not None:
+                if filepath_filter not in str(filepath):
+                    continue
             _results.append(pd.DataFrame(load_dataset("json", data_files=str(filepath), split="train")))
     results_df = pd.concat(_results)
 
@@ -127,7 +133,8 @@ def load_results(
             df = df.loc[:, cols]
 
         # remove models with DPO Ref. Free as type (future work)
-        df = df[~df["model_type"].str.contains("DPO Ref. Free", na=False)]
+        if remove_ref_free:
+            df = df[~df["model_type"].str.contains("DPO Ref. Free", na=False)]
 
         # remove columns
         if ignore_columns:
