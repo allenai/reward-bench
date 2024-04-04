@@ -247,7 +247,9 @@ def main():
             else:
                 rewards_chosen = reward_pipe(batch["text_chosen"], **reward_pipeline_kwargs)
                 rewards_rejected = reward_pipe(batch["text_rejected"], **reward_pipeline_kwargs)
+                import ipdb
 
+                ipdb.set_trace()
                 # for each item in batch, record 1 if chosen > rejected
                 # extra score from dict within batched results (e.g. logits)
                 # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]

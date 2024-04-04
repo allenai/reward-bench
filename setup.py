@@ -48,7 +48,8 @@ setup(
         "scipy",
         "tabulate",  # dependency for markdown rendering in pandas
         "tokenizers",
-        "transformers==4.38.1",  # needed for some late models, may need to bump in the future
+        "transformers @ git+https://github.com/huggingface/transformers.git@851f253f4d3fa2414451eeaac82b7a9ad6084675",
+        # "transformers==4.38.1",   # needed for some late models, may need to bump in the future
         "trl>=0.7.7",
     ],
 )
