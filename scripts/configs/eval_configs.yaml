@@ -442,3 +442,12 @@ HuggingFaceH4/starchat2-15b-v0.1:
   num_gpus: 2
   trust_remote_code: False
   dpo: True
+stabilityai/stablelm-2-12b-chat:
+  model: stabilityai/stablelm-2-12b-chat
+  ref_model: stabilityai/stablelm-2-12b
+  tokenizer: stabilityai/stablelm-2-12b-chat
+  chat_template: # none for tokenizer
+  batch_size: 4
+  num_gpus: 2
+  trust_remote_code: True
+  dpo: True
