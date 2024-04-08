@@ -422,7 +422,7 @@ Qwen/Qwen1.5-MoE-A2.7B-Chat:
   tokenizer: Qwen/Qwen1.5-MoE-A2.7B-Chat
   chat_template: # none for tokenizer
   num_gpus: 2
-  batch_size: 6
+  batch_size: 4
   trust_remote_code: False
   dpo: True
 stabilityai/stable-code-instruct-3b:
