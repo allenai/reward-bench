@@ -451,3 +451,21 @@ stabilityai/stablelm-2-12b-chat:
   num_gpus: 2
   trust_remote_code: True
   dpo: True
+upstage/SOLAR-10.7B-Instruct-v1.0:
+  model: upstage/SOLAR-10.7B-Instruct-v1.0
+  ref_model: upstage/SOLAR-10.7B-v1.0
+  tokenizer: upstage/SOLAR-10.7B-Instruct-v1.0
+  chat_template: # none for tokenizer
+  batch_size: 4
+  num_gpus: 2
+  trust_remote_code: False
+  dpo: True
+jondurbin/bagel-dpo-34b-v0.5:
+  model: jondurbin/bagel-dpo-34b-v0.5
+  ref_model: jondurbin/bagel-34b-v0.5
+  tokenizer: jondurbin/bagel-dpo-34b-v0.5
+  chat_template: # none for tokenizer
+  batch_size: 2
+  num_gpus: 4
+  trust_remote_code: False
+  dpo: True
