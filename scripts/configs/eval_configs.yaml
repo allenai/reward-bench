@@ -401,3 +401,44 @@ ContextualAI/archangel_sft-kto_pythia12-0b:
   batch_size: 4
   trust_remote_code: False
   dpo: True
+openbmb/Eurus-RM-7b:
+  model: openbmb/Eurus-RM-7b
+  tokenizer: openbmb/Eurus-RM-7b
+  chat_template: mistral
+  batch_size: 16
+  trust_remote_code: True
+  dpo: False
+openbmb/Eurus-7b-kto:
+  model: openbmb/Eurus-7b-kto
+  ref_model: openbmb/Eurus-7b-sft
+  tokenizer: openbmb/Eurus-7b-kto
+  chat_template: mistral
+  batch_size: 4
+  trust_remote_code: True
+  dpo: True
+Qwen/Qwen1.5-MoE-A2.7B-Chat:
+  model: Qwen/Qwen1.5-MoE-A2.7B-Chat
+  ref_model: Qwen/Qwen1.5-MoE-A2.7B
+  tokenizer: Qwen/Qwen1.5-MoE-A2.7B-Chat
+  chat_template: # none for tokenizer
+  num_gpus: 2
+  batch_size: 4
+  trust_remote_code: False
+  dpo: True
+stabilityai/stable-code-instruct-3b:
+  model: stabilityai/stable-code-instruct-3b
+  ref_model: stabilityai/stable-code-3b
+  tokenizer: stabilityai/stable-code-instruct-3b
+  chat_template: # none for tokenizer
+  batch_size: 4
+  trust_remote_code: True
+  dpo: True
+HuggingFaceH4/starchat2-15b-v0.1:
+  model: HuggingFaceH4/starchat2-15b-v0.1
+  ref_model: HuggingFaceH4/starchat2-15b-sft-v0.1
+  tokenizer: HuggingFaceH4/starchat2-15b-v0.1
+  chat_template: # none for tokenizer
+  batch_size: 4
+  num_gpus: 2
+  trust_remote_code: False
+  dpo: True

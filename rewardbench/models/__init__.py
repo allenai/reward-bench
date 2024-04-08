@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from transformers import (
+    AutoModel,
     AutoModelForCausalLM,
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -59,6 +60,13 @@ REWARD_MODEL_CONFIG = {
     },
     "openbmb/UltraRM-13b": {
         "model_builder": LlamaRewardModel.from_pretrained,
+        "pipeline_builder": OpenBMBPipeline,
+        "quantized": True,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+    },
+    "openbmb/Eurus-RM-7b": {
+        "model_builder": AutoModel.from_pretrained,
         "pipeline_builder": OpenBMBPipeline,
         "quantized": True,
         "custom_dialogue": False,
