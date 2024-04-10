@@ -72,7 +72,7 @@ def get_average_over_rewardbench(
     for subset, sub_subsets in SUBSET_MAPPING.items():
         subset_cols = [col for col in new_df.columns if col in sub_subsets]
         sub_data = new_df[subset_cols].values  # take the relevant column values
-        sub_counts = [EXAMPLE_COUNTS[s] for s in sub_subsets]  # take the example counts
+        sub_counts = [EXAMPLE_COUNTS[s] for s in subset_cols]  # take the example counts
         new_df[subset] = np.average(sub_data, axis=1, weights=sub_counts)
 
     data_cols = list(SUBSET_MAPPING.keys())
