@@ -26,6 +26,7 @@ from transformers.models.deberta_v2.modeling_deberta_v2 import (
 )
 import jinja2
 
+tokenizer = AutoTokenizer.from_pretrained("microsoft/deberta-v3-large")
 
 def truncate_texts(text, max_length, truncate_side):
     tokenizer.truncation_side = truncate_side
