@@ -183,14 +183,25 @@ def main():
                     "Seq. Classifier": "\sequenceclf",  # noqa
                     "Custom Classifier": "\customclf",  # noqa
                     "DPO": "\dpo",  # noqa
+                    "generative": "\generative",
                 }
                 emoji = (
                     openmoji_map[model_type]
                     if model_type in openmoji_map
                     else "\\random"
                 )
+
+                if "Cohere" in orig_name:
+                    hf_name = "Cohere"
+                elif "openai" in orig_name:
+                    hf_name = "openai"
+                elif "Anthropic" in orig_name:
+                    hf_name = "Anthropic"
+                else:
+                    hf_name = orig_name
+
                 latex_name = (
-                    f"\href{{https://huggingface.co/{orig_name}}}"  # noqa
+                    f"\href{{https://huggingface.co/{hf_name}}}"  # noqa
                     + f"{{{emoji} {orig_name}}}".replace("_", "\_")  # noqa
                     if orig_name != "random"
                     else f"{emoji} {orig_name}"
