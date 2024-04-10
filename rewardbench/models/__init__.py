@@ -79,6 +79,13 @@ REWARD_MODEL_CONFIG = {
         "custom_dialogue": True,
         "model_type": "Custom Classifier",
     },
+    "mightbe/Better-PairRM": {
+        "model_builder": DebertaV2PairRM.from_pretrained,
+        "pipeline_builder": PairRMPipeline,
+        "quantized": True,
+        "custom_dialogue": True,
+        "model_type": "Custom Classifier",
+    },
     "stanfordnlp/SteamSHP-flan-t5-xl": {
         "model_builder": T5ForConditionalGeneration.from_pretrained,
         "pipeline_builder": SHPPipeline,
