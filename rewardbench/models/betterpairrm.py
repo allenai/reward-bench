@@ -121,7 +121,7 @@ def tokenize_pair(
     return encodings
 
 
-class PairRMPipeline:
+class BetterPairRMPipeline:
     """
     This class outputs a delta rather than a score for each.
     """

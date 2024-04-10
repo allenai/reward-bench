@@ -27,6 +27,7 @@ from .beaver import BeaverCostPipeline, BeaverPipeline, LlamaForScore
 from .openassistant import *  # noqa
 from .openbmb import LlamaRewardModel, OpenBMBPipeline
 from .pairrm import DebertaV2PairRM, PairRMPipeline
+from .betterpairrm import BetterPairRMPipeline
 from .shp import SHPPipeline
 from .starling import (
     LlamaForSequenceClassification,
@@ -81,7 +82,7 @@ REWARD_MODEL_CONFIG = {
     },
     "mightbe/Better-PairRM": {
         "model_builder": DebertaV2PairRM.from_pretrained,
-        "pipeline_builder": PairRMPipeline,
+        "pipeline_builder": BetterPairRMPipeline,
         "quantized": True,
         "custom_dialogue": True,
         "model_type": "Custom Classifier",
