@@ -76,7 +76,7 @@ def tokenize_conv_pair(tokenizer, convAs: List[str], convBs: List[str], **kwargs
         ), "USER turns must be the same"
 
     inputs = [
-        truncate_texts(my_jinja2_template.render(messages=x[:-1], add_generation_prompt=True), 2030, "left") for x in convAs
+        truncate_texts(jinja2_template.render(messages=x[:-1], add_generation_prompt=True), 2030, "left") for x in convAs
     ]
     cand1_texts = [
         truncate_texts(x[-1]['content'], 670, "right") for x in convAs
