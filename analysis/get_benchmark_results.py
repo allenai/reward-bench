@@ -92,11 +92,7 @@ def get_average_over_rewardbench(
     for i, row in new_df.iterrows():
         model = row["model"]
         if model in df_prefs["model"].values:
-            values.append(
-                df_prefs[df_prefs["model"] == model]["Prior Sets (0.5 weight)"].values[
-                    0
-                ]
-            )
+            values.append(df_prefs[df_prefs["model"] == model]["Prior Sets (0.5 weight)"].values[0])
             # new_df.at[i, "Prior Sets"] = dataframe_prefs[dataframe_prefs["model"] == model]["Prior Sets"].values[0]
         else:
             values.append(np.nan)
@@ -134,12 +130,8 @@ def main():
         etag_timeout=30,
         repo_type="dataset",
     )
-    hf_evals_df = load_results(
-        hf_evals_repo, subdir="eval-set/", ignore_columns=args.ignore_columns
-    )
-    hf_prefs_df = load_results(
-        hf_evals_repo, subdir="pref-sets/", ignore_columns=args.ignore_columns
-    )
+    hf_evals_df = load_results(hf_evals_repo, subdir="eval-set/", ignore_columns=args.ignore_columns)
+    hf_prefs_df = load_results(hf_evals_repo, subdir="pref-sets/", ignore_columns=args.ignore_columns)
 
     def _multiply_numbered_cols_by(n, df, ignore: List[str] = []):
         numbered_cols = df.select_dtypes("number").columns
@@ -183,13 +175,9 @@ def main():
                     "Seq. Classifier": "\sequenceclf",  # noqa
                     "Custom Classifier": "\customclf",  # noqa
                     "DPO": "\dpo",  # noqa
-                    "generative": "\generative",
+                    "generative": "\generative",  # noqa
                 }
-                emoji = (
-                    openmoji_map[model_type]
-                    if model_type in openmoji_map
-                    else "\\random"
-                )
+                emoji = openmoji_map[model_type] if model_type in openmoji_map else "\\random"
 
                 if "Cohere" in orig_name:
                     hf_name = "Cohere"
@@ -209,20 +197,14 @@ def main():
 
                 return latex_name
 
-            reward_model_names = df.apply(
-                lambda x: _prettify_model_name(x), axis=1
-            ).to_list()
+            reward_model_names = df.apply(lambda x: _prettify_model_name(x), axis=1).to_list()
             df.insert(0, "Reward Model", reward_model_names)
-            df = df.drop(columns=["model", "model_type"]).rename(
-                columns={"average": "Score"}
-            )
+            df = df.drop(columns=["model", "model_type"]).rename(columns={"average": "Score"})
             if "Pref Sets" in name:
                 df = df.drop(columns=["Prior Sets (0.5 weight)"])
             # Rotate column names using custom LaTeX command \rot
             df = df.rename(columns={col: "\\rot{" + col + "}" for col in df.columns})
-            render_string = df.to_latex(index=False, float_format="%.1f").replace(
-                "NaN", "-"
-            )
+            render_string = df.to_latex(index=False, float_format="%.1f").replace("NaN", "-")
         else:
             render_string = df.to_markdown(index=False, tablefmt="github")
         render_string = render_string.replace("NaN", "")
