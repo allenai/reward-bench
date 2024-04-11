@@ -41,9 +41,9 @@ llm-blender/PairRM-hf:
   batch_size: 64
   trust_remote_code: False
   dpo: False
-maywell/Better-PairRM:
-  model: 'maywell/Better-PairRM'
-  tokenizer: 'maywell/Better-PairRM'
+mightbe/Better-PairRM:
+  model: 'mightbe/Better-PairRM'
+  tokenizer: 'mightbe/Better-PairRM'
   chat_template: 'tulu'
   batch_size: 64
   trust_remote_code: False
