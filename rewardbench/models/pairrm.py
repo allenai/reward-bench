@@ -183,12 +183,15 @@ class DebertaV2PairRM(DebertaV2PreTrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         #  <source_prefix_id>...<sep><cand1_prefix_id>...<sep><cand2_prefix_id> ... <sep>
-        if not all([self.source_prefix_id in input_ids[i] for i in range(input_ids.shape[0])]):
-            print("WARNING: <source> id not in input_ids, truncated input")
-        elif not all([self.cand1_prefix_id in input_ids[i] for i in range(input_ids.shape[0])]):
-            print("WARNING: <candidate1> id not in input_ids")
-        elif not all([self.cand2_prefix_id in input_ids[i] for i in range(input_ids.shape[0])]):
-            print("WARNING: <candidate2> id not in input_ids")
+        assert all(
+            [self.source_prefix_id in input_ids[i] for i in range(input_ids.shape[0])]
+        ), "<source> id not in input_ids"
+        assert all(
+            [self.cand1_prefix_id in input_ids[i] for i in range(input_ids.shape[0])]
+        ), "<candidate1> id not in input_ids"
+        assert all(
+            [self.cand2_prefix_id in input_ids[i] for i in range(input_ids.shape[0])]
+        ), "<candidate2> id not in input_ids"
 
         keep_column_mask = attention_mask.ne(0).any(dim=0)
         input_ids = input_ids[:, keep_column_mask]

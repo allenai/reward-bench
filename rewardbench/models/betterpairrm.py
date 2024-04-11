@@ -96,10 +96,11 @@ def tokenize_pair(
 ):
     ids = []
     assert len(sources) == len(candidate1s) == len(candidate2s)
+    source_tokens = tokenizer.encode(source_prefix)
     max_length = source_max_length + 2 * candidate_max_length
     for i in range(len(sources)):
         tokenizer.truncation_side = "left"
-        source_ids = tokenizer.encode(source_prefix + sources[i], max_length=source_max_length, truncation=True)
+        source_ids = source_tokens + tokenizer.encode(sources[i], max_length=source_max_length-len(source_tokens), truncation=True)
 
         tokenizer.truncation_side = "right"
         candidate_max_length = (max_length - len(source_ids)) // 2
@@ -110,6 +111,7 @@ def tokenize_pair(
             cand2_prefix + candidate2s[i], max_length=candidate_max_length, truncation=True
         )
         ids.append(source_ids + candidate1_ids + candidate2_ids)
+    
     encodings = tokenizer.pad({"input_ids": ids}, return_tensors="pt", padding="max_length", max_length=max_length)
     return encodings
 
