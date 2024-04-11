@@ -14,17 +14,19 @@
 
 # copied partially from https://github.com/yuchenlin/LLM-Blender/blob/main/llm_blender/pair_ranker/pairrm.py
 # and added pairwise tokenization function from https://huggingface.co/llm-blender/PairRM-hf
+# requires jinja2, install with pip install jinja2
+
 from typing import List, Optional, Tuple, Union
 
+import jinja2
 import torch
 import torch.nn as nn
-from transformers import PreTrainedModel, PreTrainedTokenizer, AutoTokenizer
+from transformers import AutoTokenizer, PreTrainedModel, PreTrainedTokenizer
 from transformers.models.deberta_v2.modeling_deberta_v2 import (
     DebertaV2Model,
     DebertaV2PreTrainedModel,
     SequenceClassifierOutput,
 )
-import jinja2
 
 tokenizer = AutoTokenizer.from_pretrained("microsoft/deberta-v3-large")
 
