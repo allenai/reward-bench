@@ -34,7 +34,7 @@ setup(
     install_requires=[
         "accelerate",
         "bitsandbytes",
-        "black==23.1.0",
+        "black==24.3.0",
         "datasets",
         "deepspeed",
         "einops",

@@ -84,6 +84,15 @@ REWARD_MODEL_CONFIG = {
             "llm-blender/PairRM-hf",
         ],
     },
+    "BetterPairRM": {
+        "model_builder": models.betterpairrm.DebertaV2Model.from_pretrained,
+        "pipeline_builder": models.betterpairrm.PairRMPipeline,
+        "quantized": True,
+        "custom_dialogue": True,
+        "models": [
+            "mightbe/Better-PairRM",
+        ],
+    },
     "SHP": {
         "model_builder": T5ForConditionalGeneration.from_pretrained,
         "pipeline_builder": models.shp.SHPPipeline,

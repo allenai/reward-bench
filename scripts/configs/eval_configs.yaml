@@ -41,6 +41,13 @@ llm-blender/PairRM-hf:
   batch_size: 64
   trust_remote_code: False
   dpo: False
+maywell/Better-PairRM:
+  model: 'maywell/Better-PairRM'
+  tokenizer: 'maywell/Better-PairRM'
+  chat_template: 'tulu'
+  batch_size: 64
+  trust_remote_code: False
+  dpo: False
 berkeley-nest/Starling-RM-7B-alpha:
   model: 'berkeley-nest/Starling-RM-7B-alpha'
   tokenizer: 'meta-llama/Llama-2-7b-chat-hf'
