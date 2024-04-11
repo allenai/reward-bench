@@ -477,3 +477,11 @@ jondurbin/bagel-dpo-34b-v0.5:
   num_gpus: 4
   trust_remote_code: False
   dpo: True
+openbmb/MiniCPM-2B-dpo-fp32:
+  model: openbmb/MiniCPM-2B-dpo-fp32
+  ref_model: openbmb/MiniCPM-2B-sft-fp32
+  tokenizer: openbmb/MiniCPM-2B-dpo-fp32
+  chat_template: # none for tokenizer
+  batch_size: 4
+  trust_remote_code: True
+  dpo: True
