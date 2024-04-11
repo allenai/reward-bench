@@ -28,6 +28,7 @@ import jinja2
 
 tokenizer = AutoTokenizer.from_pretrained("microsoft/deberta-v3-large")
 
+
 def truncate_texts(text, max_length, truncate_side):
     tokenizer.truncation_side = truncate_side
     tokens = tokenizer.encode(text, add_special_tokens=False, max_length=max_length)
@@ -68,7 +69,7 @@ def tokenize_conv_pair(tokenizer, convAs: List[str], convBs: List[str], **kwargs
 
     jinja2_env = jinja2.Environment()
     jinja2_template = jinja2_env.from_string(BETTER_PAIRRM_TEMPLATE)
-    
+
     assert len(convAs) == len(convBs), "Number of conversations must be the same"
     for c_a, c_b in zip(convAs, convBs):
         assert len(c_a) == len(c_b), "Number of turns in each conversation must be the same"
@@ -77,14 +78,11 @@ def tokenize_conv_pair(tokenizer, convAs: List[str], convBs: List[str], **kwargs
         ), "USER turns must be the same"
 
     inputs = [
-        truncate_texts(jinja2_template.render(messages=x[:-1], add_generation_prompt=True), 2030, "left") for x in convAs
+        truncate_texts(jinja2_template.render(messages=x[:-1], add_generation_prompt=True), 2030, "left")
+        for x in convAs
     ]
-    cand1_texts = [
-        truncate_texts(x[-1]['content'], 670, "right") for x in convAs
-    ]
-    cand2_texts = [
-        truncate_texts(x[-1]['content'], 670, "right") for x in convBs
-    ]
+    cand1_texts = [truncate_texts(x[-1]["content"], 670, "right") for x in convAs]
+    cand2_texts = [truncate_texts(x[-1]["content"], 670, "right") for x in convBs]
 
     encodings = tokenize_pair(tokenizer, inputs, cand1_texts, cand2_texts, **kwargs)
     return encodings
