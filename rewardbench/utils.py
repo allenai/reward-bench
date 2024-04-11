@@ -68,13 +68,13 @@ def save_to_hub(
     Returns:
         scores_url: URL to the saved scores (optional).
     """
-    scores_path = f"results/{target_path}/{model_name}.json"
+    scores_path = f"./results/{target_path}/{model_name}.json"
 
     if save_metrics_for_beaker:
         # ai2 internal visualization, not needed external
-        dirname = os.path.dirname("/output/metrics.json")
+        dirname = os.path.dirname("./output/metrics.json")
         os.makedirs(dirname, exist_ok=True)  # redundant in Beaker code
-        with open("/output/metrics.json", "w+") as f:  # save format for AI2 beaker to show results
+        with open("./output/metrics.json", "w+") as f:  # save format for AI2 beaker to show results
             json.dump(results_dict, f)
 
     dirname = os.path.dirname(scores_path)
