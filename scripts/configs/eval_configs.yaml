@@ -46,6 +46,7 @@ mightbe/Better-PairRM:
   tokenizer: 'mightbe/Better-PairRM'
   chat_template: 'tulu'
   batch_size: 64
+  max_length: 3370
   trust_remote_code: False
   dpo: False
 berkeley-nest/Starling-RM-7B-alpha:

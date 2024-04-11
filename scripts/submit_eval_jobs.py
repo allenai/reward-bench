@@ -139,6 +139,8 @@ for model in models_to_evaluate:
     if "ref_model" in model_config:
         if not args.ref_free:  # if passed, ignore logic in eval configs
             d["tasks"][0]["arguments"][0] += f" --ref_model {model_config['ref_model']}"
+    if "max_length" in model_config:  # for `mightbe/Better-PairRM`, but could come up in the future
+        d["tasks"][0]["arguments"][0] += f" --max_length {model_config['max_length']}"
 
     # use os to check if beaker_configs/auto_created exists
     if not os.path.exists("beaker_configs/auto_created"):
