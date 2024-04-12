@@ -65,6 +65,7 @@ Or for example, the best of N sweep on the non-default image:
 ```
 python scripts/submit_eval_jobs.py --eval_on_bon --image=nathanl/herm_bon
 ``` 
+Note: for AI2 users, you must set `beaker secret write HF_TOKEN <your_write_token_here>` to make the scripts work.
 
 Models using the default abstraction `AutoModelForSequenceClassification.from_pretrained` can also be loaded locally. Expanding this functionality is TODO. E.g.
 ```

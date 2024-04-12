@@ -69,14 +69,10 @@ print(configs)
 # assert only one of eval_on_pref_sets and eval_on_bon is True
 assert not (eval_on_pref_sets and eval_on_bon), "Only one of eval_on_pref_sets and eval_on_bon can be True"
 
-HF_TOKEN = os.getenv("HF_TOKEN")
-assert HF_TOKEN is not None, "HF Token does not exist -- run `Export HF_TOKEN=<your_write_token_here>'"
-
 d1["tasks"][0]["image"]["beaker"] = image
 d1["tasks"][0]["context"]["cluster"] = cluster
 d1["tasks"][0]["context"]["priority"] = "high"
 d1["tasks"][0]["resources"]["gpuCount"] = num_gpus
-d1["tasks"][0]["envVars"][6]["value"] = HF_TOKEN
 
 # get model from config keys
 models_to_evaluate = list(configs.keys())

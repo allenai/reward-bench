@@ -32,7 +32,7 @@ tasks:
       - name: WANDB_DISABLED
         value: true
       - name: HF_TOKEN
-        value: <placeholder>
+        secret: HF_TOKEN
     datasets:
       - mountPath: /net/nfs.cirrascale
         source:
