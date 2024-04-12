@@ -24,10 +24,10 @@ from transformers import (
 )
 
 from .beaver import BeaverCostPipeline, BeaverPipeline, LlamaForScore
+from .betterpairrm import BetterPairRMPipeline
 from .openassistant import *  # noqa
 from .openbmb import LlamaRewardModel, OpenBMBPipeline
 from .pairrm import DebertaV2PairRM, PairRMPipeline
-from .betterpairrm import BetterPairRMPipeline
 from .shp import SHPPipeline
 from .starling import (
     LlamaForSequenceClassification,
