@@ -30,7 +30,7 @@ def get_args():
     parser.add_argument(
         "--hf_evals_repo",
         type=str,
-        default="ai2-adapt-dev/HERM-Results",
+        default="allenai/reward-bench-results",
         help="HuggingFace repository containing the evaluation results.",
     )
     parser.add_argument(

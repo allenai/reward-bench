@@ -28,7 +28,7 @@ def get_args():
     parser.add_argument(
         "--dataset_name",
         type=str,
-        default="ai2-adapt-dev/rm-benchmark-dev",
+        default="allenai/reward-bench",
         help="The HuggingFace dataset name to source the eval dataset.",
     )
     parser.add_argument(
