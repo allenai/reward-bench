@@ -26,10 +26,10 @@ from transformers import PreTrainedTokenizer
 from rewardbench.models import REWARD_MODEL_CONFIG
 
 # HuggingFace Hub locations
-CORE_EVAL_SET = "ai2-adapt-dev/rm-benchmark-dev"
+CORE_EVAL_SET = "allenai/reward-bench"
 EXTRA_PREF_SETS = "allenai/pref-test-sets"
-BON_CANDIDATES = "ai2-adapt-dev/HERM_BoN_candidates"
-EVAL_REPO = "ai2-adapt-dev/HERM-Results"  # data repo to upload results
+BON_CANDIDATES = "ai2-adapt-dev/HERM_BoN_candidates" # private until officially supported
+EVAL_REPO = "allenai/reward-bench-results"  # data repo to upload results
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)

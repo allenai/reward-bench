@@ -34,7 +34,7 @@ def get_args():
     parser.add_argument(
         "--dataset_name",
         type=str,
-        default="ai2-adapt-dev/rm-benchmark-dev",
+        default="allenai/reward-bench",
         help="Pointer to the HuggingFace repository that contains the benchmark dataset.",
     )
     parser.add_argument(

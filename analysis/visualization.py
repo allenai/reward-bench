@@ -205,7 +205,7 @@ def print_model_statistics(
 
 
 def draw_model_source_histogram(
-    dataset_name: str = "ai2-adapt-dev/rm-benchmark-dev",
+    dataset_name: str = "allenai/reward-bench",
     output_path: Optional[str] = None,
     keys: List[str] = ["chosen_model", "rejected_model"],
     figsize: Tuple[int, int] = (8, 4),
@@ -299,7 +299,7 @@ def draw_model_source_histogram(
 def draw_subtoken_statistics(
     category_subsets: Dict[str, List[str]],
     output_path: Optional[Path] = None,
-    dataset_name: str = "ai2-adapt-dev/rm-benchmark-dev",
+    dataset_name: str = "allenai/reward-bench",
     tokenizer_name: str = "oobabooga/llama-tokenizer",
     figsize: Tuple[int, int] = (8, 4),
     render_latex: bool = False,
