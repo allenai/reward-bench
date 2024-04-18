@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from transformers import (
+    AutoModel,
     AutoModelForCausalLM,
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -23,6 +24,7 @@ from transformers import (
 )
 
 from .beaver import BeaverCostPipeline, BeaverPipeline, LlamaForScore
+from .betterpairrm import BetterPairRMPipeline
 from .openassistant import *  # noqa
 from .openbmb import LlamaRewardModel, OpenBMBPipeline
 from .pairrm import DebertaV2PairRM, PairRMPipeline
@@ -64,9 +66,23 @@ REWARD_MODEL_CONFIG = {
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
     },
+    "openbmb/Eurus-RM-7b": {
+        "model_builder": AutoModel.from_pretrained,
+        "pipeline_builder": OpenBMBPipeline,
+        "quantized": True,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+    },
     "llm-blender/PairRM-hf": {
         "model_builder": DebertaV2PairRM.from_pretrained,
         "pipeline_builder": PairRMPipeline,
+        "quantized": True,
+        "custom_dialogue": True,
+        "model_type": "Custom Classifier",
+    },
+    "mightbe/Better-PairRM": {
+        "model_builder": DebertaV2PairRM.from_pretrained,
+        "pipeline_builder": BetterPairRMPipeline,
         "quantized": True,
         "custom_dialogue": True,
         "model_type": "Custom Classifier",

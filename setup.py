@@ -34,7 +34,7 @@ setup(
     install_requires=[
         "accelerate",
         "bitsandbytes",
-        "black==23.1.0",
+        "black==24.3.0",
         "datasets",
         "deepspeed",
         "einops",
@@ -48,7 +48,8 @@ setup(
         "scipy",
         "tabulate",  # dependency for markdown rendering in pandas
         "tokenizers",
-        "transformers==4.38.1",  # needed for some late models, may need to bump in the future
-        "trl>=0.7.7",
+        "transformers @ git+https://github.com/huggingface/transformers.git@851f253f4d3fa2414451eeaac82b7a9ad6084675",
+        # "transformers==4.38.1",   # TODO add version for Starcoder 2 and Qwen MoE
+        "trl>=0.8.2",  # fixed transformers import error
     ],
 )

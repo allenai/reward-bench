@@ -41,6 +41,14 @@ llm-blender/PairRM-hf:
   batch_size: 64
   trust_remote_code: False
   dpo: False
+mightbe/Better-PairRM:
+  model: 'mightbe/Better-PairRM'
+  tokenizer: 'mightbe/Better-PairRM'
+  chat_template: 'tulu'
+  batch_size: 64
+  max_length: 3370
+  trust_remote_code: False
+  dpo: False
 berkeley-nest/Starling-RM-7B-alpha:
   model: 'berkeley-nest/Starling-RM-7B-alpha'
   tokenizer: 'meta-llama/Llama-2-7b-chat-hf'
@@ -400,4 +408,80 @@ ContextualAI/archangel_sft-kto_pythia12-0b:
   chat_template: # none for tokenizer
   batch_size: 4
   trust_remote_code: False
+  dpo: True
+openbmb/Eurus-RM-7b:
+  model: openbmb/Eurus-RM-7b
+  tokenizer: openbmb/Eurus-RM-7b
+  chat_template: mistral
+  batch_size: 16
+  trust_remote_code: True
+  dpo: False
+openbmb/Eurus-7b-kto:
+  model: openbmb/Eurus-7b-kto
+  ref_model: openbmb/Eurus-7b-sft
+  tokenizer: openbmb/Eurus-7b-kto
+  chat_template: mistral
+  batch_size: 4
+  trust_remote_code: True
+  dpo: True
+Qwen/Qwen1.5-MoE-A2.7B-Chat:
+  model: Qwen/Qwen1.5-MoE-A2.7B-Chat
+  ref_model: Qwen/Qwen1.5-MoE-A2.7B
+  tokenizer: Qwen/Qwen1.5-MoE-A2.7B-Chat
+  chat_template: # none for tokenizer
+  num_gpus: 2
+  batch_size: 3
+  trust_remote_code: False
+  dpo: True
+stabilityai/stable-code-instruct-3b:
+  model: stabilityai/stable-code-instruct-3b
+  ref_model: stabilityai/stable-code-3b
+  tokenizer: stabilityai/stable-code-instruct-3b
+  chat_template: # none for tokenizer
+  batch_size: 4
+  trust_remote_code: True
+  dpo: True
+HuggingFaceH4/starchat2-15b-v0.1:
+  model: HuggingFaceH4/starchat2-15b-v0.1
+  ref_model: HuggingFaceH4/starchat2-15b-sft-v0.1
+  tokenizer: HuggingFaceH4/starchat2-15b-v0.1
+  chat_template: # none for tokenizer
+  batch_size: 4
+  num_gpus: 2
+  trust_remote_code: False
+  dpo: True
+stabilityai/stablelm-2-12b-chat:
+  model: stabilityai/stablelm-2-12b-chat
+  ref_model: stabilityai/stablelm-2-12b
+  tokenizer: stabilityai/stablelm-2-12b-chat
+  chat_template: # none for tokenizer
+  batch_size: 4
+  num_gpus: 2
+  trust_remote_code: True
+  dpo: True
+upstage/SOLAR-10.7B-Instruct-v1.0:
+  model: upstage/SOLAR-10.7B-Instruct-v1.0
+  ref_model: upstage/SOLAR-10.7B-v1.0
+  tokenizer: upstage/SOLAR-10.7B-Instruct-v1.0
+  chat_template: # none for tokenizer
+  batch_size: 4
+  num_gpus: 2
+  trust_remote_code: False
+  dpo: True
+jondurbin/bagel-dpo-34b-v0.5:
+  model: jondurbin/bagel-dpo-34b-v0.5
+  ref_model: jondurbin/bagel-34b-v0.5
+  tokenizer: jondurbin/bagel-dpo-34b-v0.5
+  chat_template: # none for tokenizer
+  batch_size: 2
+  num_gpus: 4
+  trust_remote_code: False
+  dpo: True
+openbmb/MiniCPM-2B-dpo-fp32:
+  model: openbmb/MiniCPM-2B-dpo-fp32
+  ref_model: openbmb/MiniCPM-2B-sft-fp32
+  tokenizer: openbmb/MiniCPM-2B-dpo-fp32
+  chat_template: # none for tokenizer
+  batch_size: 4
+  trust_remote_code: True
   dpo: True

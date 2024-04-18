@@ -26,10 +26,10 @@ from transformers import PreTrainedTokenizer
 from rewardbench.models import REWARD_MODEL_CONFIG
 
 # HuggingFace Hub locations
-CORE_EVAL_SET = "ai2-adapt-dev/rm-benchmark-dev"
+CORE_EVAL_SET = "allenai/reward-bench"
 EXTRA_PREF_SETS = "allenai/pref-test-sets"
-BON_CANDIDATES = "ai2-adapt-dev/HERM_BoN_candidates"
-EVAL_REPO = "ai2-adapt-dev/HERM-Results"  # data repo to upload results
+BON_CANDIDATES = "ai2-adapt-dev/HERM_BoN_candidates"  # private until officially supported
+EVAL_REPO = "allenai/reward-bench-results"  # data repo to upload results
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -68,13 +68,13 @@ def save_to_hub(
     Returns:
         scores_url: URL to the saved scores (optional).
     """
-    scores_path = f"results/{target_path}/{model_name}.json"
+    scores_path = f"./results/{target_path}/{model_name}.json"
 
     if save_metrics_for_beaker:
-        # ai2 internal visualization, not needed external
+        # ai2 internal visualization, not needed externally, global path intentional.
         dirname = os.path.dirname("/output/metrics.json")
         os.makedirs(dirname, exist_ok=True)  # redundant in Beaker code
-        with open("/output/metrics.json", "w+") as f:  # save format for AI2 beaker to show results
+        with open("./output/metrics.json", "w+") as f:  # save format for AI2 beaker to show results
             json.dump(results_dict, f)
 
     dirname = os.path.dirname(scores_path)

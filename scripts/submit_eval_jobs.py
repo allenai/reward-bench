@@ -28,7 +28,7 @@ argparser.add_argument(
     "--eval_on_pref_sets", action="store_true", default=False, help="Evaluate on preference sets rather than core set"
 )
 argparser.add_argument("--eval_on_bon", action="store_true", default=False, help="Evaluate on BON preference sets")
-argparser.add_argument("--image", type=str, default="nathanl/rewardbench_v5", help="Beaker image to use")
+argparser.add_argument("--image", type=str, default="nathanl/rewardbench_v10", help="Beaker image to use")
 argparser.add_argument("--cluster", type=str, default="ai2/allennlp-cirrascale", help="Beaker cluster to use")
 argparser.add_argument("--upload_to_hub", action="store_false", default=True, help="Upload to results to HF hub")
 argparser.add_argument("--model", type=str, default=None, help="Specific model to evaluate if not sweep")
@@ -50,7 +50,7 @@ with open("scripts/configs/beaker_eval.yaml", "r") as f:
     d1 = yaml.load(f.read(), Loader=yaml.FullLoader)
 
 cluster = args.cluster
-# cluster = "ai2/mosaic-cirrascale"
+
 image = args.image
 num_gpus = 1
 upload_to_hub = args.upload_to_hub
@@ -69,14 +69,10 @@ print(configs)
 # assert only one of eval_on_pref_sets and eval_on_bon is True
 assert not (eval_on_pref_sets and eval_on_bon), "Only one of eval_on_pref_sets and eval_on_bon can be True"
 
-HF_TOKEN = os.getenv("HF_TOKEN")
-assert HF_TOKEN is not None, "HF Token does not exist -- run `Export HF_TOKEN=<your_write_token_here>'"
-
 d1["tasks"][0]["image"]["beaker"] = image
 d1["tasks"][0]["context"]["cluster"] = cluster
 d1["tasks"][0]["context"]["priority"] = "high"
 d1["tasks"][0]["resources"]["gpuCount"] = num_gpus
-d1["tasks"][0]["envVars"][6]["value"] = HF_TOKEN
 
 # get model from config keys
 models_to_evaluate = list(configs.keys())
@@ -139,6 +135,8 @@ for model in models_to_evaluate:
     if "ref_model" in model_config:
         if not args.ref_free:  # if passed, ignore logic in eval configs
             d["tasks"][0]["arguments"][0] += f" --ref_model {model_config['ref_model']}"
+    if "max_length" in model_config:  # for `mightbe/Better-PairRM`, but could come up in the future
+        d["tasks"][0]["arguments"][0] += f" --max_length {model_config['max_length']}"
 
     # use os to check if beaker_configs/auto_created exists
     if not os.path.exists("beaker_configs/auto_created"):
