@@ -1,0 +1,8 @@
+{
+    "openbmb/UltraRM-13b": "https://huggingface.co/datasets/allenai/reward-bench-results/raw/main/best-of-n/alpaca_eval/tulu-13b/openbmb/UltraRM-13b.json",
+    "weqweasdas/hh_rlhf_rm_open_llama_3b": "https://huggingface.co/datasets/allenai/reward-bench-results/raw/main/best-of-n/alpaca_eval/tulu-13b/weqweasdas/hh_rlhf_rm_open_llama_3b.json",
+    "PKU-Alignment/beaver-7b-v1.0-cost": "https://huggingface.co/datasets/allenai/reward-bench-results/raw/main/best-of-n/alpaca_eval/tulu-13b/PKU-Alignment/beaver-7b-v1.0-cost.json",
+    "PKU-Alignment/beaver-7b-v1.0-reward": "https://huggingface.co/datasets/allenai/reward-bench-results/raw/main/best-of-n/alpaca_eval/tulu-13b/PKU-Alignment/beaver-7b-v1.0-reward.json",
+    "OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5": "https://huggingface.co/datasets/allenai/reward-bench-results/raw/main/best-of-n/alpaca_eval/tulu-13b/OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5.json",
+    "OpenAssistant/reward-model-deberta-v3-large-v2": "https://huggingface.co/datasets/allenai/reward-bench-results/raw/main/best-of-n/alpaca_eval/tulu-13b/OpenAssistant/reward-model-deberta-v3-large-v2.json"
+}

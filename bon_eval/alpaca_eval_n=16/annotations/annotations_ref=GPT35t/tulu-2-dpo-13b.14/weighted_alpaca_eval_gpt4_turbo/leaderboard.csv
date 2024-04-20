@@ -1,0 +1,2 @@
+,win_rate,standard_error,mode,avg_length,n_wins,n_wins_base,n_draws,n_total,discrete_win_rate,length_controlled_winrate
+allenai/tulu-2-dpo-13b.14,41.77674726408137,1.5130180458661828,community,1812,336,467,2,805,41.86335403726708,31.36942743061778
