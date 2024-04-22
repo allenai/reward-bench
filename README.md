@@ -21,7 +21,7 @@ The repository includes the following:
 
 The two primary scripts to generate results (more in `scripts/`):
 1. `scripts/run_rm.py`: Run evaluations for reward models.
-2. `scripts/run_dpo.py`: Run evaluations for direct preference optimization (DPO) models.
+2. `scripts/run_dpo.py`: Run evaluations for direct preference optimization (DPO) models (and other models using implicit rewards, such as KTO).
 3. `scripts/train_rm.py`: A basic RM training script built on [TRL](https://github.com/huggingface/trl).
 
 ## Installation
@@ -175,6 +175,7 @@ Notes: Do not use the character - in image names for beaker,
 When updating the `Dockerfile`, make sure to see the instructions at the top to update the base cuda version. 
 
 In development, we have the following docker images (most recent first as it's likely what you need).
+- `nathanl/rb_v11`: add support for llama3
 - `nathanl/rewardbench_v10`: add support for `mightbe/Better-PairRM` via jinja2
 - `nathanl/rewardbench_v8`: add support for `openbmb/Eurus-RM-7b` and starcoder2
 - `nathanl/rewardbench_v5`: improve saving with DPO script

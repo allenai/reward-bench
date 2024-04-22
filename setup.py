@@ -48,8 +48,9 @@ setup(
         "scipy",
         "tabulate",  # dependency for markdown rendering in pandas
         "tokenizers",
-        "transformers @ git+https://github.com/huggingface/transformers.git@851f253f4d3fa2414451eeaac82b7a9ad6084675",
-        # "transformers==4.38.1",   # TODO add version for Starcoder 2 and Qwen MoE
+        "tiktoken==0.6.0",  # added for llama 3
+        # "transformers @ git+https://github.com/huggingface/transformers.git@851f253f4d3fa2414451eeaac82b7a9ad6084675", # noqa
+        "transformers==4.40.0",  # pinned at llama 3
         "trl>=0.8.2",  # fixed transformers import error
     ],
 )
