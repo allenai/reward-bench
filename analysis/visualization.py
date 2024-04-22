@@ -27,7 +27,7 @@ import pandas as pd
 from datasets import Dataset, load_dataset
 from transformers import AutoTokenizer
 
-from analysis.constants import SUBSET_NAME_TO_PAPER_READY
+from rewardbench.constants import SUBSET_NAME_TO_PAPER_READY
 
 # From varnish: https://varnish.allenai.org/components/colors
 AI2_COLORS = {

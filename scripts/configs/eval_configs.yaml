@@ -499,3 +499,10 @@ meta-llama/Meta-Llama-3-70B-Instruct:
   num_gpus: 4
   generative: True
   dpo: False
+sfairXC/FsfairX-LLaMA3-RM-v0.1:
+  model: sfairXC/FsfairX-LLaMA3-RM-v0.1
+  tokenizer: sfairXC/FsfairX-LLaMA3-RM-v0.1
+  chat_template: # none for tokenizer
+  batch_size: 4
+  trust_remote_code: False
+  dpo: False
