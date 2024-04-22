@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from huggingface_hub import snapshot_download
 
-from analysis.constants import SUBSET_NAME_TO_PAPER_READY
+from rewardbench.constants import SUBSET_NAME_TO_PAPER_READY
 from analysis.utils import load_results
 from analysis.visualization import AI2_COLORS, PLOT_PARAMS
 

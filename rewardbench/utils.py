@@ -35,6 +35,24 @@ EVAL_REPO = "allenai/reward-bench-results"  # data repo to upload results
 HF_TOKEN = os.getenv("HF_TOKEN", None)
 api = HfApi(token=HF_TOKEN)
 
+def calculate_scores_per_section(example_counts, subset_mapping, metrics):
+    """
+    Helper function for immediately logging RewardBench scores.
+    """
+    section_scores = {}
+    for section, tests in subset_mapping.items():
+        total_weighted_score = 0
+        total_examples = 0
+        for test in tests:
+            if test in metrics:
+                total_weighted_score += metrics[test] * example_counts[test]
+                total_examples += example_counts[test]
+        if total_examples > 0:
+            section_scores[section] = total_weighted_score / total_examples
+        else:
+            section_scores[section] = 0
+    return section_scores
+
 
 def check_tokenizer_chat_template(tokenizer):
     """

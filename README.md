@@ -90,7 +90,9 @@ python scripts/run_bon.py --model=OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2
 
 **Important**: We use prompt-weighed scores for the sections Chat, Chat Hard, Safety, and Reasoning (with math equalized to code here) to avoid assigning too much credit to small subsets (e.g. MT Bench ones). Use the following code to compute the scores for each category, assuming `RewardBench` is installed:
 ```
-from analysis.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
+from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
+from rewardbench.utils import calculate_scores_per_section
+
 metrics = {
   "alpacaeval-easy": 0.5,
   "alpacaeval-hard": 0.7052631578947368,
@@ -120,24 +122,9 @@ metrics = {
   "xstest-should-respond": 0.284
 }
 
-def calculate_scores_per_section(example_counts, subset_mapping, metrics):
-    section_scores = {}
-    for section, tests in subset_mapping.items():
-        total_weighted_score = 0
-        total_examples = 0
-        for test in tests:
-            if test in metrics:
-                total_weighted_score += metrics[test] * example_counts[test]
-                total_examples += example_counts[test]
-        if total_examples > 0:
-            section_scores[section] = total_weighted_score / total_examples
-        else:
-            section_scores[section] = 0
-    return section_scores
-
 # Calculate and print the scores per section
 scores_per_section = calculate_scores_per_section(EXAMPLE_COUNTS, SUBSET_MAPPING, metrics)
-scores_per_section
+print(scores_per_section)
 ```
 
 ## Repository structure
