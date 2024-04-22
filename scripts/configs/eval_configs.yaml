@@ -485,3 +485,10 @@ openbmb/MiniCPM-2B-dpo-fp32:
   batch_size: 4
   trust_remote_code: True
   dpo: True
+sfairXC/FsfairX-LLaMA3-RM-v0.1:
+  model: sfairXC/FsfairX-LLaMA3-RM-v0.1
+  tokenizer: sfairXC/FsfairX-LLaMA3-RM-v0.1
+  chat_template: # none for tokenizer
+  batch_size: 4
+  trust_remote_code: False
+  dpo: False
