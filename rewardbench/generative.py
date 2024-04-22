@@ -24,8 +24,6 @@ import openai
 from fastchat.conversation import get_conv_template
 from openai import OpenAI
 
-client = OpenAI()
-
 ANTHROPIC_MODEL_LIST = (
     "claude-1",
     "claude-2",
@@ -51,6 +49,8 @@ OPENAI_MODEL_LIST = (
     "gpt-4-1106-preview",
     "gpt-4-0125-preview",
 )
+
+API_MODEL_LIST = OPENAI_MODEL_LIST + ANTHROPIC_MODEL_LIST
 
 
 # API setting constants
@@ -104,13 +104,10 @@ MTBENCH_MULTI_V2 = {
     "output_format": "[[A]]",
 }
 
+
 # format with prompt_template.format(question=question, answer_a=answer_a, answer_b=answer_b)
-
-
-# noqa adapted from FastChat https://github.com/lm-sys/FastChat/blob/b015f21cb9d0cf3c87d2a5e53008074c537e8be0/fastchat/llm_judge/common.py#L235C1-L312C1
-def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False):
+def format_judge_answers(question, answer_a, answer_b, multi_turn=False):
     kwargs = {}
-
     if multi_turn:
         system_prompt = MTBENCH_MULTI_V2["system_prompt"]
         user_prompt = MTBENCH_MULTI_V2["prompt_template"].format(
@@ -130,7 +127,21 @@ def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False):
             answer_b=answer_b[1]["content"],
             **kwargs,
         )
+    return system_prompt, user_prompt
 
+
+def process_judgement(judgment):
+    if "[[A]]" in judgment:
+        return "A"
+    elif "[[B]]" in judgment:
+        return "B"
+    else:
+        return "error"
+
+
+# noqa adapted from FastChat https://github.com/lm-sys/FastChat/blob/b015f21cb9d0cf3c87d2a5e53008074c537e8be0/fastchat/llm_judge/common.py#L235C1-L312C1
+def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False):
+    system_prompt, user_prompt = format_judge_answers(question, answer_a, answer_b, multi_turn)
     winner = "error"
 
     if model in OPENAI_MODEL_LIST:
@@ -155,12 +166,7 @@ def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False):
     else:
         raise ValueError(f"Model {model} not supported")
 
-    if "[[A]]" in judgment:
-        winner = "A"
-    elif "[[B]]" in judgment:
-        winner = "B"
-    else:
-        winner = "error"
+    winner = process_judgement(judgment)
     return winner, user_prompt, judgment
 
 
@@ -198,6 +204,7 @@ def chat_completion_anthropic(model, conv, temperature, max_tokens, api_dict=Non
 
 
 def chat_completion_openai(model, conv, temperature, max_tokens, api_dict=None):
+    client = OpenAI()
     output = API_ERROR_OUTPUT
     for _ in range(API_MAX_RETRY):
         try:
