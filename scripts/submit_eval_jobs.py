@@ -87,6 +87,11 @@ for model in models_to_evaluate:
     model_config = configs[model]
     eval_dpo = model_config["dpo"]
 
+    # check if generative in model_config
+    if "generative" in model_config:
+        if model_config["generative"]:
+            eval_gen = True
+
     # ignore models depending on eval_dpo_only and eval_rm_only
     if args.eval_dpo_only:
         if not eval_dpo:
@@ -101,10 +106,14 @@ for model in models_to_evaluate:
     elif eval_dpo:
         experiment_group = "rewardebench-dpo"
         script = "run_dpo.py"
+    elif eval_gen:
+        experiment_group = "rewardebench-gen"
+        script = "run_generative.py"
     else:
         experiment_group = "rewardebench-seq"
         script = "run_rm.py"
 
+    # log experiment name
     if eval_on_pref_sets:
         experiment_group += "-pref-sets"
 
@@ -118,12 +127,18 @@ for model in models_to_evaluate:
     if "num_gpus" in model_config:
         d["tasks"][0]["resources"]["gpuCount"] = model_config["num_gpus"]
 
-    d["tasks"][0]["arguments"][0] = (
-        f"python scripts/{script}"
-        f" --model {model}"
-        f" --tokenizer {model_config['tokenizer']}"
-        f" --batch_size {model_config['batch_size']}"
-    )
+    if not eval_gen:
+        d["tasks"][0]["arguments"][0] = (
+            f"python scripts/{script}"
+            f" --model {model}"
+            f" --tokenizer {model_config['tokenizer']}"
+            f" --batch_size {model_config['batch_size']}"
+        )
+    else:
+        d["tasks"][0]["arguments"][0] = (
+            f"python scripts/{script}"
+            f" --model {model}"
+        )
     if model_config["chat_template"] is not None:
         d["tasks"][0]["arguments"][0] += f" --chat_template {model_config['chat_template']}"
     if model_config["trust_remote_code"]:
