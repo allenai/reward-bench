@@ -242,7 +242,6 @@ def main():
         is_shuffled = dataset_prompts["is_shuffled"]
 
         # generate
-        print(format_judgements(dataset[0]))
         outputs = model.generate(prompts, sampling_params)
 
         answers = [o.outputs[0].text for o in outputs]
