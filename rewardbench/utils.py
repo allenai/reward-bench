@@ -121,16 +121,22 @@ def load_eval_dataset(
     tokenizer: PreTrainedTokenizer = None,
     logger: logging.Logger = None,
     keep_columns: List[str] = ["text_chosen", "text_rejected", "id"],
-) -> Dataset:
+) -> tuple[Dataset, list[str]]:
     """
     Loads either the core eval set for HERM or the existing preference data test sets.
 
     Args:
         core_set: if True, load the core eval set for HERM.
         custom_dialogue_formatting: if True, format the dialogue as needed for custom models (e.g. SHP and PairRM).
+        conv: fastchat conversation template.
+                If None (default) the passed tokenizer needs to have a usable chat template.
+        tokenizer: HuggingFace tokenizer to use. The tokenizer's chat template, if available, has precedence over conv.
+        logger: logger to use for logging. If None (default), no logging is done.
+        keep_columns: list of columns to keep in the dataset.
 
     Returns:
         dataset: loaded dataset with required properties.
+        subsets: list of subsets for the corresponding samples in the dataset.
     """
     if core_set:
         raw_dataset = load_dataset(CORE_EVAL_SET, split="filtered")
