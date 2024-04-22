@@ -27,7 +27,9 @@ import numpy as np
 from fastchat.conversation import get_conv_template
 
 from rewardbench import load_eval_dataset, save_to_hub
+from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
 from rewardbench.generative import run_judge_pair
+from rewardbench.utils import calculate_scores_per_section
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -221,6 +223,11 @@ def main():
         num_total = len(subset_dataset["results"])
         print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
         results_grouped[subset] = num_correct / num_total
+
+    # log leaderboard aggregated results
+    if not args.pref_sets:
+        results_leaderboard = calculate_scores_per_section(EXAMPLE_COUNTS, SUBSET_MAPPING, results_grouped)
+        print(results_leaderboard)
 
     ############################
     # Upload results to hub

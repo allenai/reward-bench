@@ -23,12 +23,12 @@ import numpy as np
 import pandas as pd
 from huggingface_hub import snapshot_download
 
+from analysis.utils import load_results
 from rewardbench.constants import (
     EXAMPLE_COUNTS,
     SUBSET_MAPPING,
     SUBSET_NAME_TO_PAPER_READY,
 )
-from analysis.utils import load_results
 
 LOCAL_DIR = "hf_snapshot_evals"
 
