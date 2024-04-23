@@ -140,6 +140,7 @@ def load_eval_dataset(
     tokenizer: PreTrainedTokenizer = None,
     logger: logging.Logger = None,
     keep_columns: List[str] = ["text_chosen", "text_rejected", "id"],
+    max_turns: int = None,
 ) -> tuple[Dataset, list[str]]:
     """
     Loads either the core eval set for HERM or the existing preference data test sets.
@@ -152,6 +153,7 @@ def load_eval_dataset(
         tokenizer: HuggingFace tokenizer to use. The tokenizer's chat template, if available, has precedence over conv.
         logger: logger to use for logging. If None (default), no logging is done.
         keep_columns: list of columns to keep in the dataset.
+        max_turns: maximum number of turns in the dialogue (usually even). If None (default), no filtering is done.
 
     Returns:
         dataset: loaded dataset with required properties.
@@ -233,6 +235,15 @@ def load_eval_dataset(
             fn_kwargs={"core_set": core_set},
             num_proc=8,
         )
+
+    if max_turns is not None:
+        assert max_turns > 0, "max_turns must be greater than 0"
+
+        # filter long answers (MT Bench prompt as 1 or 2 turn examples)
+        def filter_long_turns(batch):
+            return len(batch["text_chosen"]) <= max_turns
+
+        dataset = dataset.filter(filter_long_turns)
 
     # take column subset from dataset
     subsets = dataset["subset"]

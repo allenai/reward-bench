@@ -27,6 +27,9 @@ RUN pip install ai2-olmo
 # TODO remove above when olmo supported in Transformers verion
 RUN pip install jinja2 
 # for better-pairRM
+# generative installs
+RUN pip install anthropic
+RUN pip install openai
 
 # for interactive session
 RUN chmod -R 777 /stage/

@@ -45,6 +45,7 @@ setup(
         "pandas",
         "peft",
         "pytest",
+        "ray",  # for generative llm multi-gpu
         "scipy",
         "tabulate",  # dependency for markdown rendering in pandas
         "tokenizers",

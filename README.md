@@ -162,7 +162,7 @@ Notes: Do not use the character - in image names for beaker,
 When updating the `Dockerfile`, make sure to see the instructions at the top to update the base cuda version. 
 
 In development, we have the following docker images (most recent first as it's likely what you need).
-- `nathanl/rb_v13`: add support for vllm + llm as a judge
+- `nathanl/rb_v15`: add support for vllm + llm as a judge
 - `nathanl/rb_v12`: add support for llama3
 - `nathanl/rewardbench_v10`: add support for `mightbe/Better-PairRM` via jinja2
 - `nathanl/rewardbench_v8`: add support for `openbmb/Eurus-RM-7b` and starcoder2

@@ -28,7 +28,7 @@ argparser.add_argument(
     "--eval_on_pref_sets", action="store_true", default=False, help="Evaluate on preference sets rather than core set"
 )
 argparser.add_argument("--eval_on_bon", action="store_true", default=False, help="Evaluate on BON preference sets")
-argparser.add_argument("--image", type=str, default="nathanl/rb_v13", help="Beaker image to use")
+argparser.add_argument("--image", type=str, default="nathanl/rb_v15", help="Beaker image to use")
 argparser.add_argument("--cluster", type=str, default="ai2/allennlp-cirrascale", help="Beaker cluster to use")
 argparser.add_argument("--priority", type=str, default="high", help="Priority of the job")
 argparser.add_argument("--upload_to_hub", action="store_false", default=True, help="Upload to results to HF hub")
@@ -71,7 +71,7 @@ print(configs)
 assert not (eval_on_pref_sets and eval_on_bon), "Only one of eval_on_pref_sets and eval_on_bon can be True"
 
 d1["tasks"][0]["image"]["beaker"] = image
-d1["tasks"][0]["context"]["cluster"] = cluster
+# d1["tasks"][0]["context"]["cluster"] = cluster
 d1["tasks"][0]["context"]["priority"] = args.priority
 d1["tasks"][0]["resources"]["gpuCount"] = num_gpus
 
@@ -137,8 +137,7 @@ for model in models_to_evaluate:
         )
     else:
         d["tasks"][0]["arguments"][0] = (
-            f"python scripts/{script}"
-            f" --model {model}"
+            f"python scripts/{script}" f" --model {model}" f" --num_gpus {model_config['num_gpus']}"
         )
     if model_config["chat_template"] is not None:
         d["tasks"][0]["arguments"][0] += f" --chat_template {model_config['chat_template']}"

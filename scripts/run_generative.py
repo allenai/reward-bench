@@ -32,14 +32,13 @@ from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams
 
 from rewardbench import load_eval_dataset, save_to_hub
+from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
 from rewardbench.generative import (
     API_MODEL_LIST,
     format_judge_answers,
     process_judgement,
     run_judge_pair,
 )
-from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
-from rewardbench.generative import run_judge_pair
 from rewardbench.utils import calculate_scores_per_section
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
@@ -63,6 +62,7 @@ def get_args():
     parser.add_argument(
         "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
     )
+    parser.add_argument("--num_gpus", type=int, default=1, help="number of gpus to use, for multi-node vllm")
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
     parser.add_argument(
         "--pref_sets", action="store_true", help="run on common preference sets instead of our custom eval set"
@@ -101,7 +101,7 @@ def main():
     # if model isn't API, load via vllm
     if args.model not in API_MODEL_LIST:
         # load model
-        model = LLM(args.model, trust_remote_code=args.trust_remote_code)
+        model = LLM(args.model, trust_remote_code=args.trust_remote_code, tensor_parallel_size=args.num_gpus)
         tokenizer = AutoTokenizer.from_pretrained(args.model)
         if "Llama-3" in args.model or "llama3-8b" in args.model:
             stop_token_ids = [128009]
@@ -126,17 +126,12 @@ def main():
         tokenizer=None,
         logger=logger,
         keep_columns=["text_chosen", "text_rejected", "id"],
+        max_turns=4,
     )
-    # filter long answers (MT Bench prompt as 1 or 2 turn examples)
-    def filter_long_turns(batch):
-        return len(batch["text_chosen"]) <= 4
 
     # copy id for saving, then remove
     ids = dataset["id"]
     dataset = dataset.remove_columns("id")
-
-
-    dataset = dataset.filter(filter_long_turns)
 
     # debug: use only 10 examples
     if args.debug:
