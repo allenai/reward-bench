@@ -87,7 +87,7 @@ def save_to_hub(
     Returns:
         scores_url: URL to the saved scores (optional).
     """
-    scores_path = f"./results/{target_path}/{model_name}.json"
+    scores_path = f"./results/{target_path}{model_name}.json"
 
     if save_metrics_for_beaker:
         # ai2 internal visualization, not needed externally, global path intentional.
