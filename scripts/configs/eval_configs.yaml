@@ -502,6 +502,14 @@ openbmb/MiniCPM-2B-dpo-fp32:
 #   num_gpus: 4
 #   generative: True
 #   dpo: False
+# CohereForAI/c4ai-command-r-plus:
+#   model: CohereForAI/c4ai-command-r-plus
+#   tokenizer: CohereForAI/c4ai-command-r-plus
+#   chat_template: # none for tokenizer
+#   trust_remote_code: False
+#   num_gpus: 4
+#   generative: True
+#   dpo: False
 # End generative reward models
 sfairXC/FsfairX-LLaMA3-RM-v0.1:
   model: sfairXC/FsfairX-LLaMA3-RM-v0.1
