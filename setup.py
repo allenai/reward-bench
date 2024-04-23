@@ -45,6 +45,7 @@ setup(
         "pandas",
         "peft",
         "pytest",
+        # "ray",  # for generative llm multi-gpu
         "scipy",
         "tabulate",  # dependency for markdown rendering in pandas
         "tokenizers",
@@ -52,5 +53,7 @@ setup(
         # "transformers @ git+https://github.com/huggingface/transformers.git@851f253f4d3fa2414451eeaac82b7a9ad6084675", # noqa
         "transformers==4.40.0",  # pinned at llama 3
         "trl>=0.8.2",  # fixed transformers import error
+        # TODO consider vllm in setup, currently only in dockerfile
+        # "vllm @ git+https://github.com/vllm-project/vllm.git@d87f39e9a9dd149f5dd7a58b4d98b21f713827b6",  # noqa, # TODO pin version, Command R Plus is currently only in source install
     ],
 )

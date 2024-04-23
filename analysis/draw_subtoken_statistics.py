@@ -15,8 +15,8 @@
 import argparse
 from pathlib import Path
 
-from rewardbench.constants import SUBSET_MAPPING
 from analysis.visualization import draw_subtoken_statistics
+from rewardbench.constants import SUBSET_MAPPING
 
 
 def get_args():

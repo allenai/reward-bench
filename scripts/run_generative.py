@@ -17,6 +17,9 @@
 # python scripts/run_generative.py --model gpt-3.5-turbo
 # python scripts/run_generative.py --model=claude-3-haiku-20240307
 
+# note: for none API models, this script uses vllm
+# pip install vllm
+
 import argparse
 import logging
 import os
@@ -25,10 +28,17 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
 from fastchat.conversation import get_conv_template
+from transformers import AutoTokenizer
+from vllm import LLM, SamplingParams
 
 from rewardbench import load_eval_dataset, save_to_hub
 from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
-from rewardbench.generative import run_judge_pair
+from rewardbench.generative import (
+    API_MODEL_LIST,
+    format_judge_answers,
+    process_judgement,
+    run_judge_pair,
+)
 from rewardbench.utils import calculate_scores_per_section
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
@@ -52,6 +62,7 @@ def get_args():
     parser.add_argument(
         "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
     )
+    parser.add_argument("--num_gpus", type=int, default=1, help="number of gpus to use, for multi-node vllm")
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
     parser.add_argument(
         "--pref_sets", action="store_true", help="run on common preference sets instead of our custom eval set"
@@ -61,6 +72,9 @@ def get_args():
     )
     parser.add_argument(
         "--num_threads", type=int, default=10, help="number of threads to use for parallel processing of examples"
+    )
+    parser.add_argument(
+        "--disable_beaker_save", action="store_true", help="disable saving the main results in a file for AI2 Beaker"
     )
     args = parser.parse_args()
     return args
@@ -87,6 +101,23 @@ def main():
     custom_dialogue = True  # to mirror other scripts, required here
     model_type = "Generative RM"
 
+    # if model isn't API, load via vllm
+    if args.model not in API_MODEL_LIST:
+        # load model
+        model = LLM(args.model, trust_remote_code=args.trust_remote_code, tensor_parallel_size=args.num_gpus)
+        tokenizer = AutoTokenizer.from_pretrained(args.model)
+        if "Llama-3" in args.model or "llama3-8b" in args.model:
+            stop_token_ids = [128009]
+        else:
+            stop_token_ids = []
+        sampling_params = SamplingParams(
+            n=1,
+            temperature=0,
+            top_p=1,
+            max_tokens=1024,
+            stop_token_ids=stop_token_ids,
+        )
+
     ############################
     # Load dataset
     ############################
@@ -98,7 +129,9 @@ def main():
         tokenizer=None,
         logger=logger,
         keep_columns=["text_chosen", "text_rejected", "id"],
+        max_turns=4,
     )
+
     # copy id for saving, then remove
     ids = dataset["id"]
     dataset = dataset.remove_columns("id")
@@ -109,95 +142,129 @@ def main():
         subsets = subsets[:10]
         ids = ids[:10]
 
-    ############################
-    # Run inference via API
-    ############################
-    def update_progress_bar(done, total):
-        # Simple text-based progress bar
-        progress = int(50 * done / total)  # Calculate progress (50 chars width)
-        sys.stdout.write("\r[{}{}] {}/{}".format("#" * progress, "." * (50 - progress), done, total))
-        sys.stdout.flush()
+    if args.model in API_MODEL_LIST:
+        ############################
+        # Run inference via API
+        ############################
+        def update_progress_bar(done, total):
+            # Simple text-based progress bar
+            progress = int(50 * done / total)  # Calculate progress (50 chars width)
+            sys.stdout.write("\r[{}{}] {}/{}".format("#" * progress, "." * (50 - progress), done, total))
+            sys.stdout.flush()
 
-    def get_judgement(batch, debug=args.debug):
-        mult_turn = True if len(batch["text_chosen"]) > 2 else False
-        prompt = batch["text_chosen"][0]["content"]
-        answer_a = batch["text_chosen"]
-        answer_b = batch["text_rejected"]
+        def get_judgement(batch, debug=args.debug):
+            mult_turn = True if len(batch["text_chosen"]) > 2 else False
+            prompt = batch["text_chosen"][0]["content"]
+            answer_a = batch["text_chosen"]
+            answer_b = batch["text_rejected"]
 
-        # shuffle a and b randomly for position bias
-        is_shuffled = np.random.rand() > 0.5
-        if is_shuffled:
-            answer_a, answer_b = answer_b, answer_a
-            winner_text = "B"
-            loser_text = "A"
-        else:
-            winner_text = "A"
-            loser_text = "B"
+            # shuffle a and b randomly for position bias
+            is_shuffled = np.random.rand() > 0.5
+            if is_shuffled:
+                answer_a, answer_b = answer_b, answer_a
+                winner_text = "B"
+                loser_text = "A"
+            else:
+                winner_text = "A"
+                loser_text = "B"
 
-        if len(batch["text_chosen"]) <= 4:  # set up only for 1 or 2 turns
-            winner, request, judgement = run_judge_pair(prompt, answer_a, answer_b, args.model, multi_turn=mult_turn)
-            if debug:
-                print(f"Prompt: {request}")
-                print(f"Judgement: {judgement}")
-            if winner == winner_text:
+            if len(batch["text_chosen"]) <= 4:  # set up only for 1 or 2 turns
+                winner, request, judgement = run_judge_pair(
+                    prompt, answer_a, answer_b, args.model, multi_turn=mult_turn
+                )
+                if debug:
+                    print(f"Prompt: {request}")
+                    print(f"Judgement: {judgement}")
+                if winner == winner_text:
+                    return 1
+                elif winner == loser_text:
+                    return 0
+                else:  # if "error"
+                    return 0.5  # effectively a tie
+            else:
+                return 0.5
+
+        with ThreadPoolExecutor(max_workers=args.num_threads) as executor:
+            # Map 'my_function' across the vector, executing in parallel using threads
+            # results = list(executor.map(get_judgement, dataset))
+
+            # Progress bar version
+            results = [None] * len(dataset)  # Preallocate results list
+            done_tasks = 0  # Counter for completed tasks
+
+            with ThreadPoolExecutor(max_workers=args.num_threads) as executor:
+                # Submit all tasks and hold their futures in a list
+                future_to_index = {executor.submit(get_judgement, x): i for i, x in enumerate(dataset)}
+
+                # As tasks complete, update progress and store results in the original order
+                for future in as_completed(future_to_index):
+                    index = future_to_index[future]
+                    results[index] = future.result()
+                    done_tasks += 1
+                    update_progress_bar(done_tasks, len(dataset))
+
+            # Print newline after progress bar
+            print()
+    else:
+        ############################
+        # Run model weights with vllm
+        ############################
+
+        def format_judgements(batch):
+            # TODO expand this to include fastchat chat templates if needed
+            mult_turn = True if len(batch["text_chosen"]) > 2 else False
+            prompt = batch["text_chosen"][0]["content"]
+            answer_a = batch["text_chosen"]
+            answer_b = batch["text_rejected"]
+
+            # shuffle a and b randomly for position bias
+            is_shuffled = np.random.rand() > 0.5
+            if is_shuffled:
+                answer_a, answer_b = answer_b, answer_a
+
+            system_prompt, user_prompt = format_judge_answers(prompt, answer_a, answer_b, multi_turn=mult_turn)
+
+            messages = [
+                {
+                    "role": "system",
+                    "content": system_prompt,
+                },
+                {"role": "user", "content": user_prompt},
+            ]
+            prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            batch["text"] = prompt
+            batch["is_shuffled"] = is_shuffled
+            return batch
+
+        # format the dataset for the model
+        dataset_prompts = dataset.map(format_judgements)
+
+        # collect texts of dataset in list
+        prompts = dataset_prompts["text"]
+        is_shuffled = dataset_prompts["is_shuffled"]
+
+        # generate
+        outputs = model.generate(prompts, sampling_params)
+
+        answers = [o.outputs[0].text for o in outputs]
+        winners = [process_judgement(a) for a in answers]
+
+        def process_shuffled(win, shuffle):
+            if shuffle:
+                winner_text = "B"
+                loser_text = "A"
+            else:
+                winner_text = "A"
+                loser_text = "B"
+
+            if win == winner_text:
                 return 1
-            elif winner == loser_text:
+            elif win == loser_text:
                 return 0
             else:  # if "error"
                 return 0.5  # effectively a tie
-        else:
-            return 0.5
 
-    with ThreadPoolExecutor(max_workers=args.num_threads) as executor:
-        # Map 'my_function' across the vector, executing in parallel using threads
-        # results = list(executor.map(get_judgement, dataset))
-
-        # Progress bar version
-        results = [None] * len(dataset)  # Preallocate results list
-        done_tasks = 0  # Counter for completed tasks
-
-        with ThreadPoolExecutor(max_workers=args.num_threads) as executor:
-            # Submit all tasks and hold their futures in a list
-            future_to_index = {executor.submit(get_judgement, x): i for i, x in enumerate(dataset)}
-
-            # As tasks complete, update progress and store results in the original order
-            for future in as_completed(future_to_index):
-                index = future_to_index[future]
-                results[index] = future.result()
-                done_tasks += 1
-                update_progress_bar(done_tasks, len(dataset))
-
-        # Print newline after progress bar
-        print()
-
-    ############################
-    # Placehold for loop for non API models
-    ############################
-    # for step, batch in enumerate(tqdm(dataset, desc="RM batch steps")):
-    #     logger.info(f"RM inference step {step}/{len(dataset)}")
-
-    # mult_turn = False
-    # prompt = batch["text_chosen"][0]["content"]
-    # answer_a = batch["text_chosen"]
-    # answer_b = batch["text_rejected"]
-
-    # # shuffle a and b randomly for position bias
-    # is_shuffled = np.random.rand() > 0.5
-    # if is_shuffled:
-    #     answer_a, answer_b = answer_b, answer_a
-    #     winner_text = "B"
-    #     loser_text = "A"
-    # else:
-    #     winner_text = "A"
-    #     loser_text = "B"
-
-    # winner, _, _ = run_judge_pair(prompt, answer_a, answer_b, args.model, multi_turn=mult_turn)
-    # if winner == winner_text:
-    #     results.append(1)
-    # elif winner == loser_text:
-    #     results.append(0)
-    # else:  # if "error"
-    #     results.append(0.5)  # effectively a tie
+        results = [process_shuffled(w, s) for w, s in zip(winners, is_shuffled)]
 
     ############################
     # Print & process results
@@ -234,7 +301,12 @@ def main():
     # ############################
     sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
     results_url = save_to_hub(
-        results_grouped, args.model, sub_path, args.debug, local_only=args.do_not_save, save_metrics_for_beaker=True
+        results_grouped,
+        args.model,
+        sub_path,
+        args.debug,
+        local_only=args.do_not_save,
+        save_metrics_for_beaker=not args.disable_beaker_save,
     )
     if not args.do_not_save:
         logger.info(f"Uploaded reward model results to {results_url}")

@@ -485,6 +485,32 @@ openbmb/MiniCPM-2B-dpo-fp32:
   batch_size: 4
   trust_remote_code: True
   dpo: True
+# Note: way not want to re-run generative models all the time
+# meta-llama/Meta-Llama-3-8B-Instruct:
+#   model: meta-llama/Meta-Llama-3-8B-Instruct
+#   tokenizer: meta-llama/Meta-Llama-3-8B-Instruct
+#   chat_template: # none for tokenizer
+#   trust_remote_code: False
+#   num_gpus: 1
+#   generative: True
+#   dpo: False
+# meta-llama/Meta-Llama-3-70B-Instruct:
+#   model: meta-llama/Meta-Llama-3-70B-Instruct
+#   tokenizer: meta-llama/Meta-Llama-3-70B-Instruct
+#   chat_template: # none for tokenizer
+#   trust_remote_code: False
+#   num_gpus: 4
+#   generative: True
+#   dpo: False
+# CohereForAI/c4ai-command-r-plus:
+#   model: CohereForAI/c4ai-command-r-plus
+#   tokenizer: CohereForAI/c4ai-command-r-plus
+#   chat_template: # none for tokenizer
+#   trust_remote_code: False
+#   num_gpus: 4
+#   generative: True
+#   dpo: False
+# End generative reward models
 sfairXC/FsfairX-LLaMA3-RM-v0.1:
   model: sfairXC/FsfairX-LLaMA3-RM-v0.1
   tokenizer: sfairXC/FsfairX-LLaMA3-RM-v0.1
