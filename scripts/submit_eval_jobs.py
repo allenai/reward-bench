@@ -28,8 +28,9 @@ argparser.add_argument(
     "--eval_on_pref_sets", action="store_true", default=False, help="Evaluate on preference sets rather than core set"
 )
 argparser.add_argument("--eval_on_bon", action="store_true", default=False, help="Evaluate on BON preference sets")
-argparser.add_argument("--image", type=str, default="nathanl/rb_v12", help="Beaker image to use")
+argparser.add_argument("--image", type=str, default="nathanl/rb_v13", help="Beaker image to use")
 argparser.add_argument("--cluster", type=str, default="ai2/allennlp-cirrascale", help="Beaker cluster to use")
+argparser.add_argument("--priority", type=str, default="high", help="Priority of the job")
 argparser.add_argument("--upload_to_hub", action="store_false", default=True, help="Upload to results to HF hub")
 argparser.add_argument("--model", type=str, default=None, help="Specific model to evaluate if not sweep")
 argparser.add_argument(
@@ -71,7 +72,7 @@ assert not (eval_on_pref_sets and eval_on_bon), "Only one of eval_on_pref_sets a
 
 d1["tasks"][0]["image"]["beaker"] = image
 d1["tasks"][0]["context"]["cluster"] = cluster
-d1["tasks"][0]["context"]["priority"] = "high"
+d1["tasks"][0]["context"]["priority"] = args.priority
 d1["tasks"][0]["resources"]["gpuCount"] = num_gpus
 
 # get model from config keys

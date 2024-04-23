@@ -127,13 +127,14 @@ def main():
         logger=logger,
         keep_columns=["text_chosen", "text_rejected", "id"],
     )
+    # filter long answers (MT Bench prompt as 1 or 2 turn examples)
+    def filter_long_turns(batch):
+        return len(batch["text_chosen"]) <= 4
+
     # copy id for saving, then remove
     ids = dataset["id"]
     dataset = dataset.remove_columns("id")
 
-    # filter long answers (MT Bench prompt as 1 or 2 turn examples)
-    def filter_long_turns(batch):
-        return len(batch["text_chosen"]) <= 4
 
     dataset = dataset.filter(filter_long_turns)
 
