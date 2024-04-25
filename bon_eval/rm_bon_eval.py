@@ -9,7 +9,7 @@ import pandas as pd
 # Load all tulu results by the ids 
 model_oputputs_all = {}
 for i in range(16):
-    file_outputs = f"alpaca_eval_n=16/annotations/tulu-2-dpo-13b.{i}.json"
+    file_outputs = f"bon_data/alpaca_eval_n=16/virtual/tulu-2-dpo-13b.{i}.json"
     with open(file_outputs) as f:
         model_oputputs = json.load(f)
         model_oputputs_all[i] = model_oputputs
@@ -17,7 +17,7 @@ for i in range(16):
 # Load all annotations by the ids
 annotations_all = {}
 for i in range(16):
-    file_annotations = f"alpaca_eval_n=16/annotations/annotations_ref=GPT35t/tulu-2-dpo-13b.{i}/weighted_alpaca_eval_gpt4_turbo/annotations.json"
+    file_annotations = f"bon_data/alpaca_eval_n=16/virtual/annotations_ref=GPT35t/tulu-2-dpo-13b.{i}/weighted_alpaca_eval_gpt4_turbo/annotations.json"
     with open(file_annotations) as f:
         annotations = json.load(f)
         annotations_all[i] = annotations
@@ -30,11 +30,13 @@ def extract_score(score_item):
     else:
         raise ValueError("Invalid score item")
     
-def compute_rm_bon_eval(pretty_rm_name, rm_result_url, model_oputputs_all, annotations_all, mode="rm"):
+def compute_rm_bon_eval(pretty_rm_name, rm_result_path, model_oputputs_all, annotations_all, mode="rm"):
     if mode == "rm":
         # load json file from http url 
         # to make it a valid json 
-        text_content = requests.get(rm_result_url).text
+        # text_content = requests.get(rm_result_path).text
+        with open(rm_result_path) as f:
+            text_content = f.read()
         text_content = text_content.replace("}\n{", "},\n{") 
         text_content = "[" + text_content + "]"   
         rm_result = json.loads(text_content)
@@ -111,7 +113,7 @@ def compute_rm_bon_eval(pretty_rm_name, rm_result_url, model_oputputs_all, annot
 
 def extract_random(eval_results):
     
-    table_file = "alpaca_eval_n=16/annotations/annotations_ref=GPT35t/merged_leaderboard.csv"
+    table_file = "bon_data/alpaca_eval_n=16/virtual/annotations_ref=GPT35t/merged_leaderboard.csv"
     # load as dataframe
     df = pd.read_csv(table_file) 
     # convert to list of dict 
@@ -143,18 +145,17 @@ def extract_random(eval_results):
 
 if __name__ == "__main__": 
     eval_results = {}
-    extract_random(eval_results)
-    # print(json.dumps(eval_results, indent=2))
-    # exit()
+    extract_random(eval_results) 
 
-    with open("rm_mapping.json") as f:
+    with open("bon_data/rm_mapping.json") as f:
         rm_mapping = json.load(f) 
     for pretty_rm_name in rm_mapping:
-        rm_result_url = rm_mapping[pretty_rm_name]
-        rm_result_url = rm_result_url.replace("huggingface.co", "hf-mirror.com")
-        print(f"Running evaluation for {pretty_rm_name} with url {rm_result_url}")
-        rm_result = compute_rm_bon_eval(pretty_rm_name, rm_result_url, model_oputputs_all, annotations_all)
+        rm_result_path = rm_mapping[pretty_rm_name]["localpath"]
+        print(f"Running evaluation for {pretty_rm_name} with url {rm_result_path}")
+        rm_result = compute_rm_bon_eval(pretty_rm_name, rm_result_path, model_oputputs_all, annotations_all) 
         eval_results[pretty_rm_name] = rm_result
         print(rm_result)
     with open("bon_eval_results.json", "w") as f:
         json.dump(eval_results, f, indent=2)
+    
+    

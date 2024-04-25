@@ -1,8 +1,8 @@
 import json
 
 N = 16
-input_file = "HERM_BoN_candidates/alpaca_eval_n=16/tulu-2-dpo-13b.json"
-output_file = "HERM_BoN_candidates/alpaca_eval_n=16/annotations/tulu-2-dpo-13b.{model_id}.json"
+input_file = "bon_data/alpaca_eval_n=16/tulu-2-dpo-13b.json"
+output_file = "bon_data/alpaca_eval_n=16/virtual/tulu-2-dpo-13b.{model_id}.json"
 
 with open(input_file, "r") as f:
     data = json.load(f)

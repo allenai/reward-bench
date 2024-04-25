@@ -256,12 +256,12 @@ def evaluate(
 if __name__ == "__main__":
     # fire.Fire(ALL_FUNCTIONS)
     fire.Fire(evaluate)
-    file_model_outputs =  "alpaca_eval_n=16/annotations/tulu-2-dpo-13b.0.json"
-    file_annotations = "alpaca_eval_n=16/annotations/annotations_ref=GPT35t/tulu-2-dpo-13b.0/weighted_alpaca_eval_gpt4_turbo/annotations.json"
-    # reference_outputs = "gpt-3.5-turbo-0613.ae.json"
+    file_model_outputs =  "bon_data/alpaca_eval_n=16/virtual/tulu-2-dpo-13b.0.json"
+    file_annotations = "bon_data/alpaca_eval_n=16/virtual/annotations_ref=GPT35t/tulu-2-dpo-13b.0/weighted_alpaca_eval_gpt4_turbo/annotations.json"
+    # reference_outputs = "bon_data/gpt-3.5-turbo-0613.ae.json"
     # evaluate(model_outputs=file_model_outputs, reference_outputs=reference_outputs, annotators_config=constants.DEFAULT_ANNOTATOR_CONFIG, output_path="auto", precomputed_leaderboard="auto", is_overwrite_leaderboard=False, leaderboard_mode_to_print="minimal", current_leaderboard_mode="community", is_return_instead_of_print=False, fn_metric="get_length_controlled_winrate", metric_kwargs=None, is_recompute_metrics_only=False, sort_by="length_controlled_winrate", is_cache_leaderboard=None, max_instances=None, annotation_kwargs=None, Annotator=annotators.PairwiseAnnotator)
     # evaluate(model_outputs=file_model_outputs, annotaitons_file=file_annotations)
 
 """
-python src/bon_eval.py --model_outputs alpaca_eval_n=16/annotations/tulu-2-dpo-13b.0.json --annotaitons_file alpaca_eval_n=16/annotations/annotations_ref=GPT35t/tulu-2-dpo-13b.0/weighted_alpaca_eval_gpt4_turbo/annotations.json
+python src/bon_eval.py --model_outputs bon_data/alpaca_eval_n=16/virtual/tulu-2-dpo-13b.0.json --annotaitons_file bon_data/alpaca_eval_n=16/virtual/annotations_ref=GPT35t/tulu-2-dpo-13b.0/weighted_alpaca_eval_gpt4_turbo/annotations.json
 """
