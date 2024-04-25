@@ -4,7 +4,7 @@ from bon_utils import evaluate
 import sys 
 import os 
 import pandas as pd
-
+from huggingface_hub import HfApi
 
 # Load all tulu results by the ids 
 model_oputputs_all = {}
@@ -155,7 +155,17 @@ if __name__ == "__main__":
         rm_result = compute_rm_bon_eval(pretty_rm_name, rm_result_path, model_oputputs_all, annotations_all) 
         eval_results[pretty_rm_name] = rm_result
         print(rm_result)
-    with open("bon_eval_results.json", "w") as f:
+    with open("bon_data/bon_eval_results.json", "w") as f:
         json.dump(eval_results, f, indent=2)
+    # save the file to rewardbench result hf repo
+    # https://huggingface.co/datasets/allenai/reward-bench-results/tree/main/best-of-n/alpaca_eval/tulu-13b
+    api = HfApi()
+    api.upload_file(
+        path_or_fileobj="bon_data/bon_eval_results.json",
+        path_in_repo="best-of-n/alpaca_eval/tulu-13b/bon_eval_results.json",
+        repo_id="allenai/reward-bench-results",
+        repo_type="dataset",
+    )
+    
     
     
