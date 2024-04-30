@@ -1,14 +1,10 @@
-import logging
-import sys
-from pathlib import Path
-from typing import Any, Callable, Literal, Optional, Sequence, Union
-
-import fire
+import logging 
+from typing import Any, Optional, Sequence, Union
 import pandas as pd
-
-from alpaca_eval import analyze, annotators, constants, decoders, metrics, utils
+from alpaca_eval import annotators, constants, metrics, utils
 from alpaca_eval.types import AnyData, AnyLoadableDF, AnyPath
- 
+
+# Source: modified from https://github.com/tatsu-lab/alpaca_eval/blob/c4a4ca716b4cab46701af759c244cb9d05772e15/src/alpaca_eval/main.py#L17C5-L17C5 
 
 def evaluate(
     model_outputs: Optional[AnyLoadableDF] = None,
@@ -122,112 +118,44 @@ def evaluate(
         precomputed_leaderboard, reference_outputs, annotators_config
     )
     annotations = None
-
-    arg_model_outputs = model_outputs
-    if False and model_outputs is not None:
-        model_outputs = utils.load_or_convert_to_dataframe(model_outputs)
-        reference_outputs = utils.load_or_convert_to_dataframe(reference_outputs)
-        name = utils.get_generator_name(name, model_outputs)
-
-        if (name not in leaderboard) or is_overwrite_leaderboard or is_recompute_metrics_only:
-            
-            logging.info(f"Evaluating the {name} outputs.")
-
-            if not is_recompute_metrics_only:
-                leaderboard[name] = {}
-                if max_instances is not None:
-                    # first we shuffle both outputs with a fix seed => more representative
-                    if len(model_outputs) != len(reference_outputs):
-                        logging.warning(
-                            "model_outputs and reference_outputs have different lengths, so we cannot shuffle before taking the first max_instances."
-                        )
-                    else:
-                        seed = 123
-                        model_outputs = model_outputs.sample(frac=1, random_state=seed)
-                        reference_outputs = reference_outputs.sample(frac=1, random_state=seed)
-
-                    model_outputs = model_outputs[:max_instances]
-                    reference_outputs = reference_outputs[:max_instances]
-
-                annotator = Annotator(annotators_config=annotators_config, **annotator_kwargs)
-                annotations = annotator.annotate_head2head(
-                    outputs_1=reference_outputs, outputs_2=model_outputs, **annotation_kwargs
-                )
-
-                leaderboard[name]["mode"] = current_leaderboard_mode
-                leaderboard[name]["avg_length"] = int(model_outputs["output"].str.len().mean())
-
-            else:
-                # load previously computed annotations so that we can recompute metrics
-                assert output_path is not None and name in leaderboard
-                output_path = utils.get_output_path(
-                    output_path, arg_model_outputs, name, annotators_config=annotators_config
-                )
-                annotations = pd.read_json(output_path / "annotations.json")
-
-            # Note: I'm using _ to make clear that we may change the annotations in-place. This is bad practice
-            # but gives much more control for saving annotations with desired metrics. E.g. that's how we save
-            # "glm_preference" in the annotations
-            # TODO: change this and use classes
-            if isinstance(fn_metric, str):
-                fn_metric_ = getattr(metrics, fn_metric)
-            else:
-                fn_metric_ = fn_metric
-
-            leaderboard[name].update(fn_metric_(annotations, **(metric_kwargs or {})))
-
-        else:
-            logging.info(f"Skipping evaluation of {name} as it is already in the precomputed leaderboard.")
-    else:
-        model_outputs = utils.load_or_convert_to_dataframe(model_outputs)
-        reference_outputs = utils.load_or_convert_to_dataframe(reference_outputs)
-        name = utils.get_generator_name(name, model_outputs)
-        leaderboard[name] = {}
-        if max_instances is not None:
-            # first we shuffle both outputs with a fix seed => more representative
-            if len(model_outputs) != len(reference_outputs):
-                logging.warning(
-                    "model_outputs and reference_outputs have different lengths, so we cannot shuffle before taking the first max_instances."
-                )
-            else:
-                seed = 123
-                model_outputs = model_outputs.sample(frac=1, random_state=seed)
-                reference_outputs = reference_outputs.sample(frac=1, random_state=seed)
-
-            model_outputs = model_outputs[:max_instances]
-            reference_outputs = reference_outputs[:max_instances]
-
-        # annotator = Annotator(annotators_config=annotators_config, **annotator_kwargs)
-        # annotations = annotator.annotate_head2head(
-        #     outputs_1=reference_outputs, outputs_2=model_outputs, **annotation_kwargs
-        # )
-
-        leaderboard[name]["mode"] = current_leaderboard_mode 
-        leaderboard[name]["avg_length"] = int(model_outputs["output"].str.len().mean())
-        annotations = pd.read_json(annotaitons_file)
-        # print(f"len(annotations): {len(annotations)}")
-        if isinstance(fn_metric, str):
-            fn_metric_ = getattr(metrics, fn_metric)
-        else:
-            fn_metric_ = fn_metric
-
-        leaderboard[name].update(fn_metric_(annotations, **(metric_kwargs or {})))
  
 
-    # output_path = utils.get_output_path(output_path, arg_model_outputs, name, annotators_config=annotators_config)
+    model_outputs = utils.load_or_convert_to_dataframe(model_outputs)
+    reference_outputs = utils.load_or_convert_to_dataframe(reference_outputs)
+    name = utils.get_generator_name(name, model_outputs)
+    leaderboard[name] = {}
+    if max_instances is not None:
+        # first we shuffle both outputs with a fix seed => more representative
+        if len(model_outputs) != len(reference_outputs):
+            logging.warning(
+                "model_outputs and reference_outputs have different lengths, so we cannot shuffle before taking the first max_instances."
+            )
+        else:
+            seed = 123
+            model_outputs = model_outputs.sample(frac=1, random_state=seed)
+            reference_outputs = reference_outputs.sample(frac=1, random_state=seed)
+
+        model_outputs = model_outputs[:max_instances]
+        reference_outputs = reference_outputs[:max_instances]
+ 
+    leaderboard[name]["mode"] = current_leaderboard_mode 
+    leaderboard[name]["avg_length"] = int(model_outputs["output"].str.len().mean())
+    annotations = pd.read_json(annotaitons_file)
+    # print(f"len(annotations): {len(annotations)}")
+    if isinstance(fn_metric, str):
+        fn_metric_ = getattr(metrics, fn_metric)
+    else:
+        fn_metric_ = fn_metric
+
+    leaderboard[name].update(fn_metric_(annotations, **(metric_kwargs or {})))
+
+ 
 
     df_leaderboard = pd.DataFrame.from_dict(leaderboard, orient="index").sort_values(by=sort_by, ascending=False)
     df_leaderboard = df_leaderboard[
         utils.prioritize_elements(list(df_leaderboard.columns), ["win_rate", "standard_error"])
     ]
-
-    # if output_path is not None:
-    #     logging.info(f"Saving all results to {output_path}")
-    #     df_leaderboard.to_csv(output_path / "leaderboard.csv")
-    #     if annotations is not None:
-    #         utils.convert_to_dataframe(annotations).to_json(
-    #             output_path / "annotations.json", orient="records", indent=2
-    #         )
+ 
 
     if is_cache_leaderboard is None:
         is_cache_leaderboard = max_instances is None
@@ -251,17 +179,5 @@ def evaluate(
             current_name=name,
             cols_to_print=[sort_by, "win_rate", "standard_error", "n_total", "avg_length"],
         )
-
  
-if __name__ == "__main__":
-    # fire.Fire(ALL_FUNCTIONS)
-    fire.Fire(evaluate)
-    file_model_outputs =  "bon_data/alpaca_eval_n=16/virtual/tulu-2-dpo-13b.0.json"
-    file_annotations = "bon_data/alpaca_eval_n=16/virtual/annotations_ref=GPT35t/tulu-2-dpo-13b.0/weighted_alpaca_eval_gpt4_turbo/annotations.json"
-    # reference_outputs = "bon_data/gpt-3.5-turbo-0613.ae.json"
-    # evaluate(model_outputs=file_model_outputs, reference_outputs=reference_outputs, annotators_config=constants.DEFAULT_ANNOTATOR_CONFIG, output_path="auto", precomputed_leaderboard="auto", is_overwrite_leaderboard=False, leaderboard_mode_to_print="minimal", current_leaderboard_mode="community", is_return_instead_of_print=False, fn_metric="get_length_controlled_winrate", metric_kwargs=None, is_recompute_metrics_only=False, sort_by="length_controlled_winrate", is_cache_leaderboard=None, max_instances=None, annotation_kwargs=None, Annotator=annotators.PairwiseAnnotator)
-    # evaluate(model_outputs=file_model_outputs, annotaitons_file=file_annotations)
-
-"""
-python src/bon_eval.py --model_outputs bon_data/alpaca_eval_n=16/virtual/tulu-2-dpo-13b.0.json --annotaitons_file bon_data/alpaca_eval_n=16/virtual/annotations_ref=GPT35t/tulu-2-dpo-13b.0/weighted_alpaca_eval_gpt4_turbo/annotations.json
-"""
+ 

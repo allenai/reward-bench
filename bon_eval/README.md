@@ -39,5 +39,5 @@ done
 
 <!-- export HF_ENDPOINT=https://hf-mirror.com -->
 
-Run `python rm_bon_eval.py` and you will get a json named `bon_eval_results.json` in the current directory. 
+Run `python rm_bon_eval.py` and you will get a json named `bon_eval_results.json` in the current directory, which will be also uploaded to HuggingFace hub.
 
