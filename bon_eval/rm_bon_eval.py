@@ -32,7 +32,7 @@ def extract_score(score_item):
     
 def compute_rm_bon_eval(pretty_rm_name, rm_result, model_oputputs_all, annotations_all, mode="rm"):
     if mode == "rm":  
-        assert len(rm_result) == 805 * 16
+        assert len(rm_result) == 805 * 16, "The length of the result should be 805 * 16 but got {}".format(len(rm_result))
 
         # split the results by grouping them by each of the 805 example 
         rm_result_grouped = [rm_result[i:i+16] for i in range(0, len(rm_result), 16)]
@@ -90,7 +90,7 @@ def compute_rm_bon_eval(pretty_rm_name, rm_result, model_oputputs_all, annotatio
     df_leaderboard = df_leaderboard.reset_index()
 
     # convert the dataframe to json
-    rm_row_json = df_leaderboard.to_dict(orient="records", index=True,)
+    rm_row_json = df_leaderboard.to_dict(orient="records") #, index=True,)
     # print(json.dumps(rm_row_json, indent=2))
     # find the one with pretty_rm_name 
     for row in rm_row_json:
@@ -108,7 +108,7 @@ def compute_rm_bon_eval(pretty_rm_name, rm_result, model_oputputs_all, annotatio
     # TODO: check if uploaded path is correct 
     api.upload_file(
         path_or_fileobj=file_result,
-        path_in_repo=f"best-of-n/alpaca_eval/tulu-13b/{pretty_rm_name}.json",
+        path_in_repo=f"best-of-n/alpaca_eval/tulu-13b/eval_results/{pretty_rm_name}.json",
         repo_id="allenai/reward-bench-results",
         repo_type="dataset",
     )
@@ -148,7 +148,7 @@ def extract_random(eval_results):
 
 if __name__ == "__main__": 
     eval_results = {}
-    extract_random(eval_results) 
+    # extract_random(eval_results) 
     api = HfApi()
     with open("bon_data/rm_mapping.json") as f:
         rm_mapping = json.load(f) 

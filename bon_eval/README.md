@@ -7,10 +7,13 @@ This folder serves for evaluating reward models' abilities in selecting the best
 
 ```bash
 cd bon_eval
+pip install alpaca_eval==0.6.2
 python download_bon_data.py
+python model_mapping_gen.py
+python rm_bon_eval.py
 ```
 
-## AlpacaEval-BoN
+## AlpacaEval-BoN (notes)
 
 - LLM: Tulu-2-dpo-13b
 - N: 16
