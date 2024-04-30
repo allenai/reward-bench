@@ -30,17 +30,8 @@ def extract_score(score_item):
     else:
         raise ValueError("Invalid score item")
     
-def compute_rm_bon_eval(pretty_rm_name, rm_result_path, model_oputputs_all, annotations_all, mode="rm"):
-    if mode == "rm":
-        # load json file from http url 
-        # to make it a valid json 
-        # text_content = requests.get(rm_result_path).text
-        with open(rm_result_path) as f:
-            text_content = f.read()
-        text_content = text_content.replace("}\n{", "},\n{") 
-        text_content = "[" + text_content + "]"   
-        rm_result = json.loads(text_content)
-
+def compute_rm_bon_eval(pretty_rm_name, rm_result, model_oputputs_all, annotations_all, mode="rm"):
+    if mode == "rm":  
         assert len(rm_result) == 805 * 16
 
         # split the results by grouping them by each of the 805 example 
@@ -109,6 +100,18 @@ def compute_rm_bon_eval(pretty_rm_name, rm_result_path, model_oputputs_all, anno
     target_rm_row_json["reward_model"] = pretty_rm_name
     del target_rm_row_json["index"]
     # print(json.dumps(target_rm_row_json, indent=2))
+    file_result = f"rm_bon_eval_results/eval_results/{pretty_rm_name}.json"
+    os.makedirs(os.path.dirname(file_result), exist_ok=True)
+    with open(file_result, "w") as f:
+        json.dump(target_rm_row_json, f, indent=2)
+    
+    # TODO: check if uploaded path is correct 
+    api.upload_file(
+        path_or_fileobj=file_result,
+        path_in_repo=f"best-of-n/alpaca_eval/tulu-13b/{pretty_rm_name}.json",
+        repo_id="allenai/reward-bench-results",
+        repo_type="dataset",
+    )
     return target_rm_row_json
 
 def extract_random(eval_results):
@@ -146,20 +149,25 @@ def extract_random(eval_results):
 if __name__ == "__main__": 
     eval_results = {}
     extract_random(eval_results) 
-
+    api = HfApi()
     with open("bon_data/rm_mapping.json") as f:
         rm_mapping = json.load(f) 
     for pretty_rm_name in rm_mapping:
         rm_result_path = rm_mapping[pretty_rm_name]["localpath"]
         print(f"Running evaluation for {pretty_rm_name} with url {rm_result_path}")
-        rm_result = compute_rm_bon_eval(pretty_rm_name, rm_result_path, model_oputputs_all, annotations_all) 
-        eval_results[pretty_rm_name] = rm_result
-        print(rm_result)
+        with open(rm_result_path) as f:
+            text_content = f.read()
+        text_content = text_content.replace("}\n{", "},\n{") 
+        text_content = "[" + text_content + "]"   
+        rm_result = json.loads(text_content)
+        eval_result = compute_rm_bon_eval(pretty_rm_name, rm_result, model_oputputs_all, annotations_all) 
+        eval_results[pretty_rm_name] = eval_result
+        print(eval_result)  
     with open("bon_data/bon_eval_results.json", "w") as f:
         json.dump(eval_results, f, indent=2)
     # save the file to rewardbench result hf repo
     # https://huggingface.co/datasets/allenai/reward-bench-results/tree/main/best-of-n/alpaca_eval/tulu-13b
-    api = HfApi()
+    
     api.upload_file(
         path_or_fileobj="bon_data/bon_eval_results.json",
         path_in_repo="best-of-n/alpaca_eval/tulu-13b/bon_eval_results.json",
