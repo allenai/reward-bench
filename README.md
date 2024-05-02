@@ -86,6 +86,26 @@ For reward models already in RewardBench, you can run an offline ensemble test t
 python analysis/run_ensemble_offline.py --models sfairXC/FsfairX-LLaMA3-RM-v0.1 openbmb/Eurus-RM-7b Nexusflow/Starling-RM-34B
 ```
 
+## Running Generative RMs (LLM-as-a-judge)
+Local and API models are supported. For example, run OpenAI's models like:
+```
+python scripts/run_generative.py --model=gpt-3.5-turbo-0125
+```
+Local models are loaded from HuggingFace, though some are also available via Together's API. Run Llama 3 locally with
+```
+python scripts/run_generative.py --model=meta-llama/Llama-3-70b-chat-hf --force_local
+```
+Or, with Together's API with:
+```
+python scripts/run_generative.py --model=meta-llama/Llama-3-70b-chat-hf
+```
+
+We are adding support for generative ensembles (only via API for now), run with:
+```
+python scripts/run_generative.py --model gpt-3.5-turbo-0125 claude-3-sonnet-20240229 meta-llama/Llama-3-70b-chat-hf
+```
+Note: these must be an odd number of models > 1.
+
 ## Creating Best of N (BoN) rankings
 
 To create the ranking across the dataset, run (best_of 8 being placeholder, 16 should be fine as eval logic will handle lower best of N numbers):
