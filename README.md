@@ -80,6 +80,12 @@ python scripts/run_dpo.py --model=stabilityai/stablelm-zephyr-3b --ref_model=sta
 python scripts/run_dpo.py --model=stabilityai/stablelm-2-zephyr-1_6b --ref_model=stabilityai/stablelm-2-1_6b --batch_size=16
 ```
 
+## Ensembling RMs
+For reward models already in RewardBench, you can run an offline ensemble test to approximate using multiple reward models in your system. To try this, you can run:
+```
+python analysis/run_ensemble_offline.py --models sfairXC/FsfairX-LLaMA3-RM-v0.1 openbmb/Eurus-RM-7b Nexusflow/Starling-RM-34B
+```
+
 ## Running Generative RMs (LLM-as-a-judge)
 Local and API models are supported. For example, run OpenAI's models like:
 ```
