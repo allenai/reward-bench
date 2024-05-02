@@ -16,13 +16,15 @@
 
 
 import argparse
-from huggingface_hub import hf_hub_download
+
+import numpy as np
 import pandas as pd
-import numpy as np 
 from datasets import Dataset
+from huggingface_hub import hf_hub_download
 
 from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
 from rewardbench.utils import calculate_scores_per_section
+
 
 def get_args():
     """
@@ -42,6 +44,7 @@ def get_args():
     parser.add_argument("--pref_sets", action="store_true", help="Use preference sets.")
     parser.add_argument("--sweep", action="store_true", default=False, help="Sweep over all model options from >3.")
     return parser.parse_args()
+
 
 if __name__ == "__main__":
     args = get_args()
@@ -68,12 +71,12 @@ if __name__ == "__main__":
         return data
 
     for m in all_models:
-        hub_file = subdir+f"{m}.json"
+        hub_file = subdir + f"{m}.json"
         f = hf_hub_download(args.hf_evals_repo, hub_file, repo_type="dataset")
         eval_data = pd.read_json(f, orient="records")
 
         # add baseline values for each model
-        all_rewards = np.concatenate((eval_data["scores_rejected"].values,eval_data["scores_chosen"]))
+        all_rewards = np.concatenate((eval_data["scores_rejected"].values, eval_data["scores_chosen"]))
         all_rewards = flatten(all_rewards)
         mean_reward = np.mean(all_rewards)
         std_dev_reward = np.std(all_rewards)
@@ -86,12 +89,16 @@ if __name__ == "__main__":
     #########################
     if not args.do_not_normalize:
         for m in all_models:
-            data[m]["scores_rejected"] = (flatten(data[m]["scores_rejected"]) - baseline_values[m]["mean"]) / baseline_values[m]["std_dev"]
-            data[m]["scores_chosen"] = (flatten(data[m]["scores_chosen"]) - baseline_values[m]["mean"]) / baseline_values[m]["std_dev"]
+            data[m]["scores_rejected"] = (
+                flatten(data[m]["scores_rejected"]) - baseline_values[m]["mean"]
+            ) / baseline_values[m]["std_dev"]
+            data[m]["scores_chosen"] = (
+                flatten(data[m]["scores_chosen"]) - baseline_values[m]["mean"]
+            ) / baseline_values[m]["std_dev"]
 
     print(f"All models: {all_models}")
     all_results = []
-    
+
     # check if sweep
     if args.sweep:
         modes = ["Mean", "Worst", "Uncertainty"]
@@ -99,20 +106,20 @@ if __name__ == "__main__":
     else:
         modes = [args.mode]
         model_index = len(all_models)
-    
+
     # iterate over all subsets from length 3 to 6 models
     from itertools import combinations
+
     for mode in modes:
         args.mode = mode
-        for i in range(model_index, len(all_models)+1):
+        for i in range(model_index, len(all_models) + 1):
             for models in combinations(all_models, i):
                 models = list(models)
-                
+
                 print(f"Analyzing models: {models}")
 
-                
                 #########################
-                # Calculate ensembles 
+                # Calculate ensembles
                 #########################
                 def compute_reward(scores, mode):
                     if mode == "Mean":
@@ -121,7 +128,7 @@ if __name__ == "__main__":
                         return np.min(scores)
                     elif mode == "Uncertainty":
                         return np.mean(scores) - np.std(scores)
-                    
+
                 # iterate over ids in the dataframe
                 ids = data[models[0]]["id"].unique()
                 out_dataset = {"subsets": [], "results": []}
@@ -131,7 +138,7 @@ if __name__ == "__main__":
                     for m in models:
                         scores_chosen.append(data[m].loc[data[m]["id"] == id]["scores_chosen"].values[0])
                         scores_rejected.append(data[m].loc[data[m]["id"] == id]["scores_rejected"].values[0])
-                    
+
                     ensemble_score_chosen = compute_reward(np.array(scores_chosen), args.mode)
                     ensemble_score_rejected = compute_reward(np.array(scores_rejected), args.mode)
                     subset = data[models[0]].loc[data[models[0]]["id"] == id]["subset"].values[0]
@@ -139,8 +146,8 @@ if __name__ == "__main__":
                     value = 1 if ensemble_score_chosen > ensemble_score_rejected else 0
                     out_dataset["results"].append(value)
 
-                out_dataset = Dataset.from_dict(out_dataset).to_pandas() # I know this is meh
-                
+                out_dataset = Dataset.from_dict(out_dataset).to_pandas()  # I know this is meh
+
                 #########################
                 # Save / Share
                 #########################
@@ -158,7 +165,7 @@ if __name__ == "__main__":
                 if not args.pref_sets:
                     results_leaderboard = calculate_scores_per_section(EXAMPLE_COUNTS, SUBSET_MAPPING, results_grouped)
                     print(results_leaderboard)
-                    results_leaderboard["models"] = '|'.join(models)
+                    results_leaderboard["models"] = "|".join(models)
                     results_leaderboard["mode"] = args.mode
                     all_results.append(results_leaderboard)
 
