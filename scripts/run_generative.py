@@ -34,7 +34,9 @@ from vllm import LLM, SamplingParams
 from rewardbench import load_eval_dataset, save_to_hub
 from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
 from rewardbench.generative import (
+    ANTHROPIC_MODEL_LIST,
     API_MODEL_LIST,
+    OPENAI_MODEL_LIST,
     format_judge_answers,
     process_judgement,
     run_judge_pair,
@@ -56,7 +58,11 @@ def get_args():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--model", type=str, required=True, help="name of OpenAI model to use (TODO add more providers/models)"
+        "--model",
+        type=str,
+        nargs="+",  # allow list of models (ensemble)
+        required=True,
+        help="name of OpenAI model to use (TODO add more providers/models)",
     )
     parser.add_argument("--chat_template", type=str, default="chatgpt", help="path to chat template")
     parser.add_argument(
@@ -76,6 +82,7 @@ def get_args():
     parser.add_argument(
         "--disable_beaker_save", action="store_true", help="disable saving the main results in a file for AI2 Beaker"
     )
+    parser.add_argument("--force_local", action="store_true", help="force local run, even if model is on Together API")
     args = parser.parse_args()
     return args
 
@@ -101,8 +108,14 @@ def main():
     custom_dialogue = True  # to mirror other scripts, required here
     model_type = "Generative RM"
 
+    # if model is list, make type + PoLL and check multiple is odd
+    if isinstance(args.model, list):
+        model_type += " + PoLL"
+        # assert that is odd and > 1
+        assert len(args.model) > 1 and len(args.model) % 2 == 1
+
     # if model isn't API, load via vllm
-    if args.model not in API_MODEL_LIST:
+    if args.model not in API_MODEL_LIST or args.force_local:
         # load model
         model = LLM(args.model, trust_remote_code=args.trust_remote_code, tensor_parallel_size=args.num_gpus)
         tokenizer = AutoTokenizer.from_pretrained(args.model)
@@ -142,7 +155,7 @@ def main():
         subsets = subsets[:10]
         ids = ids[:10]
 
-    if args.model in API_MODEL_LIST:
+    if args.model in API_MODEL_LIST or not args.force_local:
         ############################
         # Run inference via API
         ############################
@@ -175,6 +188,11 @@ def main():
                 if debug:
                     print(f"Prompt: {request}")
                     print(f"Judgement: {judgement}")
+
+                # if type of winner is list, take most common entry
+                if isinstance(winner, list):
+                    winner = max(set(winner), key=winner.count)
+
                 if winner == winner_text:
                     return 1
                 elif winner == loser_text:
@@ -276,9 +294,21 @@ def main():
     out_dataset = out_dataset.add_column("subset", subsets)
     out_dataset = out_dataset.add_column("id", ids)
 
+    # model name concat if list
+    if isinstance(args.model, list):
+        model_name = "_".join(args.model)
+        model_name = "PoLL/" + model_name
+    else:
+        model_name = args.model
+    # if model in openai or Anthropic list, append org to model name
+    if args.model in OPENAI_MODEL_LIST:
+        model_name = "openai/" + model_name
+    if args.model in ANTHROPIC_MODEL_LIST:
+        model_name = "anthropic/" + model_name
+
     # get core dataset
     results_grouped = {}
-    results_grouped["model"] = args.model
+    results_grouped["model"] = model_name
     results_grouped["model_type"] = model_type
     results_grouped["chat_template"] = args.chat_template
 
@@ -298,11 +328,11 @@ def main():
 
     ############################
     # Upload results to hub
-    # ############################
+    #############################
     sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
     results_url = save_to_hub(
         results_grouped,
-        args.model,
+        model_name,
         sub_path,
         args.debug,
         local_only=args.do_not_save,
@@ -312,6 +342,19 @@ def main():
         logger.info(f"Uploaded reward model results to {results_url}")
 
     logger.info("Not uploading chosen-rejected text with scores due to model compatibility")
+
+    ############################
+    # Save per-prompt results to hub
+    ############################
+    # create new json with scores and upload
+    scores_dict = out_dataset.to_dict()
+    scores_dict["model"] = model_name
+    scores_dict["model_type"] = model_type
+
+    sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
+
+    scores_url = save_to_hub(scores_dict, model_name, sub_path_scores, args.debug, local_only=args.do_not_save)
+    logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
 
 
 if __name__ == "__main__":

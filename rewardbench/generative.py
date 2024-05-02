@@ -15,6 +15,7 @@
 # Prompts and other tools for running RewardBench with generative RMs
 # pip install openai>=1.0
 # pip install anthropic>=0.21.3
+# pip install together>=1.1.3
 
 import os
 import time as time
@@ -23,6 +24,7 @@ import anthropic
 import openai
 from fastchat.conversation import get_conv_template
 from openai import OpenAI
+from together import Together
 
 ANTHROPIC_MODEL_LIST = (
     "claude-1",
@@ -50,7 +52,11 @@ OPENAI_MODEL_LIST = (
     "gpt-4-0125-preview",
 )
 
-API_MODEL_LIST = OPENAI_MODEL_LIST + ANTHROPIC_MODEL_LIST
+# feel free to add more models to this list via PR
+# available models: https://docs.together.ai/docs/inference-models
+TOGETHER_MODEL_LIST = ("meta-llama/Llama-3-70b-chat-hf", "meta-llama/Llama-3-8b-chat-hf")
+
+API_MODEL_LIST = OPENAI_MODEL_LIST + ANTHROPIC_MODEL_LIST + TOGETHER_MODEL_LIST
 
 
 # API setting constants
@@ -144,6 +150,15 @@ def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False):
     system_prompt, user_prompt = format_judge_answers(question, answer_a, answer_b, multi_turn)
     winner = "error"
 
+    # handle multi-model (ensembles) recursively
+    if isinstance(model, list):
+        winners = []
+        judgments = []
+        for m in model:
+            winner, _, judgment = run_judge_pair(question, answer_a, answer_b, m, multi_turn)
+            winners.append(winner)
+        return winners, user_prompt, judgments
+
     if model in OPENAI_MODEL_LIST:
         template = "chatgpt"
         conv = get_conv_template(template)
@@ -163,6 +178,15 @@ def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False):
         conv.messages = conv.to_openai_api_messages()
 
         judgment = chat_completion_anthropic(model, conv, temperature=0, max_tokens=1024)
+    elif model in TOGETHER_MODEL_LIST:
+        template = "chatgpt"  # template doesn't matter, it just uses raw messages later
+        conv = get_conv_template(template)
+
+        conv.append_message(conv.roles[0], user_prompt)
+        conv.append_message(conv.roles[1], None)
+        conv.set_system_message(system_prompt)
+        judgment = chat_completion_together(model, conv, temperature=0, max_tokens=2048)
+
     else:
         raise ValueError(f"Model {model} not supported")
 
@@ -201,6 +225,24 @@ def chat_completion_anthropic(model, conv, temperature, max_tokens, api_dict=Non
             print(type(e), e)
             time.sleep(API_RETRY_SLEEP)
     return output.strip()
+
+
+def chat_completion_together(model, conv, temperature, max_tokens, api_dict=None):
+    client = Together(api_key=os.environ["TOGETHER_API_KEY"])
+    output = API_ERROR_OUTPUT
+    for _ in range(API_MAX_RETRY):
+        try:
+            messages = conv.to_openai_api_messages()
+            response = client.chat.completions.create(
+                model=model, messages=messages, n=1, temperature=temperature, max_tokens=max_tokens
+            )
+            output = response.choices[0].message.content
+            break
+        # except any exception
+        except Exception as e:
+            print(f"Failed to connect to Together API: {e}")
+            time.sleep(API_RETRY_SLEEP)
+        return output
 
 
 def chat_completion_openai(model, conv, temperature, max_tokens, api_dict=None):
