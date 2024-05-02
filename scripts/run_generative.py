@@ -82,7 +82,9 @@ def get_args():
     parser.add_argument(
         "--disable_beaker_save", action="store_true", help="disable saving the main results in a file for AI2 Beaker"
     )
-    parser.add_argument("--force_local", action="store_true", help="force local run, even if model is on Together API")
+    parser.add_argument(
+        "--force_local", action="store_true", default=False, help="force local run, even if model is on Together API"
+    )
     args = parser.parse_args()
     return args
 
@@ -114,8 +116,11 @@ def main():
         # assert that is odd and > 1
         assert len(args.model) > 1 and len(args.model) % 2 == 1
 
+    # define variable if is API or local
+    is_api_models = isinstance(args.model, list) or args.model in API_MODEL_LIST or not args.force_local
+
     # if model isn't API, load via vllm
-    if args.model not in API_MODEL_LIST or args.force_local:
+    if not is_api_models:
         # load model
         model = LLM(args.model, trust_remote_code=args.trust_remote_code, tensor_parallel_size=args.num_gpus)
         tokenizer = AutoTokenizer.from_pretrained(args.model)
@@ -155,7 +160,7 @@ def main():
         subsets = subsets[:10]
         ids = ids[:10]
 
-    if args.model in API_MODEL_LIST or not args.force_local:
+    if is_api_models:
         ############################
         # Run inference via API
         ############################
@@ -189,8 +194,11 @@ def main():
                     print(f"Prompt: {request}")
                     print(f"Judgement: {judgement}")
 
-                # if type of winner is list, take most common entry
+                # handle voting
                 if isinstance(winner, list):
+                    # print votes if debug
+                    if debug:
+                        print(winner)
                     winner = max(set(winner), key=winner.count)
 
                 if winner == winner_text:

@@ -157,6 +157,7 @@ def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False):
         for m in model:
             winner, _, judgment = run_judge_pair(question, answer_a, answer_b, m, multi_turn)
             winners.append(winner)
+            judgments.append(judgment)
         return winners, user_prompt, judgments
 
     if model in OPENAI_MODEL_LIST:
@@ -242,7 +243,7 @@ def chat_completion_together(model, conv, temperature, max_tokens, api_dict=None
         except Exception as e:
             print(f"Failed to connect to Together API: {e}")
             time.sleep(API_RETRY_SLEEP)
-        return output
+    return output
 
 
 def chat_completion_openai(model, conv, temperature, max_tokens, api_dict=None):
