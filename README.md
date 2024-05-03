@@ -24,8 +24,31 @@ The two primary scripts to generate results (more in `scripts/`):
 2. `scripts/run_dpo.py`: Run evaluations for direct preference optimization (DPO) models (and other models using implicit rewards, such as KTO).
 3. `scripts/train_rm.py`: A basic RM training script built on [TRL](https://github.com/huggingface/trl).
 
-## Installation
-Please install `torch` on your system, and then install the following requirements.
+## Quick Usage
+RewardBench let's you quickly evaluate any reward model on any preference set. 
+To install for quick usage, install with pip as:
+```
+pip install reward bench
+```
+Then, run a following:
+```
+python -m rewardbench --model={} --dataset={} --batch_size=8
+```
+For a DPO model, pass --ref_model={} and the script will automatically route there.
+Automatically uses Tokenizers chat templates, but can also use fastchat conv templates.
+
+Examples:
+1. Normal operation
+```
+python -m rewardbench --model=OpenAssistant/reward-model-deberta-v3-large-v2 --dataset=allenai/ultrafeedback_binarized_cleaned --split=test_gen --chat_template=raw
+```
+2. DPO model from local dataset (note `--load_json`)
+```
+python -m rewardbench --model=Qwen/Qwen1.5-0.5B-Chat --ref_model=Qwen/Qwen1.5-0.5B --dataset=/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar-binarized-preferences-random-rejected.jsonl --load_json
+```
+
+## Full Installation
+To install from source, please install `torch` on your system, and then install the following requirements.
 ```
 pip install -e .
 ```

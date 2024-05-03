@@ -20,10 +20,10 @@ import os
 import sys
 
 import torch
-import tqdm
 import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
+from tqdm import tqdm
 from transformers import AutoTokenizer
 
 from rewardbench import (
@@ -36,6 +36,8 @@ from rewardbench import (
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate a reward model.")
+
+    # core args
     parser.add_argument("--dataset", type=str, required=True, help="The dataset to evaluate on.")
     parser.add_argument("--split", type=str, default=None, help="The split to evaluate on.")
     parser.add_argument("--model", type=str, required=True, help="The model to evaluate.")
@@ -47,7 +49,13 @@ def main():
         default=None,
         help="The chat template to use (defaults to from tokenizer, from chattemplate).",
     )
+
+    # inference args
     parser.add_argument("--batch_size", type=int, default=8, help="The batch size to use.")
+    parser.add_argument("--max_length", type=int, default=512, help="The max length to use.")
+
+    # system args
+    parser.add_argument("--load_json", action="store_true", default=False, help="Load dataset as json.")
     parser.add_argument("--trust_remote_code", action="store_true", default=False, help="Trust remote code.")
     parser.add_argument("--debug", action="store_true", default=False, help="Debug mode.")
     parser.add_argument("--output_dir", type=str, default="results/", help="The output directory to save results.")
@@ -92,6 +100,8 @@ def main():
         from fastchat.conversation import get_conv_template
 
         conv = get_conv_template(args.chat_template)
+    else:
+        conv = None
 
     if args.model in MODEL_CONFIGS:
         config = MODEL_CONFIGS[args.model]
@@ -106,14 +116,15 @@ def main():
     # "custom_dialogue": False,
     # "model_type": "Seq. Classifier"
 
-    quantized = config["quantized"]  # only Starling isn't quantized for now
-    custom_dialogue = config["custom_dialogue"]
-    _ = config["model_type"]
-    model_builder = config["model_builder"]
-    pipeline_builder = config["pipeline_builder"]
+    if not is_dpo:
+        quantized = config["quantized"]  # only Starling isn't quantized for now
+        custom_dialogue = config["custom_dialogue"]
+        pipeline_builder = config["pipeline_builder"]
+        _ = config["model_type"]
+        if custom_dialogue:
+            raise NotImplementedError("Custom dialogue not implemented yet for simpler data formatting.")
 
-    if custom_dialogue:
-        raise NotImplementedError("Custom dialogue not implemented yet for simpler data formatting.")
+    model_builder = config["model_builder"]
 
     #########################
     # load dataset
@@ -121,10 +132,9 @@ def main():
     logger.info("*** Load dataset ***")
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=args.trust_remote_code)
-    dataset = load_preference_dataset(args.dataset, 
-                                      split=args.split,
-                                      tokenizer=tokenizer,
-                                      conv=conv,)
+    dataset = load_preference_dataset(
+        args.dataset, split=args.split, json=args.load_json, tokenizer=tokenizer, conv=conv
+    )
 
     if args.debug:
         dataset = dataset.select(range(10))
@@ -163,7 +173,6 @@ def main():
             ref_model,
             tokenizer=tokenizer,
             accelerator=accelerator,
-            ref_free_norm=args.ref_free_type,
             # norm is norm, avg is average, sum is sum
         )
 
@@ -274,7 +283,7 @@ def main():
     ############################
     # calculate accuracy
     accuracy = sum(results) / len(results)
-    logger.info(f"Results: {accuracy}")
+    logger.info(f"Results: {accuracy}, on {len(results)} prompts")
 
     ############################
     # compile scores
@@ -294,6 +303,7 @@ def main():
                 "accuracy": accuracy,
                 "num_prompts": len(results),
                 "model": args.model,
+                "ref_model": args.ref_model,
                 "tokenizer": tokenizer_path,
                 "chat_template": args.chat_template,
             },
@@ -313,3 +323,7 @@ def main():
         with open(output_path, "w") as f:
             for chosen, rejected in zip(scores_chosen, scores_rejected):
                 f.write(json.dumps({"chosen": scores_chosen, "rejected": scores_rejected}) + "\n")
+
+
+if __name__ == "__main__":
+    main()

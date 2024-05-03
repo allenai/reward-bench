@@ -15,7 +15,7 @@
 # Core function for running reward bench easily on any model and any formatted dataset
 import logging
 
-from datasets import Dataset, load_dataset
+from datasets import Dataset, DatasetDict, concatenate_datasets, load_dataset
 from fastchat.conversation import Conversation
 from transformers import PreTrainedTokenizer
 
@@ -29,6 +29,7 @@ from rewardbench.utils import (
 def load_preference_dataset(
     dataset_name: str,
     split: str = "train",
+    json: bool = False,
     conv: Conversation = None,
     tokenizer: PreTrainedTokenizer = None,
     logger: logging.Logger = None,
@@ -51,28 +52,60 @@ def load_preference_dataset(
         dataset (Dataset): The loaded dataset with prompt, text_chosen, and text_rejected columns.
             text_ indicates a full conversation ending with that turn
     """
-    dataset = load_dataset(dataset_name, split=split)
+    if json:
+        dataset = load_dataset("json", data_files=dataset_name)
+    else:
+        dataset = load_dataset(dataset_name, split=split)
+
+    # if datasetdict, flatten all splits
+    if isinstance(dataset, DatasetDict):
+        available_splits = list(dataset.keys())
+        datasets_to_combine = [dataset[split] for split in available_splits]
+        dataset = concatenate_datasets(datasets_to_combine)
+
+    # if has column question without prompt, rename question column to prompt
+    if "question" in dataset.column_names:
+        assert "prompt" not in dataset.column_names, "Both prompt and question columns found"
+        dataset = dataset.rename_column("question", "prompt")
+    if "input" in dataset.column_names:
+        assert "prompt" not in dataset.column_names, "Both prompt and question columns found"
+        dataset = dataset.rename_column("input", "prompt")
 
     # switch to format used for data utils
     # e.g. for evaluating this data https://huggingface.co/datasets/allenai/preference-test-sets
     # python -m rewardbench/rewardbench.py --dataset-name allenai/preference-test-sets --split shp
     features = dataset.features
-    if not isinstance(features["prompt"], list):
 
-        def switch_format(example):
-            # chosen/rejected append {"role": "assistnat", "content": chosen}
-            example["prompt"] = example["chosen"][:-1]
-            example["chosen"] = example["chosen"][-1]["content"]
-            example["rejected"] = example["rejected"][-1]["content"]
-            return example
+    def switch_format(example):
+        # chosen/rejected append {"role": "assistnat", "content": chosen}
+        example["prompt"] = example["chosen"][:-1]
+        example["chosen"] = example["chosen"][-1]["content"]
+        example["rejected"] = example["rejected"][-1]["content"]
+        return example
 
+    # NOTE: We do NOT want to support every schema. These are the main three to start with
+    # 1. Prompt is in a list of previous turns, chosen and rejected are final message from assistant
+    # 2. Prompt is a string, chosen and rejected are full conversations with different final turns
+    # 3. Prompt is not existent, chosen and rejected are full conversations with different final turns
+    # TODO implement system prompts correctly (though, often doesn't work for Reward Models)
+
+    # if prompt isn't a column,
+    if "prompt" not in dataset.column_names:
         dataset = dataset.map(
             switch_format,
             num_proc=8,
             load_from_cache_file=False,
         )
-        # update features if needed
-        features = dataset.features
+    # elif prompt is a list and not a str, same function works
+    elif not isinstance(features["prompt"], list):
+        dataset = dataset.map(
+            switch_format,
+            num_proc=8,
+            load_from_cache_file=False,
+        )
+
+    # update features
+    features = dataset.features
 
     # assert the correct types
     assert features["chosen"].dtype == "string", f"chosen is wrong type (should be string): {features['chosen']}"
@@ -107,7 +140,7 @@ def load_preference_dataset(
         )
 
     # remove excess data
-    keep_columns = ["prompt", "chosen", "rejected"]
+    keep_columns = ["prompt", "text_chosen", "text_rejected"]
     all_cols = dataset.column_names
     dataset = dataset.remove_columns([c for c in all_cols if c not in keep_columns])
     return dataset
