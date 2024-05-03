@@ -16,7 +16,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="rewardbench",
-    version="0.1.0.dev",
+    version="0.1.0",
     author="Nathan Lambert",
     author_email="nathanl@allenai.org",
     description="Tools for evaluating reward models",
