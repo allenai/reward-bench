@@ -20,6 +20,7 @@ import logging
 import os
 import sys
 
+import numpy as np
 import torch
 import transformers
 from accelerate import Accelerator
@@ -39,7 +40,7 @@ def main():
     parser = argparse.ArgumentParser(description="Evaluate a reward model.")
 
     # core args
-    parser.add_argument("--dataset", type=str, required=True, help="The dataset to evaluate on.")
+    parser.add_argument("--dataset", type=str, default="allenai/reward-bench", help="The dataset to evaluate on.")
     parser.add_argument("--split", type=str, default=None, help="The split to evaluate on.")
     parser.add_argument("--model", type=str, required=True, help="The model to evaluate.")
     parser.add_argument("--ref_model", type=str, default=None, help="The reference model to compare against.")
@@ -133,9 +134,25 @@ def main():
     logger.info("*** Load dataset ***")
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=args.trust_remote_code)
-    dataset = load_preference_dataset(
-        args.dataset, split=args.split, json=args.load_json, tokenizer=tokenizer, conv=conv
-    )
+    if args.dataset == "allenai/reward-bench":
+        logger.info("Running core eval dataset.")
+        from rewardbench import load_eval_dataset
+        from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
+        from rewardbench.utils import calculate_scores_per_section
+
+        # primary set compiles slightly more information
+        dataset, subsets = load_eval_dataset(
+            core_set=False,
+            conv=conv,
+            custom_dialogue_formatting=False,
+            tokenizer=tokenizer,
+            logger=logger,
+            keep_columns=["text_chosen", "text_rejected", "id"],
+        )
+    else:
+        dataset = load_preference_dataset(
+            args.dataset, split=args.split, json=args.load_json, tokenizer=tokenizer, conv=conv
+        )
 
     if args.debug:
         dataset = dataset.select(range(10))
@@ -286,6 +303,23 @@ def main():
     accuracy = sum(results) / len(results)
     logger.info(f"Results: {accuracy}, on {len(results)} prompts")
 
+    if args.dataset == "allenai/reward-bench":
+        out_dataset = dataset.add_column("results", results)
+        out_dataset = out_dataset.add_column("subset", subsets)
+        out_dataset = out_dataset.to_pandas()  # I know this is meh
+
+        results_grouped = {}
+        present_subsets = np.unique(out_dataset["subsets"])
+        for subset in present_subsets:
+            subset_dataset = out_dataset[out_dataset["subsets"] == subset]
+            num_correct = sum(subset_dataset["results"])
+            num_total = len(subset_dataset["results"])
+            logger.info(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
+            results_grouped[subset] = num_correct / num_total
+
+        results_section = calculate_scores_per_section(EXAMPLE_COUNTS, SUBSET_MAPPING, results_grouped)
+        logger.info(f"Results: {results_section}")
+
     ############################
     # compile scores
     ############################
@@ -307,6 +341,7 @@ def main():
                 "ref_model": args.ref_model,
                 "tokenizer": tokenizer_path,
                 "chat_template": args.chat_template,
+                "extra_results": results_grouped if args.dataset == "allenai/reward-bench" else None,
             },
             f,
         )

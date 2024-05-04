@@ -50,6 +50,7 @@ setup(
         "pytest",
         # "ray",  # for generative llm multi-gpu
         "scipy",
+        "sentencepiece",
         "tabulate",  # dependency for markdown rendering in pandas
         "tokenizers",
         "tiktoken==0.6.0",  # added for llama 3
