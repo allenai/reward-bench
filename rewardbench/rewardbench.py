@@ -147,7 +147,7 @@ def main():
             custom_dialogue_formatting=False,
             tokenizer=tokenizer,
             logger=logger,
-            keep_columns=["text_chosen", "text_rejected", "id"],
+            keep_columns=["text_chosen", "text_rejected", "prompt"],
         )
     else:
         dataset = load_preference_dataset(
@@ -305,7 +305,9 @@ def main():
 
     if args.dataset == "allenai/reward-bench":
         out_dataset = dataset.add_column("results", results)
-        out_dataset = out_dataset.add_column("subset", subsets)
+        if args.debug:
+            subsets = subsets[:10]
+        out_dataset = out_dataset.add_column("subsets", subsets)
         out_dataset = out_dataset.to_pandas()  # I know this is meh
 
         results_grouped = {}

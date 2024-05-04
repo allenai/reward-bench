@@ -32,19 +32,24 @@ pip install reward bench
 ```
 Then, run a following:
 ```
-python -m rewardbench --model={} --dataset={} --batch_size=8
+rewardbench --model={yourmodel} --dataset={yourdataset} --batch_size=8
 ```
 For a DPO model, pass --ref_model={} and the script will automatically route there.
 Automatically uses Tokenizers chat templates, but can also use fastchat conv templates.
 
+To run the core Reward Bench evaluation set, run:
+```
+rewardbench --model={yourmodel}
+```
+
 Examples:
 1. Normal operation
 ```
-python -m rewardbench --model=OpenAssistant/reward-model-deberta-v3-large-v2 --dataset=allenai/ultrafeedback_binarized_cleaned --split=test_gen --chat_template=raw
+rewardbench --model=OpenAssistant/reward-model-deberta-v3-large-v2 --dataset=allenai/ultrafeedback_binarized_cleaned --split=test_gen --chat_template=raw
 ```
 2. DPO model from local dataset (note `--load_json`)
 ```
-python -m rewardbench --model=Qwen/Qwen1.5-0.5B-Chat --ref_model=Qwen/Qwen1.5-0.5B --dataset=/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar-binarized-preferences-random-rejected.jsonl --load_json
+rewardbench --model=Qwen/Qwen1.5-0.5B-Chat --ref_model=Qwen/Qwen1.5-0.5B --dataset=/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar-binarized-preferences-random-rejected.jsonl --load_json
 ```
 
 ## Full Installation
