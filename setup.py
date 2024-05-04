@@ -16,9 +16,10 @@ from setuptools import find_packages, setup
 
 # instructions for releasing new version: update the version number, then follow
 # from 6 https://github.com/huggingface/diffusers/blob/49b959b5408b97274e2ee423059d9239445aea26/setup.py#L36C43-L38C1
+# this has not yet been pushed to pypyi-test
 setup(
     name="rewardbench",
-    version="0.1.0",
+    version="0.1.1",
     author="Nathan Lambert",
     author_email="nathanl@allenai.org",
     description="Tools for evaluating reward models",
@@ -31,8 +32,7 @@ setup(
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.10",
-        "License :: OSI Approved :: Apache 2.0 License",
+        "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.10",
@@ -54,6 +54,7 @@ setup(
         "sentencepiece",
         "tabulate",  # dependency for markdown rendering in pandas
         "tokenizers",
+        "torch",
         "tiktoken==0.6.0",  # added for llama 3
         "transformers==4.40.0",  # pinned at llama 3
         "trl>=0.8.2",  # fixed transformers import error
