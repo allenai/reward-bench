@@ -142,7 +142,7 @@ def main():
 
         # primary set compiles slightly more information
         dataset, subsets = load_eval_dataset(
-            core_set=False,
+            core_set=True,
             conv=conv,
             custom_dialogue_formatting=False,
             tokenizer=tokenizer,
