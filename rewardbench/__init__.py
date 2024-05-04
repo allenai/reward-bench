@@ -16,11 +16,11 @@ __version__ = "0.1.0"
 from .chattemplates import *  # noqa
 from .dpo import DPOInference
 from .models import DPO_MODEL_CONFIG, REWARD_MODEL_CONFIG
-from .rewardbench import load_preference_dataset
 from .utils import (
     check_tokenizer_chat_template,
     load_bon_dataset,
     load_eval_dataset,
+    load_preference_dataset,
     prepare_dialogue,
     prepare_dialogue_from_tokenizer,
     save_to_hub,
