@@ -14,6 +14,8 @@
 
 from setuptools import find_packages, setup
 
+# instructions for releasing new version: update the version number, then follow
+# from 6 https://github.com/huggingface/diffusers/blob/49b959b5408b97274e2ee423059d9239445aea26/setup.py#L36C43-L38C1
 setup(
     name="rewardbench",
     version="0.1.0",
