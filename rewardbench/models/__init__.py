@@ -35,6 +35,7 @@ from .starling import (
     build_starling_rm,
 )
 from .ziya import ZiyaPipeline
+from .pair_pm import PairPMPipeline
 
 # Please open a PR if you need to add more custom modeling code / utilize existing code for you model
 REWARD_MODEL_CONFIG = {
@@ -121,6 +122,13 @@ REWARD_MODEL_CONFIG = {
         "quantized": True,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
+    },
+    "RLHFlow/pair-preference-model-LLaMA3-8B": {
+        "model_builder": AutoModelForCausalLM.from_pretrained(model_path,),
+        "pipeline_builder": PairPMPipeline,
+        "quantized": True,
+        "custom_dialogue": True,
+        "model_type": "Custom Classifier",
     },
 }
 

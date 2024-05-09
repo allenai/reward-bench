@@ -71,9 +71,8 @@ class PairPMPipeline:
         return probs_choose_A
 
 
+'''
 #### An example to use the pair-preference model.
-
-
 tqdm.pandas()
 ds_dir = "allenai/reward-bench"
 ds = load_dataset(ds_dir, split='filtered', keep_in_memory=True)
@@ -206,3 +205,4 @@ df_final = df_final._append(row, ignore_index=True)
 
 for col in ['Chat', 'Chat Hard', 'Safety', 'Reasoning']:
     print(f"{col}: {df_final[col].values[0]}")
+'''
