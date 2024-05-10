@@ -9,7 +9,7 @@ import pandas as pd
 from typing import List, Optional, Tuple, Union
 
 
-class PairPMPipeline:
+class SlicPairPMPipeline:
 
     def __init__(self, model_path):
         self.model = AutoModelForCausalLM.from_pretrained(model_path,).cuda() #, attn_implementation="flash_attention_2",  torch_dtype=torch.bfloat16

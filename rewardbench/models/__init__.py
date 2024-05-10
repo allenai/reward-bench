@@ -35,7 +35,7 @@ from .starling import (
     build_starling_rm,
 )
 from .ziya import ZiyaPipeline
-from .pair_pm import PairPMPipeline
+from .slicpairpm import SlicPairPMPipeline
 
 # Please open a PR if you need to add more custom modeling code / utilize existing code for you model
 REWARD_MODEL_CONFIG = {
