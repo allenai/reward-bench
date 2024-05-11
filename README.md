@@ -85,6 +85,13 @@ python scripts/run_rm.py --model=PKU-Alignment/beaver-7b-v1.0-cost --chat_templa
 python scripts/run_rm.py --model=IDEA-CCNL/Ziya-LLaMA-7B-Reward --batch_size=32 --trust_remote_code --chat_template=Ziya
 ```
 
+To lauch a multi-gpu inference job with Accelerate, run:
+```
+accelerate launch scripts/run_rm.py --model=OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5 --chat_template=oasst_pythia
+```
+Optionally with `--num_processes=2` if Acceralte does not automatically detect it.
+
+
 To run these models with AI2 infrastructure, run:
 ```
 python scripts/submit_eval_jobs.py

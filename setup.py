@@ -37,7 +37,7 @@ setup(
     ],
     python_requires=">=3.10",
     install_requires=[
-        "accelerate",
+        "accelerate>=0.29",
         "bitsandbytes",
         "black",
         "datasets",
