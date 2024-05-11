@@ -20,7 +20,6 @@ import sys
 import numpy as np
 import torch
 import transformers
-from accelerate import Accelerator
 from accelerate.logging import get_logger
 from fastchat.conversation import get_conv_template
 from tqdm import tqdm
@@ -76,9 +75,6 @@ def main():
     ###############
     # Setup logging
     ###############
-    accelerator = Accelerator()
-    current_device = accelerator.process_index
-
     logger = get_logger(__name__)
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -163,11 +159,11 @@ def main():
     if quantized:
         model_kwargs = {
             "load_in_8bit": True,
-            "device_map": {"": current_device},
+            "device_map": "auto",
             "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
         }
     else:
-        model_kwargs = {"device_map": {"": current_device}}
+        model_kwargs = {"device_map": "auto"}
 
     model = model_builder(args.model, **model_kwargs, trust_remote_code=trust_remote_code)
     reward_pipe = pipeline_builder(
@@ -199,8 +195,6 @@ def main():
     if pipeline_builder == pipeline:
         logger.info("*** Running forward pass via built in pipeline abstraction ***")
         # this setup can be optimized slightly with one pipeline call
-        # prepare for inference
-        reward_pipe = accelerator.prepare(reward_pipe)
 
         results_rej = reward_pipe(dataset["text_rejected"], **reward_pipeline_kwargs)
         results_cho = reward_pipe(dataset["text_chosen"], **reward_pipeline_kwargs)
@@ -236,9 +230,6 @@ def main():
             shuffle=False,
             drop_last=False,
         )
-
-        dataloader, model = accelerator.prepare(dataloader, reward_pipe.model)
-        reward_pipe.model = model
 
         results = []
         scores_chosen = []

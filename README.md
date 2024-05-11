@@ -87,7 +87,7 @@ python scripts/run_rm.py --model=IDEA-CCNL/Ziya-LLaMA-7B-Reward --batch_size=32 
 
 To lauch a multi-gpu inference job with Accelerate, run:
 ```
-accelerate launch scripts/run_rm.py --model=OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5 --chat_template=oasst_pythia
+accelerate launch scripts/run_rm_mgpu.py --model=OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5 --chat_template=oasst_pythia
 ```
 Optionally with `--num_processes=2` if Acceralte does not automatically detect it.
 
