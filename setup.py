@@ -19,7 +19,7 @@ from setuptools import find_packages, setup
 # this has not yet been pushed to pypyi-test
 setup(
     name="rewardbench",
-    version="0.1.1",
+    version="0.1.2",
     author="Nathan Lambert",
     author_email="nathanl@allenai.org",
     description="Tools for evaluating reward models",
