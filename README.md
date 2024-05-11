@@ -52,6 +52,17 @@ rewardbench --model=OpenAssistant/reward-model-deberta-v3-large-v2 --dataset=all
 rewardbench --model=Qwen/Qwen1.5-0.5B-Chat --ref_model=Qwen/Qwen1.5-0.5B --dataset=/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar-binarized-preferences-random-rejected.jsonl --load_json
 ```
 
+*Experimental*: Generative RMs can be run from the pip install by running:
+```
+pip install rewardbench[generative]
+```
+And then:
+```
+rewardbench-gen --model={}
+```
+For more information, see `scripts/run_generative.py`. 
+The extra requirement for local models is VLLM and the requesite API for API models (OpenAI, Anthropic, and Together are supported).
+
 ## Full Installation
 To install from source, please install `torch` on your system, and then install the following requirements.
 ```

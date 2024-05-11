@@ -24,7 +24,10 @@ setup(
     author_email="nathanl@allenai.org",
     description="Tools for evaluating reward models",
     entry_points={
-        "console_scripts": ["rewardbench=rewardbench.rewardbench:main"],
+        "console_scripts": [
+            "rewardbench=rewardbench.rewardbench:main",
+            "rewardbench-gen=scripts.run_generative:main",
+        ],
     },
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -58,7 +61,16 @@ setup(
         "tiktoken==0.6.0",  # added for llama 3
         "transformers==4.40.0",  # pinned at llama 3
         "trl>=0.8.2",  # fixed transformers import error
-        # TODO consider vllm in setup, currently only in dockerfile
-        # "vllm @ git+https://github.com/vllm-project/vllm.git@d87f39e9a9dd149f5dd7a58b4d98b21f713827b6",  # noqa, # TODO pin version, Command R Plus is currently only in source install
     ],
+    extras_require={
+        "generative": [
+            "vllm>=0.4.1",
+            "openai",
+            "anthropic",
+            "together",
+        ],
+        "training": [
+            "wandb",
+        ],
+    },
 )
