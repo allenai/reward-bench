@@ -124,7 +124,7 @@ REWARD_MODEL_CONFIG = {
         "model_type": "Seq. Classifier",
     },
     "RLHFlow/pair-preference-model-LLaMA3-8B": {
-        "model_builder": AutoModelForCausalLM.from_pretrained(model_path,),
+        "model_builder": AutoModelForCausalLM.from_pretrained,
         "pipeline_builder": PairPMPipeline,
         "quantized": True,
         "custom_dialogue": True,
