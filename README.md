@@ -28,7 +28,7 @@ The two primary scripts to generate results (more in `scripts/`):
 RewardBench let's you quickly evaluate any reward model on any preference set. 
 To install for quick usage, install with pip as:
 ```
-pip install reward bench
+pip install rewardbench
 ```
 Then, run a following:
 ```
