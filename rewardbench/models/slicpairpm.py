@@ -6,12 +6,14 @@ from typing import List
 
 class SlicPairPMPipeline:
 
-    def __init__(self, model_path):
-        self.model = AutoModelForCausalLM.from_pretrained(model_path,).cuda() #, attn_implementation="flash_attention_2",  torch_dtype=torch.bfloat16
-        self.model.eval()
-
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
-        self.tokenizer_data_format = AutoTokenizer.from_pretrained(model_path, use_fast=True)
+    def __init__(self, task, model, tokenizer):
+        #self.model = AutoModelForCausalLM.from_pretrained(model_path,).cuda() #, attn_implementation="flash_attention_2",  torch_dtype=torch.bfloat16
+        #self.model.eval()
+	self.model = model
+	self.task = task
+	self.tokenizer = tokenizer
+        #self.tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
+        self.tokenizer_data_format = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct", use_fast=True)
         self.tokenizer_data_format.chat_template = "\n{% for message in messages %}{% if loop.index0 % 2 == 0 %}\n\n<turn> user\n {{ message['content'] }}{% else %}\n\n<turn> assistant\n {{ message['content'] }}{% endif %}{% endfor %}\n\n\n"
 
         self.prompt_template = "[CONTEXT] {context} [RESPONSE A] {response_A} [RESPONSE B] {response_B} \n"
