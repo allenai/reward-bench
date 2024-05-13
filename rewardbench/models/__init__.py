@@ -125,7 +125,7 @@ REWARD_MODEL_CONFIG = {
     },
     "RLHFlow/pair-preference-model-LLaMA3-8B": {
         "model_builder": AutoModelForCausalLM.from_pretrained,
-        "pipeline_builder": PairPMPipeline,
+        "pipeline_builder": SlicPairPMPipeline,
         "quantized": True,
         "custom_dialogue": True,
         "model_type": "Custom Classifier",
