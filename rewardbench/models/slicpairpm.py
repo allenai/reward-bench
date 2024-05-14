@@ -1,28 +1,20 @@
-from typing import List
-
-import numpy as np
 import torch
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import numpy as np
+from typing import List
 
 
 class SlicPairPMPipeline:
 
     def __init__(self, task, model, tokenizer):
-
-        # self.model.eval()
-        self.model = model
-        self.task = task
-        self.tokenizer = tokenizer
-        # self.tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
-        self.tokenizer_data_format = AutoTokenizer.from_pretrained(
-            "meta-llama/Meta-Llama-3-8B-Instruct", use_fast=True
-        )
-        x1 = "\n{% for message in messages %}{% if loop.index0 % 2 == 0 %}\n\n<turn> user"
-        x2 = "\n {{ message['content'] }}{% else %}\n\n<turn> assistant\n"
-        x3 = " {{ message['content'] }}{% endif %}{% endfor %}\n\n\n"
-        my_template = x1 + x2 + x3
-
-        self.tokenizer_data_format.chat_template = my_template
+        #self.model = AutoModelForCausalLM.from_pretrained(model_path,).cuda() #, attn_implementation="flash_attention_2",  torch_dtype=torch.bfloat16
+        #self.model.eval()
+	self.model = model
+	self.task = task
+	self.tokenizer = tokenizer
+        #self.tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
+        self.tokenizer_data_format = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct", use_fast=True)
+        self.tokenizer_data_format.chat_template = "\n{% for message in messages %}{% if loop.index0 % 2 == 0 %}\n\n<turn> user\n {{ message['content'] }}{% else %}\n\n<turn> assistant\n {{ message['content'] }}{% endif %}{% endfor %}\n\n\n"
 
         self.prompt_template = "[CONTEXT] {context} [RESPONSE A] {response_A} [RESPONSE B] {response_B} \n"
         token_id_A = self.tokenizer.encode("A", add_special_tokens=False)
@@ -33,14 +25,14 @@ class SlicPairPMPipeline:
         self.temperature = 1.0
 
     def __call__(self, prompts: List[str], candidates_A: List[str], candidates_B: List[str]):
-        """
+        '''
         Input:
             prompts: [prompt1, prompt2, ..., promptn]
             candidates_A: [responseA1, responses A2, ..., responseAn]
             candidates_B: [responseB1, responses B2, ..., responseBn]
         Output:
             probs_choose_A: [P(responseA1 > responseB1 | prompt1), ...., P(responseAn > responseBn | promptn)]
-        """
+        '''
         assert len(prompts) == len(candidates_A)
         assert len(candidates_A) == len(candidates_B)
         probs_choose_A = []
@@ -48,9 +40,9 @@ class SlicPairPMPipeline:
             instruction = [{"role": "user", "content": prompts[i]}]
             context = self.tokenizer_data_format.apply_chat_template(instruction, tokenize=False)
             responses = [candidates_A[i], candidates_B[i]]
-
+        
             probs_chosen = []
-
+    
             for chosen_position in [0, 1]:
                 # we swap order to mitigate position bias
                 response_A = responses[chosen_position]
@@ -60,12 +52,8 @@ class SlicPairPMPipeline:
                     {"role": "user", "content": prompt},
                 ]
 
-                input_ids = self.tokenizer.encode(
-                    self.tokenizer.apply_chat_template(message, tokenize=False).replace(self.tokenizer.bos_token, ""),
-                    return_tensors="pt",
-                    add_special_tokens=False,
-                ).cuda()
-
+                input_ids = self.tokenizer.encode(self.tokenizer.apply_chat_template(message, tokenize=False).replace(self.tokenizer.bos_token, ""), return_tensors='pt', add_special_tokens=False).cuda() 
+            
                 with torch.no_grad():
                     output = self.model(input_ids)
                 logit_A = output.logits[0, -1, self.token_id_A].item()
@@ -78,3 +66,5 @@ class SlicPairPMPipeline:
             probs_choose_A.append(np.mean(probs_chosen))
         # probs_chose_B = 1 - probs_choose_A
         return probs_choose_A
+
+
