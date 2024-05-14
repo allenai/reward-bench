@@ -29,6 +29,7 @@ from .openassistant import *  # noqa
 from .openbmb import LlamaRewardModel, OpenBMBPipeline
 from .pairrm import DebertaV2PairRM, PairRMPipeline
 from .shp import SHPPipeline
+from .slicpairpm import SlicPairPMPipeline
 from .starling import (
     LlamaForSequenceClassification,
     StarlingPipeline,
@@ -121,6 +122,13 @@ REWARD_MODEL_CONFIG = {
         "quantized": True,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
+    },
+    "RLHFlow/pair-preference-model-LLaMA3-8B": {
+        "model_builder": AutoModelForCausalLM.from_pretrained,
+        "pipeline_builder": SlicPairPMPipeline,
+        "quantized": True,
+        "custom_dialogue": True,
+        "model_type": "Custom Classifier",
     },
 }
 
