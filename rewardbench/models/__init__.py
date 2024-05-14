@@ -29,13 +29,13 @@ from .openassistant import *  # noqa
 from .openbmb import LlamaRewardModel, OpenBMBPipeline
 from .pairrm import DebertaV2PairRM, PairRMPipeline
 from .shp import SHPPipeline
+from .slicpairpm import SlicPairPMPipeline
 from .starling import (
     LlamaForSequenceClassification,
     StarlingPipeline,
     build_starling_rm,
 )
 from .ziya import ZiyaPipeline
-from .slicpairpm import SlicPairPMPipeline
 
 # Please open a PR if you need to add more custom modeling code / utilize existing code for you model
 REWARD_MODEL_CONFIG = {
