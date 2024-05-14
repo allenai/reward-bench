@@ -32,7 +32,7 @@ class SlicPairPMPipeline:
         self.token_id_B = token_id_B[0]
         self.temperature = 1.0
 
-    def __call__(self, prompts: List[str], candidates_A: List[str], candidates_B: List[str]):
+    def __call__(self, candidates_A: List[str], candidates_B: List[str], **kwargs):
         """
         Input:
             prompts: [prompt1, prompt2, ..., promptn]
@@ -41,14 +41,14 @@ class SlicPairPMPipeline:
         Output:
             probs_choose_A: [P(responseA1 > responseB1 | prompt1), ...., P(responseAn > responseBn | promptn)]
         """
-        assert len(prompts) == len(candidates_A)
+
         assert len(candidates_A) == len(candidates_B)
         probs_choose_A = []
-        for i in range(len(prompts)):
-            instruction = [{"role": "user", "content": prompts[i]}]
-            context = self.tokenizer_data_format.apply_chat_template(instruction, tokenize=False)
-            responses = [candidates_A[i], candidates_B[i]]
-
+        for i in range(len(candidates_A)):
+            chosen = candidates_A[i]
+            rejected = candidates_B[i]
+            context = self.tokenizer_data_format.apply_chat_template(chosen[:-1], tokenize=False)
+            responses = [chosen[-1]["content"], rejected[-1]["content"]]
             probs_chosen = []
 
             for chosen_position in [0, 1]:
@@ -77,4 +77,4 @@ class SlicPairPMPipeline:
                 probs_chosen.append(prob_chosen)
             probs_choose_A.append(np.mean(probs_chosen))
         # probs_chose_B = 1 - probs_choose_A
-        return probs_choose_A
+        return torch.tensor([x > 0.5 for x in probs_choose_A])
