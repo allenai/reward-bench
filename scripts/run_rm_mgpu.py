@@ -20,10 +20,13 @@ import sys
 import numpy as np
 import torch
 import transformers
+from accelerate import Accelerator
 from accelerate.logging import get_logger
 from fastchat.conversation import get_conv_template
+from torch.distributed import all_gather
+from torch.utils.data.dataloader import default_collate
 from tqdm import tqdm
-from transformers import AutoTokenizer, pipeline
+from transformers import AutoTokenizer
 
 from rewardbench import (
     REWARD_MODEL_CONFIG,
@@ -75,6 +78,9 @@ def main():
     ###############
     # Setup logging
     ###############
+    accelerator = Accelerator()
+    current_device = accelerator.process_index
+
     logger = get_logger(__name__)
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -159,11 +165,11 @@ def main():
     if quantized:
         model_kwargs = {
             "load_in_8bit": True,
-            "device_map": "auto",
+            "device_map": {"": current_device},
             "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
         }
     else:
-        model_kwargs = {"device_map": "auto"}
+        model_kwargs = {"device_map": {"": current_device}}
 
     model = model_builder(args.model, **model_kwargs, trust_remote_code=trust_remote_code)
     reward_pipe = pipeline_builder(
@@ -188,48 +194,32 @@ def main():
         reward_pipe.tokenizer.add_eos_token = True
 
     ############################
-    # Run inference [1/2]" built in transformers
+    # Run inference
     ############################
-    # if using HF pipeline, can pass entire dataset and get results
-    # first, handle custom pipelines that we must batch normally
-    if pipeline_builder == pipeline:
-        logger.info("*** Running forward pass via built in pipeline abstraction ***")
-        # this setup can be optimized slightly with one pipeline call
+    # TODO make more custom pipelines work with pre-tokenized data
+    # for PairRM, hmm, will move all of this later
+    def custom_collate_fn(batch):
+        # check if ['text_chosen'] is in first batch element
+        # Check if the first element of the batch is a dictionary
+        if isinstance(batch[0]["text_chosen"][0], dict):
+            return batch  # Return the batch as-is if it's a list of dicts
+        else:
+            return default_collate(batch)  # Use the default collate behavior otherwise
 
-        results_rej = reward_pipe(dataset["text_rejected"], **reward_pipeline_kwargs)
-        results_cho = reward_pipe(dataset["text_chosen"], **reward_pipeline_kwargs)
+    accelerator.wait_for_everyone()
+    with accelerator.split_between_processes(dataset) as dataset_sub:
 
-        # extract scores from results which is list of dicts, e.g. [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
-        scores_chosen = [result["score"] for result in results_cho]
-        scores_rejected = [result["score"] for result in results_rej]
-
-        # pairwise comparison list comprehension
-        results = [1 if chosen > rejected else 0 for chosen, rejected in zip(scores_chosen, scores_rejected)]
-
-    ############################
-    # Run inference [2/2] custom pipelines
-    ############################
-    else:
-        logger.info("*** Running dataloader to collect results ***")
-        # TODO make more custom pipelines work with pre-tokenized data
-        from torch.utils.data.dataloader import default_collate
-
-        # for PairRM, hmm, will move all of this later
-        def custom_collate_fn(batch):
-            # check if ['text_chosen'] is in first batch element
-            # Check if the first element of the batch is a dictionary
-            if isinstance(batch[0]["text_chosen"][0], dict):
-                return batch  # Return the batch as-is if it's a list of dicts
-            else:
-                return default_collate(batch)  # Use the default collate behavior otherwise
-
+        # split_between_processes will not work with DataLoader
         dataloader = torch.utils.data.DataLoader(
-            dataset,
+            dataset_sub,
             batch_size=BATCH_SIZE,
             collate_fn=custom_collate_fn,  # if not args.pref_sets else None,
             shuffle=False,
             drop_last=False,
         )
+
+        dataloader, model = accelerator.prepare(dataloader, reward_pipe.model)
+        reward_pipe.model = model.module
 
         results = []
         scores_chosen = []
@@ -267,71 +257,73 @@ def main():
                 scores_chosen.extend(score_chosen_batch)
                 scores_rejected.extend(score_rejected_batch)
 
-    ############################
-    # Print & process results
-    ############################
-    # add column for results for easy printing
-    out_dataset = dataset.add_column("results", results)
+    results_gathered = all_gather(results)
+    if accelerator.is_main_process:
+        ############################
+        # Print & process results
+        ############################
+        # add column for results for easy printing
+        out_dataset = dataset.add_column("results", results_gathered)
 
-    # add subsets back (removed so it's not handled by cuda)
-    out_dataset = out_dataset.add_column("subset", subsets)
-    out_dataset = out_dataset.add_column("id", ids)
+        # add subsets back (removed so it's not handled by cuda)
+        out_dataset = out_dataset.add_column("subset", subsets)
+        out_dataset = out_dataset.add_column("id", ids)
 
-    # add scores_chosen and scores_rejected to the dataset
-    out_dataset = out_dataset.add_column("scores_chosen", scores_chosen)
-    out_dataset = out_dataset.add_column("scores_rejected", scores_rejected)
+        # add scores_chosen and scores_rejected to the dataset
+        out_dataset = out_dataset.add_column("scores_chosen", scores_chosen)
+        out_dataset = out_dataset.add_column("scores_rejected", scores_rejected)
 
-    # get core dataset
-    results_grouped = {}
-    results_grouped["model"] = args.model
-    results_grouped["model_type"] = model_type
-    results_grouped["chat_template"] = (
-        args.chat_template if not check_tokenizer_chat_template(tokenizer) else "tokenizer"
-    )
+        # get core dataset
+        results_grouped = {}
+        results_grouped["model"] = args.model
+        results_grouped["model_type"] = model_type
+        results_grouped["chat_template"] = (
+            args.chat_template if not check_tokenizer_chat_template(tokenizer) else "tokenizer"
+        )
 
-    # print per subset and log into results_grouped file
-    present_subsets = np.unique(subsets)
-    for subset in present_subsets:
-        subset_dataset = out_dataset.filter(lambda example: example["subset"] == subset)
-        num_correct = sum(subset_dataset["results"])
-        num_total = len(subset_dataset["results"])
-        print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
-        results_grouped[subset] = num_correct / num_total
+        # print per subset and log into results_grouped file
+        present_subsets = np.unique(subsets)
+        for subset in present_subsets:
+            subset_dataset = out_dataset.filter(lambda example: example["subset"] == subset)
+            num_correct = sum(subset_dataset["results"])
+            num_total = len(subset_dataset["results"])
+            print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
+            results_grouped[subset] = num_correct / num_total
 
-    # log leaderboard aggregated results
-    if not args.pref_sets:
-        results_leaderboard = calculate_scores_per_section(EXAMPLE_COUNTS, SUBSET_MAPPING, results_grouped)
-        print(results_leaderboard)
+        # log leaderboard aggregated results
+        if not args.pref_sets:
+            results_leaderboard = calculate_scores_per_section(EXAMPLE_COUNTS, SUBSET_MAPPING, results_grouped)
+            print(results_leaderboard)
 
-    ############################
-    # Upload results to hub
-    ############################
-    sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
-    results_url = save_to_hub(
-        results_grouped,
-        args.model,
-        sub_path,
-        args.debug,
-        local_only=args.do_not_save,
-        save_metrics_for_beaker=not args.disable_beaker_save,
-    )
-    if not args.do_not_save:
-        logger.info(f"Uploaded reward model results to {results_url}")
+        ############################
+        # Upload results to hub
+        ############################
+        sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
+        results_url = save_to_hub(
+            results_grouped,
+            args.model,
+            sub_path,
+            args.debug,
+            local_only=args.do_not_save,
+            save_metrics_for_beaker=not args.disable_beaker_save,
+        )
+        if not args.do_not_save:
+            logger.info(f"Uploaded reward model results to {results_url}")
 
-    # upload chosen-rejected with scores
-    if not model_type == "Custom Classifier":  # custom classifiers do not return scores
-        # create new json with scores and upload
-        scores_dict = out_dataset.to_dict()
-        scores_dict["model"] = args.model
-        scores_dict["model_type"] = model_type
-        scores_dict["chat_template"] = args.chat_template
+        # upload chosen-rejected with scores
+        if not model_type == "Custom Classifier":  # custom classifiers do not return scores
+            # create new json with scores and upload
+            scores_dict = out_dataset.to_dict()
+            scores_dict["model"] = args.model
+            scores_dict["model_type"] = model_type
+            scores_dict["chat_template"] = args.chat_template
 
-        sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
+            sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
 
-        scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug, local_only=args.do_not_save)
-        logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
-    else:
-        logger.info("Not uploading chosen-rejected text with scores due to model compatibility")
+            scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug, local_only=args.do_not_save)
+            logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
+        else:
+            logger.info("Not uploading chosen-rejected text with scores due to model compatibility")
 
 
 if __name__ == "__main__":
