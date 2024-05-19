@@ -3,7 +3,7 @@
 # To get the latest id, run `beaker image pull ai2/cuda11.8-cudnn8-dev-ubuntu20.04` 
 # and then `docker image list`, to verify docker image is pulled
 # e.g. `Image is up to date for gcr.io/ai2-beaker-core/public/cncl3kcetc4q9nvqumrg:latest`
-FROM gcr.io/ai2-beaker-core/public/cojd4q5l9jpqudh7p570:latest
+FROM gcr.io/ai2-beaker-core/public/cp3ript9a0gcrm4lmha0:latest
 
 RUN apt update && apt install -y openjdk-8-jre-headless
 
@@ -30,7 +30,8 @@ RUN pip install jinja2
 # generative installs
 RUN pip install anthropic
 RUN pip install openai
-RUN pip install git+https://github.com/vllm-project/vllm.git@d87f39e9a9dd149f5dd7a58b4d98b21f713827b6
+RUN pip install vllm==0.4.2 
+# from git+https://github.com/vllm-project/vllm.git@d87f39e9a9dd149f5dd7a58b4d98b21f713827b6
 
 # for interactive session
 RUN chmod -R 777 /stage/

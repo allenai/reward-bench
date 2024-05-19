@@ -130,6 +130,13 @@ def main():
             stop_token_ids = [128009]
         else:
             stop_token_ids = []
+
+        # use different prompt for prometheus models
+        if "prometheus" in args.model:
+            is_prometheus = True
+        else:
+            is_prometheus = False
+
         sampling_params = SamplingParams(
             n=1,
             temperature=0,
@@ -250,7 +257,9 @@ def main():
             if is_shuffled:
                 answer_a, answer_b = answer_b, answer_a
 
-            system_prompt, user_prompt = format_judge_answers(prompt, answer_a, answer_b, multi_turn=mult_turn)
+            system_prompt, user_prompt = format_judge_answers(
+                prompt, answer_a, answer_b, multi_turn=mult_turn, prometheus=is_prometheus
+            )
 
             messages = [
                 {
@@ -275,7 +284,7 @@ def main():
         outputs = model.generate(prompts, sampling_params)
 
         answers = [o.outputs[0].text for o in outputs]
-        winners = [process_judgement(a) for a in answers]
+        winners = [process_judgement(a, is_prometheus) for a in answers]
 
         def process_shuffled(win, shuffle):
             if shuffle:
