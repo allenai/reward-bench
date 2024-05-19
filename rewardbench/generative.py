@@ -211,10 +211,10 @@ def process_judgement(judgment, is_prometheus=False):
     if is_prometheus:
         if "[RESULT]" in judgment:
             # after [RESULT] is A or B, else error (mayube spaces)
-            result = judgment.split("[RESULT]")[1].strip()
-            if result == "A":
+            # result = judgment.split("[RESULT]")[1].strip()
+            if judgment[-1] == "A":
                 return "A"
-            elif result == "B":
+            elif judgment[-1] == "B":
                 return "B"
             else:
                 return "error"

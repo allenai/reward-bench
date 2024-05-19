@@ -260,6 +260,7 @@ def main():
 
             if optional_chat_template is not None:
                 optional_chat_template.set_system_message(system_prompt)
+                optional_chat_template.messages = []
                 optional_chat_template.append_message(optional_chat_template.roles[0], user_prompt)
                 optional_chat_template.append_message(optional_chat_template.roles[1], None)
                 prompt = optional_chat_template.get_prompt()
@@ -287,12 +288,13 @@ def main():
         prompts = dataset_prompts["text"]
         is_shuffled = dataset_prompts["is_shuffled"]
 
-        logger.info("*** Run inference ***")
         # generate
+        logger.info("*** Run inference ***")
         outputs = model.generate(prompts, sampling_params)
+        logger.info("*** Inference done ***")
 
         answers = [o.outputs[0].text for o in outputs]
-        winners = [process_judgement(a, is_prometheus) for a in answers]
+        winners = [process_judgement(a, is_prometheus=is_prometheus) for a in answers]
 
         def process_shuffled(win, shuffle):
             if shuffle:
