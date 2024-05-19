@@ -209,10 +209,15 @@ def format_judge_answers(question, answer_a, answer_b, multi_turn=False, prometh
 
 def process_judgement(judgment, is_prometheus=False):
     if is_prometheus:
-        if "[A]" in judgment:
-            return "A"
-        elif "[B]" in judgment:
-            return "B"
+        if "[RESULT]" in judgment:
+            # after [RESULT] is A or B, else error (mayube spaces)
+            result = judgment.split("[RESULT]")[1].strip()
+            if result == "A":
+                return "A"
+            elif result == "B":
+                return "B"
+            else:
+                return "error"
         else:
             return "error"
     else:
