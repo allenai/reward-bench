@@ -111,10 +111,12 @@ def main():
     model_type = "Generative RM"
 
     # if model is list, make type + PoLL and check multiple is odd
-    if isinstance(args.model, list):
-        model_type += " + PoLL"
+    if isinstance(args.model, list) and len(args.model) == 1:
+        args.model = args.model[0]
+    elif isinstance(args.model, list):
+        model_type += " PoLL"
         # assert that is odd and > 1
-        assert len(args.model) > 1 and len(args.model) % 2 == 1
+        assert len(args.model) % 2 == 1
 
     # define variable if is API or local
     is_api_models = isinstance(args.model, list) or args.model in API_MODEL_LIST or not args.force_local
