@@ -259,7 +259,7 @@ def main():
             )
 
             if optional_chat_template is not None:
-                optional_chat_template.set_system_message(prompt)
+                optional_chat_template.set_system_message(system_prompt)
                 optional_chat_template.append_message(optional_chat_template.roles[0], user_prompt)
                 optional_chat_template.append_message(optional_chat_template.roles[1], None)
                 prompt = optional_chat_template.get_prompt()
@@ -287,6 +287,7 @@ def main():
         prompts = dataset_prompts["text"]
         is_shuffled = dataset_prompts["is_shuffled"]
 
+        logger.info("*** Run inference ***")
         # generate
         outputs = model.generate(prompts, sampling_params)
 
