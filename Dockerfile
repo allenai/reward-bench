@@ -25,10 +25,13 @@ RUN chmod +x scripts/*
 
 # this is just very slow
 RUN pip install flash-attn==2.5.0 --no-build-isolation
+
+# for olmo-instruct v1, weird install requirements
 RUN pip install ai2-olmo 
-# TODO remove above when olmo supported in Transformers verion
-RUN pip install jinja2 
+
 # for better-pairRM
+RUN pip install jinja2 
+
 # generative installs
 RUN pip install anthropic
 RUN pip install openai
