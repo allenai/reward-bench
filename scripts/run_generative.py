@@ -64,7 +64,7 @@ def get_args():
         required=True,
         help="name of OpenAI model to use (TODO add more providers/models)",
     )
-    parser.add_argument("--chat_template", type=str, default=None, help="path to chat template")
+    parser.add_argument("--chat_template", type=str, default=None, help="fastchat chat template (optional)")
     parser.add_argument(
         "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
     )
@@ -242,7 +242,7 @@ def main():
         # Run model weights with vllm
         ############################
 
-        def format_judgements(batch, chat_template):
+        def format_judgements(batch, optional_chat_template=None):
             # TODO expand this to include fastchat chat templates if needed
             mult_turn = True if len(batch["text_chosen"]) > 2 else False
             prompt = batch["text_chosen"][0]["content"]
@@ -258,11 +258,11 @@ def main():
                 prompt, answer_a, answer_b, multi_turn=mult_turn, prometheus=is_prometheus
             )
 
-            if chat_template is not None:
-                chat_template.set_system_message(prompt)
-                chat_template.append_message(chat_template.roles[0], user_prompt)
-                chat_template.append_message(chat_template.roles[1], None)
-                prompt = chat_template.get_prompt()
+            if optional_chat_template is not None:
+                optional_chat_template.set_system_message(prompt)
+                optional_chat_template.append_message(optional_chat_template.roles[0], user_prompt)
+                optional_chat_template.append_message(optional_chat_template.roles[1], None)
+                prompt = optional_chat_template.get_prompt()
             else:
                 messages = [
                     {
@@ -281,7 +281,7 @@ def main():
             chat_template = get_conv_template(args.chat_template)
         else:
             chat_template = None
-        dataset_prompts = dataset.map(format_judgements, chat_template)
+        dataset_prompts = dataset.map(format_judgements, fn_kwargs={"optional_chat_template": chat_template})
 
         # collect texts of dataset in list
         prompts = dataset_prompts["text"]
