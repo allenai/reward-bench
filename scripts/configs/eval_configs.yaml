@@ -518,3 +518,17 @@ sfairXC/FsfairX-LLaMA3-RM-v0.1:
   batch_size: 4
   trust_remote_code: False
   dpo: False
+RLHFlow/pair-preference-model-LLaMA3-8B:
+  model: RLHFlow/pair-preference-model-LLaMA3-8B
+  tokenizer: RLHFlow/pair-preference-model-LLaMA3-8B
+  chat_template: # none for tokenizer
+  batch_size: 4
+  trust_remote_code: False
+  dpo: False
+RLHFlow/RewardModel-Mistral-7B-for-DPA-v1:
+  model: RLHFlow/RewardModel-Mistral-7B-for-DPA-v1
+  tokenizer: RLHFlow/RewardModel-Mistral-7B-for-DPA-v1
+  chat_template: # none for tokenizer
+  batch_size: 4
+  trust_remote_code: True
+  dpo: False

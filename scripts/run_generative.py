@@ -64,7 +64,7 @@ def get_args():
         required=True,
         help="name of OpenAI model to use (TODO add more providers/models)",
     )
-    parser.add_argument("--chat_template", type=str, default="chatgpt", help="path to chat template")
+    parser.add_argument("--chat_template", type=str, default=None, help="fastchat chat template (optional)")
     parser.add_argument(
         "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
     )
@@ -105,16 +105,15 @@ def main():
 
     logger.info(f"Running reward model on {args.model} with chat template {args.chat_template}")
 
-    # load chat template
-    conv = get_conv_template("raw")  # not used
-    custom_dialogue = True  # to mirror other scripts, required here
     model_type = "Generative RM"
 
     # if model is list, make type + PoLL and check multiple is odd
-    if isinstance(args.model, list):
-        model_type += " + PoLL"
+    if isinstance(args.model, list) and len(args.model) == 1:
+        args.model = args.model[0]
+    elif isinstance(args.model, list):
+        model_type += " PoLL"
         # assert that is odd and > 1
-        assert len(args.model) > 1 and len(args.model) % 2 == 1
+        assert len(args.model) % 2 == 1
 
     # define variable if is API or local
     is_api_models = isinstance(args.model, list) or args.model in API_MODEL_LIST or not args.force_local
@@ -128,6 +127,13 @@ def main():
             stop_token_ids = [128009]
         else:
             stop_token_ids = []
+
+        # use different prompt for prometheus models
+        if "prometheus" in args.model:
+            is_prometheus = True
+        else:
+            is_prometheus = False
+
         sampling_params = SamplingParams(
             n=1,
             temperature=0,
@@ -142,8 +148,8 @@ def main():
     logger.info("*** Load dataset ***")
     dataset, subsets = load_eval_dataset(
         core_set=not args.pref_sets,
-        conv=conv,
-        custom_dialogue_formatting=custom_dialogue,
+        conv=get_conv_template("raw"),  # not used in this script (handled later)
+        custom_dialogue_formatting=True,  # handle formatting later
         tokenizer=None,
         logger=logger,
         keep_columns=["text_chosen", "text_rejected", "id"],
@@ -236,7 +242,7 @@ def main():
         # Run model weights with vllm
         ############################
 
-        def format_judgements(batch):
+        def format_judgements(batch, optional_chat_template=None):
             # TODO expand this to include fastchat chat templates if needed
             mult_turn = True if len(batch["text_chosen"]) > 2 else False
             prompt = batch["text_chosen"][0]["content"]
@@ -248,32 +254,47 @@ def main():
             if is_shuffled:
                 answer_a, answer_b = answer_b, answer_a
 
-            system_prompt, user_prompt = format_judge_answers(prompt, answer_a, answer_b, multi_turn=mult_turn)
+            system_prompt, user_prompt = format_judge_answers(
+                prompt, answer_a, answer_b, multi_turn=mult_turn, prometheus=is_prometheus
+            )
 
-            messages = [
-                {
-                    "role": "system",
-                    "content": system_prompt,
-                },
-                {"role": "user", "content": user_prompt},
-            ]
-            prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            if optional_chat_template is not None:
+                optional_chat_template.set_system_message(system_prompt)
+                optional_chat_template.messages = []
+                optional_chat_template.append_message(optional_chat_template.roles[0], user_prompt)
+                optional_chat_template.append_message(optional_chat_template.roles[1], None)
+                prompt = optional_chat_template.get_prompt()
+            else:
+                messages = [
+                    {
+                        "role": "system",
+                        "content": system_prompt,
+                    },
+                    {"role": "user", "content": user_prompt},
+                ]
+                prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
             batch["text"] = prompt
             batch["is_shuffled"] = is_shuffled
             return batch
 
-        # format the dataset for the model
-        dataset_prompts = dataset.map(format_judgements)
+        # format the dataset for the model, with optional fastchat templating
+        if args.chat_template is not None:
+            chat_template = get_conv_template(args.chat_template)
+        else:
+            chat_template = None
+        dataset_prompts = dataset.map(format_judgements, fn_kwargs={"optional_chat_template": chat_template})
 
         # collect texts of dataset in list
         prompts = dataset_prompts["text"]
         is_shuffled = dataset_prompts["is_shuffled"]
 
         # generate
+        logger.info("*** Run inference ***")
         outputs = model.generate(prompts, sampling_params)
+        logger.info("*** Inference done ***")
 
         answers = [o.outputs[0].text for o in outputs]
-        winners = [process_judgement(a) for a in answers]
+        winners = [process_judgement(a, is_prometheus=is_prometheus) for a in answers]
 
         def process_shuffled(win, shuffle):
             if shuffle:
