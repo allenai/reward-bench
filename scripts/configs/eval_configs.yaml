@@ -532,3 +532,11 @@ RLHFlow/RewardModel-Mistral-7B-for-DPA-v1:
   batch_size: 4
   trust_remote_code: True
   dpo: False
+RLHFlow/LLaMA3-iterative-DPO-final:
+  model: RLHFlow/LLaMA3-iterative-DPO-final
+  ref_model: RLHFlow/LLaMA3-SFT
+  tokenizer: RLHFlow/LLaMA3-iterative-DPO-final
+  chat_template: # none for tokenizer
+  batch_size: 4
+  num_gpus: 2
+  dpo: True
