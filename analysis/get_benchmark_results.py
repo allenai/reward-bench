@@ -66,7 +66,7 @@ def get_args():
         help="Model type to filter the results.",
     )
     parser.add_argument(
-        "--full_results",
+        "--print_all_results",
         action="store_true",
         default=False,
         help="If set, then it will render the full results.",
@@ -161,7 +161,7 @@ def main():
             100, get_average_over_rewardbench(hf_evals_df, hf_prefs_df, args.model_type)
         )
     }
-    if args.full_results:
+    if args.print_all_results:
         all_results["RewardBench - Detailed"] = _multiply_numbered_cols_by(100, hf_evals_df)
         all_results["Pref Sets - Overview"] = _multiply_numbered_cols_by(100, hf_prefs_df)
 
@@ -200,6 +200,8 @@ def main():
                     "Seq. Classifier": "\sequenceclf",  # noqa
                     "Custom Classifier": "\customclf",  # noqa
                     "DPO": "\dpo",  # noqa
+                    "Generative": "\generative",  # noqa
+                    "Generative RM": "\generative",  # noqa
                     "generative": "\generative",  # noqa
                 }
                 emoji = openmoji_map[model_type] if model_type in openmoji_map else "\\random"
