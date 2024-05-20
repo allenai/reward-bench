@@ -127,9 +127,6 @@ def get_average_over_rewardbench(
     # filter df from model_type in "Model Type"
     if model_type:
         new_df = new_df[new_df["model_type"] == model_type]
-        import ipdb
-
-        ipdb.set_trace()
     return new_df
 
 
@@ -185,6 +182,12 @@ def main():
     for name, df in all_results.items():
         # df.insert(0, "", range(1, 1 + len(df)))
         print(f"==================== {name} ====================")
+        optional_header = """
+        Reward Model & \thead{Avg} & \thead{Chat} & \thead{Chat\\Hard} & \thead{Safety} & \thead{Reason} & \thead{Prior\\Sets} \\
+        """  # noqa
+        print(optional_header)
+        print("\n")
+
         df = df.sort_values(by="average", ascending=False).round(1)
         df = df.rename(columns=SUBSET_NAME_TO_PAPER_READY)
 
