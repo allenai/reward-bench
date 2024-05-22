@@ -59,6 +59,18 @@ def get_args():
         default=None,
         help="Comma-separated column names to exclude from the report.",
     )
+    parser.add_argument(
+        "--model_type",
+        type=str,
+        default=None,
+        help="Model type to filter the results.",
+    )
+    parser.add_argument(
+        "--print_all_results",
+        action="store_true",
+        default=False,
+        help="If set, then it will render the full results.",
+    )
     args = parser.parse_args()
     return args
 
@@ -66,6 +78,7 @@ def get_args():
 def get_average_over_rewardbench(
     df: pd.DataFrame,
     df_prefs: pd.DataFrame,
+    model_type: str = None,
 ) -> pd.DataFrame:
     """Get average over a strict subset of reward models"""
     new_df = df.copy()
@@ -110,6 +123,10 @@ def get_average_over_rewardbench(
     # make average third column
     keep_columns = ["model", "model_type", "average"] + data_cols
     new_df = new_df[keep_columns]
+
+    # filter df from model_type in "Model Type"
+    if model_type:
+        new_df = new_df[new_df["model_type"] == model_type]
     return new_df
 
 
@@ -126,6 +143,7 @@ def main():
         local_dir=Path(LOCAL_DIR) / "rewardbench",
         repo_id=args.hf_evals_repo,
         use_auth_token=api_token,
+        ignore_patterns=["eval-set-scores/*", "pref-sets-scores/*"],
         tqdm_class=None,
         etag_timeout=30,
         repo_type="dataset",
@@ -140,29 +158,36 @@ def main():
 
     all_results = {
         "RewardBench - Overview": _multiply_numbered_cols_by(
-            100, get_average_over_rewardbench(hf_evals_df, hf_prefs_df)
-        ),
-        "RewardBench - Detailed": _multiply_numbered_cols_by(100, hf_evals_df),
-        "Pref Sets - Overview": _multiply_numbered_cols_by(100, hf_prefs_df),
+            100, get_average_over_rewardbench(hf_evals_df, hf_prefs_df, args.model_type)
+        )
     }
+    if args.print_all_results:
+        all_results["RewardBench - Detailed"] = _multiply_numbered_cols_by(100, hf_evals_df)
+        all_results["Pref Sets - Overview"] = _multiply_numbered_cols_by(100, hf_prefs_df)
 
-    for category, subsets in SUBSET_MAPPING.items():
-        df_per_category = hf_evals_df[subsets]
-        df_per_category.insert(0, "model", hf_evals_df["model"].to_list())
-        df_per_category.insert(1, "model_type", hf_evals_df["model_type"].to_list())
+        for category, subsets in SUBSET_MAPPING.items():
+            df_per_category = hf_evals_df[subsets]
+            df_per_category.insert(0, "model", hf_evals_df["model"].to_list())
+            df_per_category.insert(1, "model_type", hf_evals_df["model_type"].to_list())
 
-        wt_average = []
-        for _, row in hf_evals_df[subsets].iterrows():
-            scores = [row[s] for s in subsets]
-            weights = [EXAMPLE_COUNTS.get(s) for s in subsets]
-            wt_average.append(np.average(scores, weights=weights))
+            wt_average = []
+            for _, row in hf_evals_df[subsets].iterrows():
+                scores = [row[s] for s in subsets]
+                weights = [EXAMPLE_COUNTS.get(s) for s in subsets]
+                wt_average.append(np.average(scores, weights=weights))
 
-        df_per_category.insert(2, "average", wt_average)
-        all_results[category] = df_per_category
+            df_per_category.insert(2, "average", wt_average)
+            all_results[category] = df_per_category
 
     for name, df in all_results.items():
         # df.insert(0, "", range(1, 1 + len(df)))
         print(f"==================== {name} ====================")
+        optional_header = """
+        Reward Model & \thead{Avg} & \thead{Chat} & \thead{Chat\\Hard} & \thead{Safety} & \thead{Reason} & \thead{Prior\\Sets} \\
+        """  # noqa
+        print(optional_header)
+        print("\n")
+
         df = df.sort_values(by="average", ascending=False).round(1)
         df = df.rename(columns=SUBSET_NAME_TO_PAPER_READY)
 
@@ -175,6 +200,8 @@ def main():
                     "Seq. Classifier": "\sequenceclf",  # noqa
                     "Custom Classifier": "\customclf",  # noqa
                     "DPO": "\dpo",  # noqa
+                    "Generative": "\generative",  # noqa
+                    "Generative RM": "\generative",  # noqa
                     "generative": "\generative",  # noqa
                 }
                 emoji = openmoji_map[model_type] if model_type in openmoji_map else "\\random"
