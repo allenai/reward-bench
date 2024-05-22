@@ -77,6 +77,13 @@ prompt_v2 = (
 )
 
 # used for gemini pro llm as a judge (API implementation coming soon)
+# usage is as follows:
+# -> no system prompt
+# -> use following text, followed by instruction then example. E.g.
+# [Rating instructions]
+# [Prompt]: [Instruction1]
+# TODO: complete formatting
+# TODO: explain response averaging
 prompt_v2_gemini = (
     "Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user question displayed below. " # noqa
     "You should choose the assistant that follows the user's instructions and answers the user's question better. " # noqa
