@@ -76,6 +76,17 @@ prompt_v2 = (
     '"[[A]]" if assistant A is better, "[[B]]" if assistant B is better.'  # noqa, removed tie option as , and \"[[C]]\ " for a tie
 )
 
+# used for gemini pro llm as a judge (API implementation coming soon)
+prompt_v2_gemini = (
+    "Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user question displayed below. "
+    "You should choose the assistant that follows the user's instructions and answers the user's question better. "
+    "Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of their responses. "
+    "Avoid any position biases and ensure that the order in which the responses were presented does not influence your decision. "
+    "Do not allow the length of the responses to influence your evaluation. Do not favor certain names of the assistants. "
+    "Be as objective as possible. "
+    "Your output should only consist of '[[A]]' if assistant A is better, or '[[B]]' if assistant B is better. Omit any other output.\n"
+)
+
 prompt_multi_v2 = (
     "Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user questions. "  # noqa
     "You should focus on who provides a better answer to the second user question. "  # noqa
