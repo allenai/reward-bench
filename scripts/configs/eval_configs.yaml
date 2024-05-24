@@ -532,3 +532,10 @@ RLHFlow/RewardModel-Mistral-7B-for-DPA-v1:
   batch_size: 4
   trust_remote_code: True
   dpo: False
+RLHFlow/ArmoRM-Llama3-8B-v0.1:
+  model: RLHFlow/ArmoRM-Llama3-8B-v0.1
+  tokenizer: RLHFlow/ArmoRM-Llama3-8B-v0.1
+  chat_template: # none for tokenizer
+  batch_size: 4
+  trust_remote_code: True
+  dpo: False
