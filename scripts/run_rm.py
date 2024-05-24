@@ -35,6 +35,10 @@ from rewardbench import (
 from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
 from rewardbench.utils import calculate_scores_per_section
 
+# Enable TensorFloat32 (TF32) tensor cores on Ampere GPUs for matrix multiplications (faster than FP32)
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
 # this is necessary to automatically log in when running this script in docker/batch beaker jobs
@@ -117,7 +121,7 @@ def main():
     model_type = config["model_type"]
     model_builder = config["model_builder"]
     pipeline_builder = config["pipeline_builder"]
-
+    torch_dtype = config.get("torch_dtype", None)
     # not included in config to make user explicitly understand they are passing this
     trust_remote_code = args.trust_remote_code
 
@@ -167,7 +171,10 @@ def main():
             "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
         }
     else:
-        model_kwargs = {"device_map": {"": current_device}}
+        model_kwargs = {
+            "device_map": {"": current_device},
+            "torch_dtype": torch_dtype,
+        }
 
     model = model_builder(args.model, **model_kwargs, trust_remote_code=trust_remote_code)
     reward_pipe = pipeline_builder(
