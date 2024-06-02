@@ -233,8 +233,8 @@ def main():
                     hf_name = orig_name
 
                 # shorten long names
-                if len(orig_name) > 30:
-                    orig_name = orig_name[:20] + "..."
+                if len(orig_name) > 50:
+                    orig_name = orig_name[:48] + "..."
 
                 latex_name = (
                     f"\href{{https://huggingface.co/{hf_name}}}"  # noqa
