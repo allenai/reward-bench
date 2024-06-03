@@ -71,8 +71,20 @@ def get_args():
         default=False,
         help="If set, then it will render the full results.",
     )
+    parser.add_argument(
+        "--ignore_closed_models",
+        action="store_true",
+        default=False,
+        help="If set, then it will ignore the closed models.",
+    )
     args = parser.parse_args()
     return args
+
+
+CLOSED_MODEL_LIST = [
+    "Cohere May 2024",
+    "Cohere March 2024",
+]
 
 
 def get_average_over_rewardbench(
@@ -151,6 +163,11 @@ def main():
     hf_evals_df = load_results(hf_evals_repo, subdir="eval-set/", ignore_columns=args.ignore_columns)
     hf_prefs_df = load_results(hf_evals_repo, subdir="pref-sets/", ignore_columns=args.ignore_columns)
 
+    # remove rows with closed models
+    if args.ignore_closed_models:
+        hf_evals_df = hf_evals_df[~hf_evals_df["model"].isin(CLOSED_MODEL_LIST)]
+        hf_prefs_df = hf_prefs_df[~hf_prefs_df["model"].isin(CLOSED_MODEL_LIST)]
+
     def _multiply_numbered_cols_by(n, df, ignore: List[str] = []):
         numbered_cols = df.select_dtypes("number").columns
         df[numbered_cols] *= n
@@ -214,6 +231,10 @@ def main():
                     hf_name = "Anthropic"
                 else:
                     hf_name = orig_name
+
+                # shorten long names
+                if len(orig_name) > 50:
+                    orig_name = orig_name[:48] + "..."
 
                 latex_name = (
                     f"\href{{https://huggingface.co/{hf_name}}}"  # noqa
