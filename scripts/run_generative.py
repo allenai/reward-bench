@@ -129,14 +129,6 @@ def main():
         else:
             stop_token_ids = []
 
-        is_prometheus = False  # handles output tokens differently (less flexible)
-        # use different prompt for prometheus/gemini models
-        if "prometheus" in args.model:
-            model_modifier = "prometheus"
-            is_prometheus = True
-        elif "gemini" in args.model:
-            model_modifier = "gemini"
-
         sampling_params = SamplingParams(
             n=1,
             temperature=0,
@@ -144,6 +136,15 @@ def main():
             max_tokens=1024,
             stop_token_ids=stop_token_ids,
         )
+
+    # handle off-case models
+    is_prometheus = False  # handles output tokens differently (less flexible)
+    # use different prompt for prometheus/gemini models
+    if "prometheus" in args.model:
+        model_modifier = "prometheus"
+        is_prometheus = True
+    elif "gemini" in args.model:
+        model_modifier = "gemini"
 
     ############################
     # Load dataset
@@ -197,7 +198,7 @@ def main():
 
             if len(batch["text_chosen"]) <= 4:  # set up only for 1 or 2 turns
                 winner, request, judgement = run_judge_pair(
-                    prompt, answer_a, answer_b, args.model, multi_turn=mult_turn
+                    prompt, answer_a, answer_b, args.model, multi_turn=mult_turn, model_modifier=model_modifier
                 )
                 if debug:
                     print(f"Prompt: {request}")
@@ -267,7 +268,7 @@ def main():
                 optional_chat_template.append_message(optional_chat_template.roles[0], user_prompt)
                 optional_chat_template.append_message(optional_chat_template.roles[1], None)
                 prompt = optional_chat_template.get_prompt()
-            else:
+            elif model_modifier:
                 messages = [
                     {
                         "role": "system",

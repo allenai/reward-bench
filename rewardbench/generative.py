@@ -25,6 +25,7 @@ import anthropic
 import google.generativeai as genai
 import openai
 from fastchat.conversation import get_conv_template
+from google.generativeai.types import HarmBlockThreshold, HarmCategory
 from openai import OpenAI
 from together import Together
 
@@ -60,7 +61,7 @@ OPENAI_MODEL_LIST = (
 # available models: https://docs.together.ai/docs/inference-models
 TOGETHER_MODEL_LIST = ("meta-llama/Llama-3-70b-chat-hf", "meta-llama/Llama-3-8b-chat-hf")
 
-GEMINI_MODEL_LIST = ("gemini-1.5-flash", "gemini-1.5-pro")
+GEMINI_MODEL_LIST = ("gemini-1.5-flash-001", "gemini-1.5-pro-001")
 
 API_MODEL_LIST = OPENAI_MODEL_LIST + ANTHROPIC_MODEL_LIST + TOGETHER_MODEL_LIST
 
@@ -256,8 +257,10 @@ def process_judgement(judgment, is_prometheus=False):
 
 
 # noqa adapted from FastChat https://github.com/lm-sys/FastChat/blob/b015f21cb9d0cf3c87d2a5e53008074c537e8be0/fastchat/llm_judge/common.py#L235C1-L312C1
-def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False):
-    system_prompt, user_prompt = format_judge_answers(question, answer_a, answer_b, multi_turn)
+def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False, model_modifier=None):
+    system_prompt, user_prompt = format_judge_answers(
+        question, answer_a, answer_b, multi_turn, model_modifier=model_modifier
+    )
     winner = "error"
 
     # handle multi-model (ensembles) recursively
@@ -355,8 +358,23 @@ def chat_completion_gemini(model, conv, temperature, max_tokens, api_dict=None):
                     max_output_tokens=max_tokens,
                     temperature=temperature,
                 ),
+                request_options={"timeout": 1000},  # eliminate Failed to connect to Gemini API: 504 Deadline Exceeded
+                safety_settings={
+                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                },
             )
-            output = response.text
+            try:
+                output = response.text
+            except ValueError:
+                # If the response doesn't contain text, check if the prompt was blocked.
+                print(response.prompt_feedback)
+                # Also check the finish reason to see if the response was blocked.
+                print(response.candidates[0].finish_reason)
+                # If the finish reason was SAFETY, the safety ratings have more details.
+                print(response.candidates[0].safety_ratings)
             break
         except Exception as e:
             print(f"Failed to connect to Gemini API: {e}")
