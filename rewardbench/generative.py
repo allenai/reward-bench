@@ -67,7 +67,7 @@ API_MODEL_LIST = OPENAI_MODEL_LIST + ANTHROPIC_MODEL_LIST + TOGETHER_MODEL_LIST
 
 
 # API setting constants
-API_MAX_RETRY = 16
+API_MAX_RETRY = 25
 API_RETRY_SLEEP = 10
 API_ERROR_OUTPUT = "$ERROR$"
 
@@ -366,20 +366,27 @@ def chat_completion_gemini(model, conv, temperature, max_tokens, api_dict=None):
                     HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
                 },
             )
+
+            # gemini refuses some rewardbench prompts
+            if response.prompt_feedback == "block_reason: OTHER":
+                output = "error"
+                break
             try:
                 output = response.text
+                break
             except ValueError:
+                print("Erroneous response, not API error")
                 # If the response doesn't contain text, check if the prompt was blocked.
-                print(response.prompt_feedback)
+                print(f"Prompt feedback {response.prompt_feedback}")
                 # Also check the finish reason to see if the response was blocked.
-                print(response.candidates[0].finish_reason)
+                print(f"Finish reason {response.candidates[0].finish_reason}")
                 # If the finish reason was SAFETY, the safety ratings have more details.
-                print(response.candidates[0].safety_ratings)
-            break
+                print(f"Safety ratings {response.candidates[0].safety_ratings}")
         except Exception as e:
             print(f"Failed to connect to Gemini API: {e}")
             time.sleep(API_RETRY_SLEEP)
-    return output.strip()
+
+    return output
 
 
 def chat_completion_together(model, conv, temperature, max_tokens, api_dict=None):
