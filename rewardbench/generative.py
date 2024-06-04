@@ -294,7 +294,7 @@ def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False, model_
         judgment = chat_completion_anthropic(model, conv, temperature=0, max_tokens=1024)
     elif model in GEMINI_MODEL_LIST:
         text = user_prompt
-        judgment = chat_completion_gemini(model, text, temperature=0, max_tokens=2048)
+        judgment = chat_completion_gemini(model, text, temperature=0, max_tokens=4096)
     elif model in TOGETHER_MODEL_LIST:
         template = "chatgpt"  # template doesn't matter, it just uses raw messages later
         conv = get_conv_template(template)
@@ -369,24 +369,30 @@ def chat_completion_gemini(model, conv, temperature, max_tokens, api_dict=None):
 
             # gemini refuses some rewardbench prompts
             if response.prompt_feedback == "block_reason: OTHER":
+                print("Weird safety block, continuing!")
                 output = "error"
                 break
             try:
                 output = response.text
-                break
             except ValueError:
                 print("Erroneous response, not API error")
                 # If the response doesn't contain text, check if the prompt was blocked.
                 print(f"Prompt feedback {response.prompt_feedback}")
                 # Also check the finish reason to see if the response was blocked.
-                print(f"Finish reason {response.candidates[0].finish_reason}")
+                print(f"Finish reason {response.candidates[0].finish_reason}")  # 5 is "unknown reason"
                 # If the finish reason was SAFETY, the safety ratings have more details.
                 print(f"Safety ratings {response.candidates[0].safety_ratings}")
+            else:
+                break
         except Exception as e:
             print(f"Failed to connect to Gemini API: {e}")
             time.sleep(API_RETRY_SLEEP)
 
-    return output
+    # sometimes output is not defined and it is unclear to me
+    try:
+        return output
+    except UnboundLocalError:
+        return "error"
 
 
 def chat_completion_together(model, conv, temperature, max_tokens, api_dict=None):
