@@ -36,6 +36,7 @@ from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
 from rewardbench.generative import (
     ANTHROPIC_MODEL_LIST,
     API_MODEL_LIST,
+    GEMINI_MODEL_LIST,
     OPENAI_MODEL_LIST,
     format_judge_answers,
     process_judgement,
@@ -128,11 +129,13 @@ def main():
         else:
             stop_token_ids = []
 
-        # use different prompt for prometheus models
+        is_prometheus = False  # handles output tokens differently (less flexible)
+        # use different prompt for prometheus/gemini models
         if "prometheus" in args.model:
+            model_modifier = "prometheus"
             is_prometheus = True
-        else:
-            is_prometheus = False
+        elif "gemini" in args.model:
+            model_modifier = "gemini"
 
         sampling_params = SamplingParams(
             n=1,
@@ -255,7 +258,7 @@ def main():
                 answer_a, answer_b = answer_b, answer_a
 
             system_prompt, user_prompt = format_judge_answers(
-                prompt, answer_a, answer_b, multi_turn=mult_turn, prometheus=is_prometheus
+                prompt, answer_a, answer_b, multi_turn=mult_turn, model_modifier=model_modifier
             )
 
             if optional_chat_template is not None:
@@ -332,8 +335,10 @@ def main():
     # if model in openai or Anthropic list, append org to model name
     if args.model in OPENAI_MODEL_LIST:
         model_name = "openai/" + model_name
-    if args.model in ANTHROPIC_MODEL_LIST:
+    elif args.model in ANTHROPIC_MODEL_LIST:
         model_name = "anthropic/" + model_name
+    elif args.model in GEMINI_MODEL_LIST:
+        model_name = "google/" + model_name
 
     # get core dataset
     results_grouped = {}

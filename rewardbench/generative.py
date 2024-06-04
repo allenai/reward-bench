@@ -16,11 +16,13 @@
 # pip install openai>=1.0
 # pip install anthropic>=0.21.3
 # pip install together>=1.1.3
+# pip install google-generativeai>=0.6.4
 
 import os
 import time as time
 
 import anthropic
+import google.generativeai as genai
 import openai
 from fastchat.conversation import get_conv_template
 from openai import OpenAI
@@ -58,6 +60,8 @@ OPENAI_MODEL_LIST = (
 # available models: https://docs.together.ai/docs/inference-models
 TOGETHER_MODEL_LIST = ("meta-llama/Llama-3-70b-chat-hf", "meta-llama/Llama-3-8b-chat-hf")
 
+GEMINI_MODEL_LIST = ("gemini-1.5-flash", "gemini-1.5-pro")
+
 API_MODEL_LIST = OPENAI_MODEL_LIST + ANTHROPIC_MODEL_LIST + TOGETHER_MODEL_LIST
 
 
@@ -77,21 +81,20 @@ prompt_v2 = (
 )
 
 # used for gemini pro llm as a judge (API implementation coming soon)
+# implementation details shared from Gemini Alignment Team
 # usage is as follows:
 # -> no system prompt
 # -> use following text, followed by instruction then example. E.g.
 # [Rating instructions]
 # [Prompt]: [Instruction1]
-# TODO: complete formatting
-# TODO: explain response averaging
 prompt_v2_gemini = (
-    "Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user question displayed below. " # noqa
-    "You should choose the assistant that follows the user's instructions and answers the user's question better. " # noqa
-    "Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of their responses. " # noqa
-    "Avoid any position biases and ensure that the order in which the responses were presented does not influence your decision. " # noqa
-    "Do not allow the length of the responses to influence your evaluation. Do not favor certain names of the assistants. " # noqa
+    "Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user question displayed below. "  # noqa
+    "You should choose the assistant that follows the user's instructions and answers the user's question better. "  # noqa
+    "Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of their responses. "  # noqa
+    "Avoid any position biases and ensure that the order in which the responses were presented does not influence your decision. "  # noqa
+    "Do not allow the length of the responses to influence your evaluation. Do not favor certain names of the assistants. "  # noqa
     "Be as objective as possible. "
-    "Your output should only consist of '[[A]]' if assistant A is better, or '[[B]]' if assistant B is better. Omit any other output.\n" # noqa
+    "Your output should only consist of '[[A]]' if assistant A is better, or '[[B]]' if assistant B is better. Omit any other output.\n"  # noqa
 )
 
 prompt_multi_v2 = (
@@ -187,9 +190,9 @@ REL_SYSTEM_PROMPT = "You are a fair judge assistant assigned to deliver insightf
 
 
 # format with prompt_template.format(question=question, answer_a=answer_a, answer_b=answer_b)
-def format_judge_answers(question, answer_a, answer_b, multi_turn=False, prometheus=False):
+def format_judge_answers(question, answer_a, answer_b, multi_turn=False, model_modifier=None):
     kwargs = {}
-    if prometheus:
+    if model_modifier == "prometheus":
         if multi_turn:
             raise ValueError("Prometheus prompts do not support multi-turn prompts")
         else:
@@ -201,7 +204,6 @@ def format_judge_answers(question, answer_a, answer_b, multi_turn=False, prometh
                 score_rubric=AUTOJ_COARSE_SCORE_RUBRIC,
                 **kwargs,
             )
-
     else:
         if multi_turn:
             system_prompt = MTBENCH_MULTI_V2["system_prompt"]
@@ -222,6 +224,12 @@ def format_judge_answers(question, answer_a, answer_b, multi_turn=False, prometh
                 answer_b=answer_b[1]["content"],
                 **kwargs,
             )
+
+    # gemini adds what was the system prompt before the content, and has no system prompt
+    if model_modifier == "gemini":
+        user_prompt = prompt_v2_gemini + user_prompt
+        system_prompt = None
+
     return system_prompt, user_prompt
 
 
@@ -281,6 +289,9 @@ def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False):
         conv.messages = conv.to_openai_api_messages()
 
         judgment = chat_completion_anthropic(model, conv, temperature=0, max_tokens=1024)
+    elif model in GEMINI_MODEL_LIST:
+        text = user_prompt
+        judgment = chat_completion_gemini(model, text, temperature=0, max_tokens=2048)
     elif model in TOGETHER_MODEL_LIST:
         template = "chatgpt"  # template doesn't matter, it just uses raw messages later
         conv = get_conv_template(template)
@@ -326,6 +337,29 @@ def chat_completion_anthropic(model, conv, temperature, max_tokens, api_dict=Non
             break
         except anthropic.APIError as e:
             print(type(e), e)
+            time.sleep(API_RETRY_SLEEP)
+    return output.strip()
+
+
+def chat_completion_gemini(model, conv, temperature, max_tokens, api_dict=None):
+    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+    api_model = genai.GenerativeModel(model)
+
+    for _ in range(API_MAX_RETRY):
+        try:
+            response = api_model.generate_content(
+                conv,
+                generation_config=genai.types.GenerationConfig(
+                    # Only one candidate for now.
+                    candidate_count=1,
+                    max_output_tokens=max_tokens,
+                    temperature=temperature,
+                ),
+            )
+            output = response.text
+            break
+        except Exception as e:
+            print(f"Failed to connect to Gemini API: {e}")
             time.sleep(API_RETRY_SLEEP)
     return output.strip()
 
