@@ -257,8 +257,8 @@ def main():
             shuffle=False,
             drop_last=False,
         )
-
-        dataloader, model = accelerator.prepare(dataloader, reward_pipe.model)
+ 
+        model = accelerator.prepare(reward_pipe.model)
         reward_pipe.model = model
 
     ############################

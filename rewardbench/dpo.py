@@ -213,27 +213,26 @@ class DPOInference:
         Uses TRL inference batched logprob computation to compute chosen + rejected
         logprobs then compute rewards and win rate.
         """
-        with torch.no_grad():
-            (
-                policy_chosen_logps,
-                policy_rejected_logps,
-                _,  # policy_chosen_logits,
-                _,  # policy_rejected_logits,
-            ) = self.concatenated_forward(self.model, batch)
+        (
+            policy_chosen_logps,
+            policy_rejected_logps,
+            _,  # policy_chosen_logits,
+            _,  # policy_rejected_logits,
+        ) = self.concatenated_forward(self.model, batch)
 
-            # optionally compute reward without normalizing via reference model
-            if not ref_free:
-                (
-                    ref_chosen_logps,
-                    ref_rejected_logps,
-                    _,  # ref_chosen_logits,
-                    _,  # ref_rejected_logits,
-                ) = self.concatenated_forward(self.ref_model, batch)
-                chosen_logratios = policy_chosen_logps.detach().cpu() - ref_chosen_logps.detach().cpu()
-                rejected_logratios = policy_rejected_logps.detach().cpu() - ref_rejected_logps.detach().cpu()
-            else:
-                chosen_logratios = policy_chosen_logps.detach().cpu()
-                rejected_logratios = policy_rejected_logps.detach().cpu()
+        # optionally compute reward without normalizing via reference model
+        if not ref_free:
+            (
+                ref_chosen_logps,
+                ref_rejected_logps,
+                _,  # ref_chosen_logits,
+                _,  # ref_rejected_logits,
+            ) = self.concatenated_forward(self.ref_model, batch)
+            chosen_logratios = policy_chosen_logps.detach().cpu() - ref_chosen_logps.detach().cpu()
+            rejected_logratios = policy_rejected_logps.detach().cpu() - ref_rejected_logps.detach().cpu()
+        else:
+            chosen_logratios = policy_chosen_logps.detach().cpu()
+            rejected_logratios = policy_rejected_logps.detach().cpu()
 
         return chosen_logratios, rejected_logratios
 
@@ -335,6 +334,7 @@ class DPOInference:
         labels[labels == label_pad_token_id] = 0
 
         per_token_logps = torch.gather(logits.log_softmax(-1), dim=2, index=labels.unsqueeze(2)).squeeze(2)
+        import ipdb; ipdb.set_trace()
 
         if average_log_prob:
             return (per_token_logps * loss_mask).sum(-1) / loss_mask.sum(-1)
