@@ -16,13 +16,16 @@
 # pip install openai>=1.0
 # pip install anthropic>=0.21.3
 # pip install together>=1.1.3
+# pip install google-generativeai>=0.6.4
 
 import os
 import time as time
 
 import anthropic
+import google.generativeai as genai
 import openai
 from fastchat.conversation import get_conv_template
+from google.generativeai.types import HarmBlockThreshold, HarmCategory
 from openai import OpenAI
 from together import Together
 
@@ -58,11 +61,13 @@ OPENAI_MODEL_LIST = (
 # available models: https://docs.together.ai/docs/inference-models
 TOGETHER_MODEL_LIST = ("meta-llama/Llama-3-70b-chat-hf", "meta-llama/Llama-3-8b-chat-hf")
 
+GEMINI_MODEL_LIST = ("gemini-1.5-flash-001", "gemini-1.5-pro-001")
+
 API_MODEL_LIST = OPENAI_MODEL_LIST + ANTHROPIC_MODEL_LIST + TOGETHER_MODEL_LIST
 
 
 # API setting constants
-API_MAX_RETRY = 16
+API_MAX_RETRY = 25
 API_RETRY_SLEEP = 10
 API_ERROR_OUTPUT = "$ERROR$"
 
@@ -74,6 +79,23 @@ prompt_v2 = (
     "presented does not influence your decision. Do not allow the length of the responses to influence your evaluation. Do not favor certain names "  # noqa
     "of the assistants. Be as objective as possible. After providing your explanation, output your final verdict by strictly following this format: "  # noqa
     '"[[A]]" if assistant A is better, "[[B]]" if assistant B is better.'  # noqa, removed tie option as , and \"[[C]]\ " for a tie
+)
+
+# used for gemini pro llm as a judge (API implementation coming soon)
+# implementation details shared from Gemini Alignment Team
+# usage is as follows:
+# -> no system prompt
+# -> use following text, followed by instruction then example. E.g.
+# [Rating instructions]
+# [Prompt]: [Instruction1]
+prompt_v2_gemini = (
+    "Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user question displayed below. "  # noqa
+    "You should choose the assistant that follows the user's instructions and answers the user's question better. "  # noqa
+    "Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of their responses. "  # noqa
+    "Avoid any position biases and ensure that the order in which the responses were presented does not influence your decision. "  # noqa
+    "Do not allow the length of the responses to influence your evaluation. Do not favor certain names of the assistants. "  # noqa
+    "Be as objective as possible. "
+    "Your output should only consist of '[[A]]' if assistant A is better, or '[[B]]' if assistant B is better. Omit any other output.\n"  # noqa
 )
 
 prompt_multi_v2 = (
@@ -169,9 +191,9 @@ REL_SYSTEM_PROMPT = "You are a fair judge assistant assigned to deliver insightf
 
 
 # format with prompt_template.format(question=question, answer_a=answer_a, answer_b=answer_b)
-def format_judge_answers(question, answer_a, answer_b, multi_turn=False, prometheus=False):
+def format_judge_answers(question, answer_a, answer_b, multi_turn=False, model_modifier=None):
     kwargs = {}
-    if prometheus:
+    if model_modifier == "prometheus":
         if multi_turn:
             raise ValueError("Prometheus prompts do not support multi-turn prompts")
         else:
@@ -183,7 +205,6 @@ def format_judge_answers(question, answer_a, answer_b, multi_turn=False, prometh
                 score_rubric=AUTOJ_COARSE_SCORE_RUBRIC,
                 **kwargs,
             )
-
     else:
         if multi_turn:
             system_prompt = MTBENCH_MULTI_V2["system_prompt"]
@@ -204,6 +225,12 @@ def format_judge_answers(question, answer_a, answer_b, multi_turn=False, prometh
                 answer_b=answer_b[1]["content"],
                 **kwargs,
             )
+
+    # gemini adds what was the system prompt before the content, and has no system prompt
+    if model_modifier == "gemini":
+        user_prompt = prompt_v2_gemini + user_prompt
+        system_prompt = None
+
     return system_prompt, user_prompt
 
 
@@ -230,8 +257,10 @@ def process_judgement(judgment, is_prometheus=False):
 
 
 # noqa adapted from FastChat https://github.com/lm-sys/FastChat/blob/b015f21cb9d0cf3c87d2a5e53008074c537e8be0/fastchat/llm_judge/common.py#L235C1-L312C1
-def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False):
-    system_prompt, user_prompt = format_judge_answers(question, answer_a, answer_b, multi_turn)
+def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False, model_modifier=None):
+    system_prompt, user_prompt = format_judge_answers(
+        question, answer_a, answer_b, multi_turn, model_modifier=model_modifier
+    )
     winner = "error"
 
     # handle multi-model (ensembles) recursively
@@ -263,6 +292,9 @@ def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False):
         conv.messages = conv.to_openai_api_messages()
 
         judgment = chat_completion_anthropic(model, conv, temperature=0, max_tokens=1024)
+    elif model in GEMINI_MODEL_LIST:
+        text = user_prompt
+        judgment = chat_completion_gemini(model, text, temperature=0, max_tokens=4096)
     elif model in TOGETHER_MODEL_LIST:
         template = "chatgpt"  # template doesn't matter, it just uses raw messages later
         conv = get_conv_template(template)
@@ -310,6 +342,57 @@ def chat_completion_anthropic(model, conv, temperature, max_tokens, api_dict=Non
             print(type(e), e)
             time.sleep(API_RETRY_SLEEP)
     return output.strip()
+
+
+def chat_completion_gemini(model, conv, temperature, max_tokens, api_dict=None):
+    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+    api_model = genai.GenerativeModel(model)
+
+    for _ in range(API_MAX_RETRY):
+        try:
+            response = api_model.generate_content(
+                conv,
+                generation_config=genai.types.GenerationConfig(
+                    # Only one candidate for now.
+                    candidate_count=1,
+                    max_output_tokens=max_tokens,
+                    temperature=temperature,
+                ),
+                request_options={"timeout": 1000},  # eliminate Failed to connect to Gemini API: 504 Deadline Exceeded
+                safety_settings={
+                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                },
+            )
+
+            # gemini refuses some rewardbench prompts
+            if response.prompt_feedback == "block_reason: OTHER":
+                print("Weird safety block, continuing!")
+                output = "error"
+                break
+            try:
+                output = response.text
+            except ValueError:
+                print("Erroneous response, not API error")
+                # If the response doesn't contain text, check if the prompt was blocked.
+                print(f"Prompt feedback {response.prompt_feedback}")
+                # Also check the finish reason to see if the response was blocked.
+                print(f"Finish reason {response.candidates[0].finish_reason}")  # 5 is "unknown reason"
+                # If the finish reason was SAFETY, the safety ratings have more details.
+                print(f"Safety ratings {response.candidates[0].safety_ratings}")
+            else:
+                break
+        except Exception as e:
+            print(f"Failed to connect to Gemini API: {e}")
+            time.sleep(API_RETRY_SLEEP)
+
+    # sometimes output is not defined and it is unclear to me
+    try:
+        return output
+    except UnboundLocalError:
+        return "error"
 
 
 def chat_completion_together(model, conv, temperature, max_tokens, api_dict=None):
