@@ -21,7 +21,6 @@ from transformers import (
     LlamaTokenizer,
     MixtralForCausalLM,
     T5ForConditionalGeneration,
-    pipeline,
 )
 
 from .armorm import ArmoRMPipeline
