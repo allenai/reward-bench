@@ -232,6 +232,10 @@ def main():
         else:
             model_kwargs = {"device_map": {"": current_device}}
 
+        # padding experiments for determinism
+        # tokenizer.padding_side = "left"
+        tokenizer.truncation_side = "left"
+
         model = model_builder(args.model, **model_kwargs, trust_remote_code=args.trust_remote_code)
         reward_pipe = pipeline_builder(
             "text-classification",  # often not used

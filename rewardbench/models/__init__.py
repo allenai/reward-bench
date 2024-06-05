@@ -38,12 +38,13 @@ from .starling import (
     build_starling_rm,
 )
 from .ziya import ZiyaPipeline
+from .pipeline import RewardBenchPipeline
 
 # Please open a PR if you need to add more custom modeling code / utilize existing code for you model
 REWARD_MODEL_CONFIG = {
     "default": {
         "model_builder": AutoModelForSequenceClassification.from_pretrained,
-        "pipeline_builder": pipeline,
+        "pipeline_builder": RewardBenchPipeline,
         "quantized": True,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
