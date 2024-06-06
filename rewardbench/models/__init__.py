@@ -29,6 +29,7 @@ from .betterpairrm import BetterPairRMPipeline
 from .openassistant import *  # noqa
 from .openbmb import LlamaRewardModel, OpenBMBPipeline
 from .pairrm import DebertaV2PairRM, PairRMPipeline
+from .pipeline import RewardBenchPipeline
 from .shp import SHPPipeline
 from .slicpairpm import SlicPairPMPipeline
 from .starling import (
@@ -37,7 +38,6 @@ from .starling import (
     build_starling_rm,
 )
 from .ziya import ZiyaPipeline
-from .pipeline import RewardBenchPipeline
 
 # Please open a PR if you need to add more custom modeling code / utilize existing code for you model
 REWARD_MODEL_CONFIG = {

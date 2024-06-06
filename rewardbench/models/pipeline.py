@@ -14,13 +14,22 @@
 
 import torch
 
+
+# should be redundant, but having determinism issues
+def disable_dropout_in_model(model: torch.nn.Module) -> None:
+    for module in model.modules():
+        if isinstance(module, torch.nn.Dropout):
+            module.p = 0
+    return model
+
+
 class RewardBenchPipeline:
     def __init__(self, task, model, tokenizer):
         self.task = task
-        self.model = model.eval()
+        self.model = disable_dropout_in_model(model).eval()
         self.tokenizer = tokenizer
 
-    def __call__(self, samples, **kwargs):
+    def __call__(self, samples, return_inputs=False, **kwargs):
         _ = kwargs.get("batch_size", 1)
         truncation = kwargs.get("truncation", True)
         padding = kwargs.get("padding", True)
@@ -30,8 +39,12 @@ class RewardBenchPipeline:
             truncation=truncation,
             max_length=max_length,
             padding=padding,
+            # return_special_tokens_mask=True,
             return_tensors="pt",
         ).to("cuda")
         with torch.no_grad():
             outputs = self.model(**inputs)
-        return outputs.logits
+        if return_inputs:
+            return outputs.logits, inputs
+        else:
+            return outputs.logits

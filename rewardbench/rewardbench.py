@@ -119,7 +119,7 @@ def main():
     # "model_type": "Seq. Classifier"
 
     if not is_dpo:
-        quantized = config["quantized"]  # only Starling isn't quantized for now
+        quantized = (True,)  # config["quantized"]  # only Starling isn't quantized for now
         custom_dialogue = config["custom_dialogue"]
         pipeline_builder = config["pipeline_builder"]
         _ = config["model_type"]
@@ -217,7 +217,7 @@ def main():
     else:
         reward_pipeline_kwargs = {
             "batch_size": args.batch_size,  # eval_args.inference_batch_size,
-            "truncation": True,
+            "truncation": False,
             "padding": True,
             "max_length": args.max_length,
             "function_to_apply": "none",  # Compute raw logits
@@ -233,8 +233,8 @@ def main():
             model_kwargs = {"device_map": {"": current_device}}
 
         # padding experiments for determinism
-        # tokenizer.padding_side = "left"
-        tokenizer.truncation_side = "left"
+        tokenizer.padding_side = "left"
+        # tokenizer.truncation_side = "left"
 
         model = model_builder(args.model, **model_kwargs, trust_remote_code=args.trust_remote_code)
         reward_pipe = pipeline_builder(
@@ -261,7 +261,7 @@ def main():
             shuffle=False,
             drop_last=False,
         )
- 
+
         model = accelerator.prepare(reward_pipe.model)
         reward_pipe.model = model
 
@@ -306,6 +306,11 @@ def main():
     # calculate accuracy
     accuracy = sum(results) / len(results)
     logger.info(f"Results: {accuracy}, on {len(results)} prompts")
+
+    # compute mean and std of scores, chosen and rejected, then margin between them
+    logger.info(f"Mean chosen: {np.mean(scores_chosen)}, std: {np.std(scores_chosen)}")
+    logger.info(f"Mean rejected: {np.mean(scores_rejected)}, std: {np.std(scores_rejected)}")
+    logger.info(f"Mean margin: {np.mean(np.array(scores_chosen) - np.array(scores_rejected))}")
 
     if args.dataset == "allenai/reward-bench":
         out_dataset = dataset.add_column("results", results)
