@@ -119,7 +119,7 @@ def main():
     # "model_type": "Seq. Classifier"
 
     if not is_dpo:
-        quantized = (True,)  # config["quantized"]  # only Starling isn't quantized for now
+        quantized = config["quantized"]  # only Starling isn't quantized for now
         custom_dialogue = config["custom_dialogue"]
         pipeline_builder = config["pipeline_builder"]
         _ = config["model_type"]
