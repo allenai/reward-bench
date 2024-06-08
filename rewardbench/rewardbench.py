@@ -62,6 +62,9 @@ def main():
     parser.add_argument("--debug", action="store_true", default=False, help="Debug mode.")
     parser.add_argument("--output_dir", type=str, default="results/", help="The output directory to save results.")
     parser.add_argument("--save_all", action="store_true", default=False, help="Save all results.")
+    parser.add_argument(
+        "--force_truncation", action="store_true", default=False, help="Force truncation (for if model errors)."
+    )
     args = parser.parse_args()
 
     ###############
@@ -215,9 +218,17 @@ def main():
     # Load classifier model pipeline
     ############################
     else:
+
+        # padding experiments for determinism
+        tokenizer.padding_side = "left"
+        truncation = False
+        if args.force_truncation:
+            truncation = True
+            tokenizer.truncation_side = "left"
+
         reward_pipeline_kwargs = {
             "batch_size": args.batch_size,  # eval_args.inference_batch_size,
-            "truncation": True,
+            "truncation": truncation,
             "padding": True,
             "max_length": args.max_length,
             "function_to_apply": "none",  # Compute raw logits
@@ -258,7 +269,7 @@ def main():
             drop_last=False,
         )
 
-        dataloader, model = accelerator.prepare(dataloader, reward_pipe.model)
+        model = accelerator.prepare(reward_pipe.model)
         reward_pipe.model = model
 
     ############################
@@ -302,6 +313,11 @@ def main():
     # calculate accuracy
     accuracy = sum(results) / len(results)
     logger.info(f"Results: {accuracy}, on {len(results)} prompts")
+
+    # compute mean and std of scores, chosen and rejected, then margin between them
+    logger.info(f"Mean chosen: {np.mean(scores_chosen)}, std: {np.std(scores_chosen)}")
+    logger.info(f"Mean rejected: {np.mean(scores_rejected)}, std: {np.std(scores_rejected)}")
+    logger.info(f"Mean margin: {np.mean(np.array(scores_chosen) - np.array(scores_rejected))}")
 
     if args.dataset == "allenai/reward-bench":
         out_dataset = dataset.add_column("results", results)

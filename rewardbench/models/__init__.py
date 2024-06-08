@@ -21,7 +21,6 @@ from transformers import (
     LlamaTokenizer,
     MixtralForCausalLM,
     T5ForConditionalGeneration,
-    pipeline,
 )
 
 from .armorm import ArmoRMPipeline
@@ -30,6 +29,7 @@ from .betterpairrm import BetterPairRMPipeline
 from .openassistant import *  # noqa
 from .openbmb import LlamaRewardModel, OpenBMBPipeline
 from .pairrm import DebertaV2PairRM, PairRMPipeline
+from .pipeline import RewardBenchPipeline
 from .shp import SHPPipeline
 from .slicpairpm import SlicPairPMPipeline
 from .starling import (
@@ -43,7 +43,7 @@ from .ziya import ZiyaPipeline
 REWARD_MODEL_CONFIG = {
     "default": {
         "model_builder": AutoModelForSequenceClassification.from_pretrained,
-        "pipeline_builder": pipeline,
+        "pipeline_builder": RewardBenchPipeline,
         "quantized": True,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
