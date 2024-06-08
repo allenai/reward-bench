@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from setuptools import find_packages, setup
-
 from rewardbench import __version__
 
 # instructions for releasing new version: update the version number, then follow
