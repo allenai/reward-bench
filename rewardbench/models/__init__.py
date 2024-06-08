@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import torch
 from transformers import (
     AutoModel,
     AutoModelForCausalLM,
@@ -23,6 +24,7 @@ from transformers import (
     pipeline,
 )
 
+from .armorm import ArmoRMPipeline
 from .beaver import BeaverCostPipeline, BeaverPipeline, LlamaForScore
 from .betterpairrm import BetterPairRMPipeline
 from .openassistant import *  # noqa
@@ -129,6 +131,14 @@ REWARD_MODEL_CONFIG = {
         "quantized": True,
         "custom_dialogue": True,
         "model_type": "Custom Classifier",
+    },
+    "RLHFlow/ArmoRM-Llama3-8B-v0.1": {
+        "model_builder": AutoModelForSequenceClassification.from_pretrained,
+        "pipeline_builder": ArmoRMPipeline,
+        "quantized": False,
+        "custom_dialogue": True,
+        "model_type": "Custom Classifier",
+        "torch_dtype": torch.bfloat16,
     },
 }
 

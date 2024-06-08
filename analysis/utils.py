@@ -128,6 +128,12 @@ def load_results(
         df = df.loc[:, cols]
 
         if "model_type" in cols:
+            # get model_types that have generative in them
+            mask = df["model_type"].str.contains("generative", case=False, na=False)
+
+            # set these values to "Generative"
+            df.loc[mask, "model_type"] = "Generative"
+
             cols = list(df.columns)
             cols.insert(1, cols.pop(cols.index("model_type")))
             df = df.loc[:, cols]

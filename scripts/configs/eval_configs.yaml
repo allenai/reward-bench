@@ -540,3 +540,24 @@ RLHFlow/LLaMA3-iterative-DPO-final:
   batch_size: 4
   num_gpus: 2
   dpo: True
+RLHFlow/ArmoRM-Llama3-8B-v0.1:
+  model: RLHFlow/ArmoRM-Llama3-8B-v0.1
+  tokenizer: RLHFlow/ArmoRM-Llama3-8B-v0.1
+  chat_template: # none for tokenizer
+  batch_size: 4
+  trust_remote_code: True
+  dpo: False
+PKU-Alignment/beaver-7b-v2.0-reward:
+  model: 'PKU-Alignment/beaver-7b-v2.0-reward'
+  tokenizer: 'PKU-Alignment/beaver-7b-v2.0-reward'
+  chat_template: 'pku-align'
+  batch_size: 16
+  trust_remote_code: False
+  dpo: False
+PKU-Alignment/beaver-7b-v2.0-cost:
+  model: 'PKU-Alignment/beaver-7b-v2.0-cost'
+  tokenizer: 'PKU-Alignment/beaver-7b-v2.0-cost'
+  chat_template: 'pku-align'
+  batch_size: 16
+  trust_remote_code: False
+  dpo: False

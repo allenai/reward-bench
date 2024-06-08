@@ -36,6 +36,7 @@ from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
 from rewardbench.generative import (
     ANTHROPIC_MODEL_LIST,
     API_MODEL_LIST,
+    GEMINI_MODEL_LIST,
     OPENAI_MODEL_LIST,
     format_judge_answers,
     process_judgement,
@@ -128,12 +129,6 @@ def main():
         else:
             stop_token_ids = []
 
-        # use different prompt for prometheus models
-        if "prometheus" in args.model:
-            is_prometheus = True
-        else:
-            is_prometheus = False
-
         sampling_params = SamplingParams(
             n=1,
             temperature=0,
@@ -141,6 +136,15 @@ def main():
             max_tokens=1024,
             stop_token_ids=stop_token_ids,
         )
+
+    # handle off-case models
+    is_prometheus = False  # handles output tokens differently (less flexible)
+    # use different prompt for prometheus/gemini models
+    if "prometheus" in args.model:
+        model_modifier = "prometheus"
+        is_prometheus = True
+    elif "gemini" in args.model:
+        model_modifier = "gemini"
 
     ############################
     # Load dataset
@@ -194,7 +198,7 @@ def main():
 
             if len(batch["text_chosen"]) <= 4:  # set up only for 1 or 2 turns
                 winner, request, judgement = run_judge_pair(
-                    prompt, answer_a, answer_b, args.model, multi_turn=mult_turn
+                    prompt, answer_a, answer_b, args.model, multi_turn=mult_turn, model_modifier=model_modifier
                 )
                 if debug:
                     print(f"Prompt: {request}")
@@ -255,7 +259,7 @@ def main():
                 answer_a, answer_b = answer_b, answer_a
 
             system_prompt, user_prompt = format_judge_answers(
-                prompt, answer_a, answer_b, multi_turn=mult_turn, prometheus=is_prometheus
+                prompt, answer_a, answer_b, multi_turn=mult_turn, model_modifier=model_modifier
             )
 
             if optional_chat_template is not None:
@@ -264,7 +268,7 @@ def main():
                 optional_chat_template.append_message(optional_chat_template.roles[0], user_prompt)
                 optional_chat_template.append_message(optional_chat_template.roles[1], None)
                 prompt = optional_chat_template.get_prompt()
-            else:
+            elif model_modifier:
                 messages = [
                     {
                         "role": "system",
@@ -332,8 +336,10 @@ def main():
     # if model in openai or Anthropic list, append org to model name
     if args.model in OPENAI_MODEL_LIST:
         model_name = "openai/" + model_name
-    if args.model in ANTHROPIC_MODEL_LIST:
+    elif args.model in ANTHROPIC_MODEL_LIST:
         model_name = "anthropic/" + model_name
+    elif args.model in GEMINI_MODEL_LIST:
+        model_name = "google/" + model_name
 
     # get core dataset
     results_grouped = {}
