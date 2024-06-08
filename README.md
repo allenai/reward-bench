@@ -9,6 +9,14 @@
 </p>
   <img width="1280" alt="Github RewardBench Logo" src="https://github.com/allenai/reward-bench/assets/10695622/39b213ba-9971-4338-b5f9-8e042d22d8fc" style="margin-left:'auto' margin-right:'auto' display:'block' "/>
 </div>
+<p align="center">
+  <a href="https://github.com/allenai/reward-bench/blob/main/LICENSE">
+    <img alt="GitHub License" src="https://img.shields.io/github/license/allenai/reward-bench">
+  </a>
+  <a href="https://pypi.org/project/rewardbench/">
+    <img alt="PyPI" src="https://img.shields.io/pypi/v/rewardbench">
+  </a>
+</p>
 
 
 ---
