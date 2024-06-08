@@ -538,6 +538,7 @@ RLHFlow/LLaMA3-iterative-DPO-final:
   tokenizer: RLHFlow/LLaMA3-iterative-DPO-final
   chat_template: # none for tokenizer
   batch_size: 4
+  trust_remote_code: False
   num_gpus: 2
   dpo: True
 RLHFlow/ArmoRM-Llama3-8B-v0.1:
