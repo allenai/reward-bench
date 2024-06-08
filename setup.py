@@ -14,12 +14,14 @@
 
 from setuptools import find_packages, setup
 
+from rewardbench import __version__
+
 # instructions for releasing new version: update the version number, then follow
 # from 6 https://github.com/huggingface/diffusers/blob/49b959b5408b97274e2ee423059d9239445aea26/setup.py#L36C43-L38C1
 # this has not yet been pushed to pypyi-test
 setup(
     name="rewardbench",
-    version="0.1.2",
+    version=__version__,
     author="Nathan Lambert",
     author_email="nathanl@allenai.org",
     description="Tools for evaluating reward models",
