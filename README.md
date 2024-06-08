@@ -236,6 +236,7 @@ When updating the `Dockerfile`, make sure to see the instructions at the top to 
 
 In development, we have the following docker images (most recent first as it's likely what you need).
 TODO: Update it so one image has VLLM (for generative RM only) and one without. Without will load much faster.
+- `nathanl/rb_v18`: Improvements to RewardBench CLI
 - `nathanl/rb_v17` (with VLLM): add support for vllm + llm as a judge, `rb_v16` is similar without prometheus and some OpenAI models
 - `nathanl/rb_v12`: add support for llama3
 - `nathanl/rewardbench_v10`: add support for `mightbe/Better-PairRM` via jinja2
