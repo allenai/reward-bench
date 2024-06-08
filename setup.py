@@ -48,7 +48,7 @@ setup(
         "deepspeed",
         "einops",
         "flake8>=6.0",
-        "fschat",
+        "fschat[model_worker,webui]",
         "huggingface_hub",
         "isort>=5.12.0",
         "pandas",
