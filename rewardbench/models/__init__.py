@@ -125,6 +125,20 @@ REWARD_MODEL_CONFIG = {
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
     },
+    "PKU-Alignment/beaver-7b-v2.0-reward": {
+        "model_builder": LlamaForScore.from_pretrained,
+        "pipeline_builder": BeaverPipeline,
+        "quantized": True,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+    },
+    "PKU-Alignment/beaver-7b-v2.0-cost": {
+        "model_builder": LlamaForScore.from_pretrained,
+        "pipeline_builder": BeaverCostPipeline,
+        "quantized": True,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+    },
     "RLHFlow/pair-preference-model-LLaMA3-8B": {
         "model_builder": AutoModelForCausalLM.from_pretrained,
         "pipeline_builder": SlicPairPMPipeline,
