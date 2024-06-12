@@ -58,7 +58,8 @@ class DPOInference:
         prompt = feature["prompt"]
         chosen = feature["text_chosen"]  # modified from source
         rejected = feature["text_rejected"]  # modified from source
-
+        print(chosen)
+        print(rejected)
         if not self.is_encoder_decoder:
             # Check issues below for more details
             #  1. https://github.com/huggingface/trl/issues/907
@@ -154,7 +155,8 @@ class DPOInference:
             batch["rejected_labels"] = rejected_tokens["input_ids"]
             batch["prompt_input_ids"] = prompt_tokens["input_ids"]
             batch["prompt_attention_mask"] = prompt_tokens["attention_mask"]
-
+        print(batch)
+        sys.exit(0)
         return batch
 
     def build_tokenized_answer(self, prompt, answer):
