@@ -59,8 +59,9 @@ class DPOInference:
         chosen = feature["text_chosen"]  # modified from source
         rejected = feature["text_rejected"]  # modified from source
         print(chosen)
-        print(rejected)
+        #print(rejected)
         if not self.is_encoder_decoder:
+            print("not encoder decoder")
             # Check issues below for more details
             #  1. https://github.com/huggingface/trl/issues/907
             #  2. https://github.com/EleutherAI/lm-evaluation-harness/pull/531#issuecomment-1595586257
