@@ -155,7 +155,7 @@ class DPOInference:
             batch["rejected_labels"] = rejected_tokens["input_ids"]
             batch["prompt_input_ids"] = prompt_tokens["input_ids"]
             batch["prompt_attention_mask"] = prompt_tokens["attention_mask"]
-        print(batch)
+        #print(batch)
         sys.exit(0)
         return batch
 
