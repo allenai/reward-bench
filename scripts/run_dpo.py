@@ -181,9 +181,13 @@ def main():
     # tokenize dataset
     column_names = list(dataset.features)
 
-    import ipdb; ipdb.set_trace()
+    import ipdb
+
+    ipdb.set_trace()
     tokenized_dataset = dataset.map(dpo.tokenize_row, remove_columns=column_names)
-    import ipdb; ipdb.set_trace()
+    import ipdb
+
+    ipdb.set_trace()
     dataloader = torch.utils.data.DataLoader(
         tokenized_dataset,
         batch_size=BATCH_SIZE,
