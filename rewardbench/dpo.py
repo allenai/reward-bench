@@ -18,7 +18,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 import torch
 from torch import nn
-
+import sys
 
 class DPOInference:
     def __init__(self, model, ref_model, tokenizer, accelerator, ref_free_norm="norm"):
