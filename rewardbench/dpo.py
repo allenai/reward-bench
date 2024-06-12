@@ -59,6 +59,12 @@ class DPOInference:
         chosen = feature["text_chosen"]  # modified from source
         rejected = feature["text_rejected"]  # modified from source
 
+        # remove prompt tokens from chosen + rejected, otherwise they repeat
+        # see issue 140 https://github.com/allenai/reward-bench/issues/140
+        # should impact results only slightly thanks to per token dpo reward math!
+        chosen = chosen.replace(prompt, "")
+        rejected = rejected.replace(prompt, "")
+
         if not self.is_encoder_decoder:
             # Check issues below for more details
             #  1. https://github.com/huggingface/trl/issues/907

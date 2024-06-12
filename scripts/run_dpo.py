@@ -59,7 +59,7 @@ def get_args():
     parser.add_argument(
         "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
     )
-    parser.add_argument("--debug", type=bool, default=False, help="use only 10 examples")
+    parser.add_argument("--debug", action="store_true", default=False, help="use only 10 examples")
     parser.add_argument(
         "--disable_beaker_save", action="store_true", help="disable saving the main results in a file for AI2 Beaker"
     )
@@ -181,7 +181,9 @@ def main():
     # tokenize dataset
     column_names = list(dataset.features)
 
+    import ipdb; ipdb.set_trace()
     tokenized_dataset = dataset.map(dpo.tokenize_row, remove_columns=column_names)
+    import ipdb; ipdb.set_trace()
     dataloader = torch.utils.data.DataLoader(
         tokenized_dataset,
         batch_size=BATCH_SIZE,
