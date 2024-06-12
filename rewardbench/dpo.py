@@ -59,6 +59,12 @@ class DPOInference:
         chosen = feature["text_chosen"]  # modified from source
         rejected = feature["text_rejected"]  # modified from source
 
+        # remove prompt tokens from chosen + rejected, otherwise they repeat
+        # see issue 140 https://github.com/allenai/reward-bench/issues/140
+        # should impact results only slightly thanks to per token dpo reward math!
+        chosen = chosen.replace(prompt, "")
+        rejected = rejected.replace(prompt, "")
+
         if not self.is_encoder_decoder:
             # Check issues below for more details
             #  1. https://github.com/huggingface/trl/issues/907
@@ -140,20 +146,7 @@ class DPOInference:
                     batch[f"{k}{type_key}"] = tokens
 
         else:
-            chosen_tokens = self.tokenizer(
-                chosen, truncation=True, max_length=self.max_target_length, add_special_tokens=True
-            )
-            rejected_tokens = self.tokenizer(
-                rejected, truncation=True, max_length=self.max_target_length, add_special_tokens=True
-            )
-            prompt_tokens = self.tokenizer(
-                prompt, truncation=True, max_length=self.max_prompt_length, add_special_tokens=True
-            )
-
-            batch["chosen_labels"] = chosen_tokens["input_ids"]
-            batch["rejected_labels"] = rejected_tokens["input_ids"]
-            batch["prompt_input_ids"] = prompt_tokens["input_ids"]
-            batch["prompt_attention_mask"] = prompt_tokens["attention_mask"]
+            raise ValueError("Encoder-decoder models are not supported yet.")
 
         return batch
 
