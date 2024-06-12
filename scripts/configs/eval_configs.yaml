@@ -581,13 +581,13 @@ allenai/tulu-v2.5-70b-uf-rm:
   model: allenai/tulu-v2.5-70b-uf-rm
   tokenizer: allenai/tulu-v2.5-70b-uf-rm
   chat_template: # none for tokenizer
-  batch_size: 4
+  batch_size: 2
   trust_remote_code: False
   dpo: False
 allenai/tulu-v2.5-70b-preference-mix-rm:
   model: allenai/tulu-v2.5-70b-preference-mix-rm
   tokenizer: allenai/tulu-v2.5-70b-preference-mix-rm
   chat_template: # none for tokenizer
-  batch_size: 4
+  batch_size: 2
   trust_remote_code: False
   dpo: False
