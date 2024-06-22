@@ -71,6 +71,9 @@ def get_args():
     parser.add_argument(
         "--disable_beaker_save", action="store_true", help="disable saving the main results in a file for AI2 Beaker"
     )
+    parser.add_argument(
+        "--not_quantized", action="store_true", help="disable quantization for models that are quantized by default"
+    )
     args = parser.parse_args()
     return args
 
@@ -117,6 +120,10 @@ def main():
     # "model_type": "Seq. Classifier"
 
     quantized = config["quantized"]  # only Starling isn't quantized for now
+    # if llama-3 in name, switch quantized to False (severely degrades performance)
+    if "llama-3" in args.model or args.not_quantized:
+        quantized = False
+
     custom_dialogue = config["custom_dialogue"]
     model_type = config["model_type"]
     model_builder = config["model_builder"]
@@ -172,7 +179,7 @@ def main():
         }
     else:
         model_kwargs = {
-            "device_map": {"": current_device},
+            "device_map": "auto",
             "torch_dtype": torch_dtype,
         }
 
