@@ -612,6 +612,6 @@ Ahjeong/MMPO_Gemma_7b:
   tokenizer: Ahjeong/MMPO_Gemma_7b
   chat_template: # none for tokenizer
   num_gpus: 2
-  batch_size: 4
+  batch_size: 2
   trust_remote_code: False
   dpo: True
