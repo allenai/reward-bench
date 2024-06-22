@@ -611,6 +611,6 @@ Ahjeong/MMPO_Gemma_7b:
   ref_model: google/gemma-7b-it
   tokenizer: Ahjeong/MMPO_Gemma_7b
   chat_template: # none for tokenizer
-  batch_size: 4
+  batch_size: 2
   trust_remote_code: False
   dpo: True
