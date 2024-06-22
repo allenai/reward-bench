@@ -123,6 +123,7 @@ def main():
     # if llama-3 in name, switch quantized to False (severely degrades performance)
     if "llama-3" in args.model or args.not_quantized:
         quantized = False
+        logger.info(f"Disabling quantization for llama-3 or override flag (--not_quantized: {args.not_quantized})")
 
     custom_dialogue = config["custom_dialogue"]
     model_type = config["model_type"]
