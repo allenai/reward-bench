@@ -615,3 +615,30 @@ Ahjeong/MMPO_Gemma_7b:
   batch_size: 2
   trust_remote_code: False
   dpo: True
+wenbopan/Faro-Yi-9B-DPO:
+  model: wenbopan/Faro-Yi-9B-DPO
+  ref_model: wenbopan/Faro-Yi-9B
+  tokenizer: wenbopan/Faro-Yi-9B-DPO
+  chat_template: # none for tokenizer
+  batch_size: 2
+  num_gpus: 2
+  trust_remote_code: False
+  dpo: True
+allenai/llama-3-tulu-2-dpo-8b:
+  model: allenai/llama-3-tulu-2-dpo-8b
+  ref_model: allenai/llama-3-tulu-2-8b
+  tokenizer: allenai/llama-3-tulu-2-dpo-8b
+  chat_template: # none for tokenizer
+  batch_size: 2
+  num_gpus: 2
+  trust_remote_code: False
+  dpo: True
+allenai/llama-3-tulu-2-dpo-70b:
+  model: allenai/llama-3-tulu-2-dpo-70b
+  ref_model: allenai/llama-3-tulu-2-70b
+  tokenizer: allenai/llama-3-tulu-2-dpo-70b
+  chat_template: # none for tokenizer
+  batch_size: 2
+  num_gpus: 4
+  trust_remote_code: False
+  dpo: True
