@@ -608,7 +608,7 @@ allenai/llama-3-tulu-2-8b-uf-mean-rm:
   dpo: False
 Ahjeong/MMPO_Gemma_7b:
   model: Ahjeong/MMPO_Gemma_7b
-  ref_model: google/gemma-7b-it
+  ref_model: kykim0/gemma-7b-ultrachat-sft
   tokenizer: Ahjeong/MMPO_Gemma_7b
   chat_template: # none for tokenizer
   num_gpus: 2
