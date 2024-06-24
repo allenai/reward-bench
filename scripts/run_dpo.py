@@ -63,6 +63,9 @@ def get_args():
     parser.add_argument(
         "--disable_beaker_save", action="store_true", help="disable saving the main results in a file for AI2 Beaker"
     )
+    parser.add_argument(
+        "--not_quantized", action="store_true", help="disable quantization for models that are quantized by default"
+    )
 
     args = parser.parse_args()
     return args
@@ -144,11 +147,33 @@ def main():
     ############################
     BATCH_SIZE = args.batch_size
 
-    model_kwargs = {
-        "load_in_8bit": True,
-        "device_map": "auto",
-        "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
-    }
+    if (
+        ("llama-3" in args.model)
+        or ("Llama3" in args.model)
+        or ("Llama-3" in args.model)
+        or ("LLaMA3" in args.model)
+        or args.not_quantized
+    ):
+        model_kwargs = {
+            "device_map": "auto",
+            "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
+        }
+        model_kwargs_ref = {
+            "device_map": "auto",
+            "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
+        }
+    else:
+        model_kwargs = {
+            "load_in_8bit": True,
+            "device_map": "auto",
+            "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
+        }
+        model_kwargs_ref = {
+            "load_in_8bit": True,
+            "device_map": "auto",
+            "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
+        }
+
     model = model_builder(
         args.model,
         trust_remote_code=args.trust_remote_code,
@@ -158,11 +183,6 @@ def main():
     if ref_free:
         ref_model = None
     else:
-        model_kwargs_ref = {
-            "load_in_8bit": True,
-            "device_map": "auto",
-            "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
-        }
         ref_model = model_builder(
             args.ref_model,
             trust_remote_code=args.trust_remote_code,
