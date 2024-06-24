@@ -51,7 +51,9 @@ def main():
         default=None,
         help="The chat template to use (defaults to from tokenizer, from chattemplate).",
     )
-
+    parser.add_argument(
+        "--not_quantized", action="store_true", help="disable quantization for models that are quantized by default"
+    )
     # inference args
     parser.add_argument("--batch_size", type=int, default=8, help="The batch size to use.")
     parser.add_argument("--max_length", type=int, default=512, help="The max length to use.")
@@ -123,6 +125,10 @@ def main():
 
     if not is_dpo:
         quantized = config["quantized"]  # only Starling isn't quantized for now
+        # if llama-3 in name, switch quantized to False (severely degrades performance)
+        if "llama-3" in args.model or args.not_quantized:
+            quantized = False
+            logger.info(f"Disabling quantization for llama-3 or override flag (--not_quantized: {args.not_quantized})")
         custom_dialogue = config["custom_dialogue"]
         pipeline_builder = config["pipeline_builder"]
         _ = config["model_type"]
@@ -241,7 +247,8 @@ def main():
                 "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
             }
         else:
-            model_kwargs = {"device_map": {"": current_device}}
+            # note, device map auto does not work for quantized models
+            model_kwargs = {"device_map": "auto"}
 
         model = model_builder(args.model, **model_kwargs, trust_remote_code=args.trust_remote_code)
         reward_pipe = pipeline_builder(
