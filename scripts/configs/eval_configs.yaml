@@ -629,7 +629,7 @@ allenai/llama-3-tulu-2-dpo-8b:
   ref_model: allenai/llama-3-tulu-2-8b
   tokenizer: allenai/llama-3-tulu-2-dpo-8b
   chat_template: # none for tokenizer
-  batch_size: 2
+  batch_size: 1
   num_gpus: 2
   trust_remote_code: False
   dpo: True
@@ -638,7 +638,7 @@ allenai/llama-3-tulu-2-dpo-70b:
   ref_model: allenai/llama-3-tulu-2-70b
   tokenizer: allenai/llama-3-tulu-2-dpo-70b
   chat_template: # none for tokenizer
-  batch_size: 2
+  batch_size: 1
   num_gpus: 4
   trust_remote_code: False
   dpo: True
