@@ -145,6 +145,8 @@ def main():
         is_prometheus = True
     elif "gemini" in args.model:
         model_modifier = "gemini"
+    else:
+        model_modifier = None
 
     ############################
     # Load dataset

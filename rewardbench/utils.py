@@ -483,7 +483,7 @@ def load_bon_dataset(
             ]
             return example
 
-        dataset = raw_dataset.map(
+        dataset = unrolled_dataset.map(
             map_conversations_ift,
             # fn_kwargs={"core_set": core_set},
             num_proc=8,

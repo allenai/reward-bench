@@ -615,6 +615,15 @@ Ahjeong/MMPO_Gemma_7b:
   batch_size: 2
   trust_remote_code: False
   dpo: True
+Ahjeong/MMPO_Gemma_7b_gamma1.1_epoch3:
+  model: Ahjeong/MMPO_Gemma_7b_gamma1.1_epoch3
+  ref_model: kykim0/gemma-7b-ultrachat-sft
+  tokenizer: Ahjeong/MMPO_Gemma_7b_gamma1.1_epoch3
+  chat_template: # none for tokenizer
+  num_gpus: 2
+  batch_size: 2
+  trust_remote_code: False
+  dpo: True
 wenbopan/Faro-Yi-9B-DPO:
   model: wenbopan/Faro-Yi-9B-DPO
   ref_model: wenbopan/Faro-Yi-9B
