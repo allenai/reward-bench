@@ -126,6 +126,7 @@ def main():
         or ("Llama3" in args.model)
         or ("Llama-3" in args.model)
         or ("LLaMA3" in args.model)
+        or ("llama3" in args.model)
         or args.not_quantized
     ):
         quantized = False
