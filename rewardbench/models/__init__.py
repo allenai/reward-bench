@@ -26,6 +26,7 @@ from transformers import (
 from .armorm import ArmoRMPipeline
 from .beaver import BeaverCostPipeline, BeaverPipeline, LlamaForScore
 from .betterpairrm import BetterPairRMPipeline
+from .grm import GRewardModel, GRMPipeline
 from .openassistant import *  # noqa
 from .openbmb import LlamaRewardModel, OpenBMBPipeline
 from .pairrm import DebertaV2PairRM, PairRMPipeline
@@ -38,7 +39,6 @@ from .starling import (
     build_starling_rm,
 )
 from .ziya import ZiyaPipeline
-from .grm import GRewardModel, GRMPipeline
 
 # Please open a PR if you need to add more custom modeling code / utilize existing code for you model
 REWARD_MODEL_CONFIG = {
@@ -155,16 +155,14 @@ REWARD_MODEL_CONFIG = {
         "model_type": "Custom Classifier",
         "torch_dtype": torch.bfloat16,
     },
-    "Ray2333/GRM-Gemma-2B-sftreg":
-    {
+    "Ray2333/GRM-Gemma-2B-sftreg": {
         "model_builder": GRewardModel.from_pretrained,
         "pipeline_builder": GRMPipeline,
         "quantized": False,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
     },
-    "Ray2333/GRM-llama3-8B-sftreg":
-    {
+    "Ray2333/GRM-llama3-8B-sftreg": {
         "model_builder": GRewardModel.from_pretrained,
         "pipeline_builder": GRMPipeline,
         "quantized": False,
