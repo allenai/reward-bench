@@ -36,6 +36,7 @@ RUN pip install jinja2
 RUN pip install anthropic
 RUN pip install openai
 RUN pip install together
+RUN pip install google-generativeai
 
 # updated for Gemma 2
 RUN pip install vllm==0.5.1
