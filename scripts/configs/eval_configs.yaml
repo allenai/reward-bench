@@ -651,3 +651,38 @@ allenai/llama-3-tulu-2-dpo-70b:
   num_gpus: 4
   trust_remote_code: False
   dpo: True
+Ray2333/GRM-llama3-8B-distill:
+  model: Ray2333/GRM-llama3-8B-distill
+  tokenizer: Ray2333/GRM-llama3-8B-distill
+  chat_template: # none for tokenizer
+  batch_size: 4
+  trust_remote_code: False
+  dpo: False
+Ray2333/Gemma-2B-rewardmodel-baseline:
+  model: Ray2333/Gemma-2B-rewardmodel-baseline
+  tokenizer: Ray2333/Gemma-2B-rewardmodel-baseline
+  chat_template: # none for tokenizer
+  batch_size: 8
+  trust_remote_code: False
+  dpo: False
+Ray2333/GRM-llama3-8B-sftreg:
+  model: Ray2333/GRM-llama3-8B-sftreg
+  tokenizer: Ray2333/GRM-llama3-8B-sftreg
+  chat_template: # none for tokenizer
+  batch_size: 4
+  trust_remote_code: False
+  dpo: False
+Ray2333/GRM-Gemma-2B-sftreg:
+  model: Ray2333/GRM-Gemma-2B-sftreg
+  tokenizer: Ray2333/GRM-Gemma-2B-sftreg
+  chat_template: # none for tokenizer
+  batch_size: 8
+  trust_remote_code: False
+  dpo: False
+CIR-AMS/BTRM_Qwen2_7b_0613:
+  model: CIR-AMS/BTRM_Qwen2_7b_0613
+  tokenizer: CIR-AMS/BTRM_Qwen2_7b_0613
+  chat_template: # none for tokenizer
+  batch_size: 4
+  trust_remote_code: False
+  dpo: False
