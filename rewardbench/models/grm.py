@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from transformers import AutoModelForCausalLM, PreTrainedModel, AutoConfig
+from transformers import AutoConfig, AutoModelForCausalLM, PreTrainedModel
 
 
 class ValueHead(nn.Module):
@@ -26,17 +26,17 @@ class ValueHead(nn.Module):
         if hasattr(config, "vhead_layer_type"):
             self.layer_type = config.vhead_layer_type
         else:
-            self.layer_type = kwargs.pop("vhead_layer_type", 'mlp')
-        if hasattr(config, 'vhead_num_neurons'):
+            self.layer_type = kwargs.pop("vhead_layer_type", "mlp")
+        if hasattr(config, "vhead_num_neurons"):
             num_neurons = config.vhead_num_neurons
         else:
             num_neurons = kwargs.pop("vhead_num_neurons", 1024)
-        if hasattr(config, 'vhead_num_layers'):
+        if hasattr(config, "vhead_num_layers"):
             num_layers = config.vhead_num_layers
         else:
             num_layers = kwargs.pop("vhead_num_layers", 1)
 
-        if self.layer_type == 'linear':
+        if self.layer_type == "linear":
             self.summary = nn.Linear(hidden_size, 1)
         else:
             module_lis = []
@@ -51,9 +51,9 @@ class ValueHead(nn.Module):
 
     def forward(self, hidden_states):
         output = self.dropout(hidden_states)
-        if (self.layer_type == 'linear' and output.dtype != self.summary.weight.dtype):
+        if self.layer_type == "linear" and output.dtype != self.summary.weight.dtype:
             output = output.to(self.summary.weight.dtype)
-        elif (self.layer_type != 'linear' and output.dtype != self.summary[0].weight.dtype):
+        elif self.layer_type != "linear" and output.dtype != self.summary[0].weight.dtype:
             output = output.to(self.summary[0].weight.dtype)
 
         output = self.summary(output)
@@ -87,10 +87,11 @@ class GRewardModel(PreTrainedModel):
         )
         last_hidden_state = base_model_output.hidden_states[-1]
 
-        if (hasattr(self.v_head.summary, 'weight') and last_hidden_state.device != self.v_head.summary.weight.device):
+        if hasattr(self.v_head.summary, "weight") and last_hidden_state.device != self.v_head.summary.weight.device:
             last_hidden_state = last_hidden_state.to(self.v_head.summary.weight.device)
-        elif not hasattr(self.v_head.summary, 'weight')\
-                and (last_hidden_state.device != self.v_head.summary[0].weight.device):
+        elif not hasattr(self.v_head.summary, "weight") and (
+            last_hidden_state.device != self.v_head.summary[0].weight.device
+        ):
             last_hidden_state = last_hidden_state.to(self.v_head.summary[0].weight.device)
 
         # use the last token value as reward
