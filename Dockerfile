@@ -36,7 +36,9 @@ RUN pip install jinja2
 RUN pip install anthropic
 RUN pip install openai
 RUN pip install together
-RUN pip install vllm==0.4.2 
+
+# updated for Gemma 2
+RUN pip install vllm==0.5.1
 # from git+https://github.com/vllm-project/vllm.git@d87f39e9a9dd149f5dd7a58b4d98b21f713827b6
 
 # for interactive session
