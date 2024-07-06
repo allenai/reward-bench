@@ -1,14 +1,9 @@
-from typing import List, Optional
-
 import torch
 import torch.nn as nn
 from transformers import AutoModelForCausalLM, PreTrainedModel, AutoConfig
 
-class ValueHead(nn.Module):
-    r"""
-    The ValueHead class implements a head for GPT2 that returns a scalar for each output token.
-    """
 
+class ValueHead(nn.Module):
     def __init__(self, config, **kwargs):
         super().__init__()
         if not hasattr(config, "summary_dropout_prob"):
@@ -17,7 +12,7 @@ class ValueHead(nn.Module):
             summary_dropout_prob = config.summary_dropout_prob
         self.dropout = nn.Dropout(summary_dropout_prob) if summary_dropout_prob else nn.Identity()
 
-        # some models such as OPT have a projection layer before the word embeddings - e.g. OPT-350m
+        # some models such as OPT have a projection layer before the word embeddings
         if hasattr(config, "hidden_size"):
             hidden_size = config.hidden_size
         if hasattr(config, "word_embed_proj_dim"):
@@ -27,8 +22,8 @@ class ValueHead(nn.Module):
                 if hasattr(config.decoder, "hidden_size"):
                     hidden_size = config.decoder.hidden_size
 
-        # get vhead config
-        if hasattr(config, "vhead_layer_type"): # config from json first
+        # get vhead config, where config from json first
+        if hasattr(config, "vhead_layer_type"):
             self.layer_type = config.vhead_layer_type
         else:
             self.layer_type = kwargs.pop("vhead_layer_type", 'mlp')
@@ -49,7 +44,7 @@ class ValueHead(nn.Module):
             for i in range(num_layers):
                 module_lis.extend([nn.Linear(input_neurons, num_neurons), nn.ReLU()])
                 input_neurons = num_neurons
-                
+
             module_lis.append(nn.Linear(num_neurons, 1))
             self.summary = nn.Sequential(*module_lis)
         self.flatten = nn.Flatten()
@@ -74,7 +69,7 @@ class GRewardModel(PreTrainedModel):
         model = AutoModelForCausalLM.from_config(config)
         self.model = model.model
         self.v_head = ValueHead(self.model.config)
-    
+
     def forward(
         self,
         input_ids=None,
@@ -82,7 +77,7 @@ class GRewardModel(PreTrainedModel):
         attention_mask=None,
         **kwargs,
     ):
-        kwargs["output_hidden_states"] = True  # this had already been set in the LORA / PEFT examples
+        kwargs["output_hidden_states"] = True
         kwargs["past_key_values"] = past_key_values
 
         base_model_output = self.model(
@@ -94,16 +89,17 @@ class GRewardModel(PreTrainedModel):
 
         if (hasattr(self.v_head.summary, 'weight') and last_hidden_state.device != self.v_head.summary.weight.device):
             last_hidden_state = last_hidden_state.to(self.v_head.summary.weight.device)
-        elif not hasattr(self.v_head.summary, 'weight') and (last_hidden_state.device != self.v_head.summary[0].weight.device):
+        elif not hasattr(self.v_head.summary, 'weight')\
+                and (last_hidden_state.device != self.v_head.summary[0].weight.device):
             last_hidden_state = last_hidden_state.to(self.v_head.summary[0].weight.device)
-        
+
         # use the last token value as reward
         if input_ids[0][0].item() == self.config.pad_token_id:
-            ## left padding
+            # left padding
             last_index = attention_mask.shape[-1] - 1
         else:
-            ## right padding
-            last_index = attention_mask.sum(dim=-1) - 1 
+            # right padding
+            last_index = attention_mask.sum(dim=-1) - 1
         value = self.v_head(last_hidden_state).squeeze(-1)[torch.arange(len(last_hidden_state)), last_index]
         return value
 
@@ -129,4 +125,3 @@ class GRMPipeline:
         with torch.no_grad():
             outputs = self.model(**inputs)
         return outputs
-
