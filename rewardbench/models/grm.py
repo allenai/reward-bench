@@ -95,7 +95,7 @@ class GRewardModel(PreTrainedModel):
             last_hidden_state = last_hidden_state.to(self.v_head.summary[0].weight.device)
 
         # use the last token value as reward
-        if input_ids[0][0].item() == self.config.pad_token_id:
+        if torch.any(attention_mask[:, 0] == 0):
             # left padding
             last_index = attention_mask.shape[-1] - 1
         else:
