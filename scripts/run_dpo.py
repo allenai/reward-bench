@@ -31,7 +31,7 @@ from rewardbench import (
     DPOInference,
     load_eval_dataset,
     save_to_hub,
-    torch_dtype,
+    torch_dtype_mapping,
 )
 from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
 from rewardbench.utils import calculate_scores_per_section
@@ -74,12 +74,13 @@ def get_args():
     )
     parser.add_argument(
         "--torch_dtype",
-        type=torch_dtype,
+        type=str,
         default="float16",
         choices=["float16", "bfloat16", "float32", "float64"],
         help="PyTorch dtype (default: float16)",
     )
     args = parser.parse_args()
+    args.torch_dtype = torch_dtype_mapping(args.torch_dtype)
     return args
 
 
