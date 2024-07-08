@@ -75,9 +75,13 @@ def get_args():
     parser.add_argument(
         "--not_quantized", action="store_true", help="disable quantization for models that are quantized by default"
     )
-    parser.add_argument("--torch_dtype", type=torch_dtype, default='float16',
-                        choices=['float16', 'bfloat16', 'float32', 'float64'],
-                        help="PyTorch dtype (default: float16)")
+    parser.add_argument(
+        "--torch_dtype",
+        type=torch_dtype,
+        default="float16",
+        choices=["float16", "bfloat16", "float32", "float64"],
+        help="PyTorch dtype (default: float16)",
+    )
     args = parser.parse_args()
     return args
 
@@ -146,7 +150,7 @@ def main():
         # if datatype is bfloat16, then manually turn off quantizaiton (done with bitsandbytes)
         if args.torch_dtype == torch.bfloat16:
             quantized = False
-            logger.info(f"Disabling quantization for bfloat16 datatype")
+            logger.info("Disabling quantization for bfloat16 datatype")
         elif args.torch_dtype == torch.float16:
             assert quantized, "Quantization must be enabled for float16 datatype"
         torch_dtype = args.torch_dtype
