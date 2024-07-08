@@ -252,8 +252,8 @@ def main():
             scores_rejected_batch = [result["score"] for result in rewards_rejected]
         # for classes that directly output scores (custom code)
         else:
-            scores_chosen_batch = rewards_chosen.cpu().numpy().tolist()
-            scores_rejected_batch = rewards_rejected.cpu().numpy().tolist()
+            scores_chosen_batch = rewards_chosen.float().cpu().numpy().tolist()  # convert to float for bfloat16 case
+            scores_rejected_batch = rewards_rejected.float().cpu().numpy().tolist()
 
         [
             results.append(1) if chosen > rejected else results.append(0)

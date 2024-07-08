@@ -152,8 +152,6 @@ def main():
         if args.torch_dtype == torch.bfloat16:
             quantized = False
             logger.info("Disabling quantization for bfloat16 datatype")
-        elif args.torch_dtype == torch.float16:
-            assert quantized, "Quantization must be enabled for float16 datatype"
         torch_dtype = args.torch_dtype
 
     # not included in config to make user explicitly understand they are passing this
@@ -306,8 +304,10 @@ def main():
                     score_rejected_batch = [result["score"] for result in rewards_rejected]
                 # for classes that directly output scores (custom code)
                 else:
-                    score_chosen_batch = rewards_chosen.cpu().numpy().tolist()
-                    score_rejected_batch = rewards_rejected.cpu().numpy().tolist()
+                    score_chosen_batch = (
+                        rewards_chosen.float().cpu().numpy().tolist()
+                    )  # cast to float in case of bfloat16
+                    score_rejected_batch = rewards_rejected.float().cpu().numpy().tolist()
 
                 # log results
                 [

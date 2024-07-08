@@ -624,6 +624,7 @@ Ahjeong/MMPO_Gemma_7b_gamma1.1_epoch3:
   batch_size: 2
   trust_remote_code: False
   dpo: True
+  torch_dtype: bfloat16
 wenbopan/Faro-Yi-9B-DPO:
   model: wenbopan/Faro-Yi-9B-DPO
   ref_model: wenbopan/Faro-Yi-9B
@@ -686,3 +687,4 @@ CIR-AMS/BTRM_Qwen2_7b_0613:
   batch_size: 4
   trust_remote_code: False
   dpo: False
+  torch_dtype: bfloat16

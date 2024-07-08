@@ -95,6 +95,13 @@ for model in models_to_evaluate:
     else:
         eval_gen = False
 
+    # check if bfloat16
+    if "torch_dtype" in model_config:
+        if model_config["torch_dtype"] == "torch.bfloat16":
+            eval_bfloat16 = True
+        else:
+            eval_bfloat16 = False
+
     # ignore models depending on eval_dpo_only and eval_rm_only
     if args.eval_dpo_only:
         if not eval_dpo:
@@ -149,6 +156,9 @@ for model in models_to_evaluate:
         d["tasks"][0]["arguments"][0] += " --do_not_save"
     if eval_on_pref_sets:
         d["tasks"][0]["arguments"][0] += " --pref_sets"
+    if eval_bfloat16:
+        d["tasks"][0]["arguments"][0] += " --torch_dtype=bfloat16"
+
     if "ref_model" in model_config:
         if not args.ref_free:  # if passed, ignore logic in eval configs
             d["tasks"][0]["arguments"][0] += f" --ref_model {model_config['ref_model']}"
