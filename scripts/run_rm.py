@@ -201,7 +201,7 @@ def main():
         model_kwargs = {
             "load_in_8bit": True,
             "device_map": {"": current_device},
-            "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
+            "torch_dtype": torch_dtype if torch.cuda.is_available() else None,
         }
     else:
         model_kwargs = {

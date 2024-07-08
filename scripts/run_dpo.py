@@ -26,7 +26,13 @@ from fastchat.conversation import get_conv_template
 from tqdm import tqdm
 from trl.trainer.utils import DPODataCollatorWithPadding
 
-from rewardbench import DPO_MODEL_CONFIG, DPOInference, load_eval_dataset, save_to_hub
+from rewardbench import (
+    DPO_MODEL_CONFIG,
+    DPOInference,
+    load_eval_dataset,
+    save_to_hub,
+    torch_dtype,
+)
 from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
 from rewardbench.utils import calculate_scores_per_section
 
@@ -66,7 +72,13 @@ def get_args():
     parser.add_argument(
         "--not_quantized", action="store_true", help="disable quantization for models that are quantized by default"
     )
-
+    parser.add_argument(
+        "--torch_dtype",
+        type=torch_dtype,
+        default="float16",
+        choices=["float16", "bfloat16", "float32", "float64"],
+        help="PyTorch dtype (default: float16)",
+    )
     args = parser.parse_args()
     return args
 
@@ -102,6 +114,13 @@ def main():
 
     model_builder = config["model_builder"]
     tokenizer_builder = config["tokenizer_builder"]
+
+    # check datatype from argparse
+    if args.torch_dtype == torch.bfloat16:
+        logger.warning("Loading weights directly as bfloat16 for PyTorch dtype")
+        torch_dtype = torch.bfloat16
+    else:
+        torch_dtype = torch.float16
 
     assert args.model != args.ref_model, "policy and reference model should be different"
     # load chat template
@@ -156,22 +175,22 @@ def main():
     ):
         model_kwargs = {
             "device_map": "auto",
-            "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
+            "torch_dtype": torch_dtype if torch.cuda.is_available() else None,
         }
         model_kwargs_ref = {
             "device_map": "auto",
-            "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
+            "torch_dtype": torch_dtype if torch.cuda.is_available() else None,
         }
     else:
         model_kwargs = {
             "load_in_8bit": True,
             "device_map": "auto",
-            "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
+            "torch_dtype": torch_dtype if torch.cuda.is_available() else None,
         }
         model_kwargs_ref = {
             "load_in_8bit": True,
             "device_map": "auto",
-            "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
+            "torch_dtype": torch_dtype if torch.cuda.is_available() else None,
         }
 
     model = model_builder(
