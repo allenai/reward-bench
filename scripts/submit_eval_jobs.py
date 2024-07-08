@@ -28,7 +28,7 @@ argparser.add_argument(
     "--eval_on_pref_sets", action="store_true", default=False, help="Evaluate on preference sets rather than core set"
 )
 argparser.add_argument("--eval_on_bon", action="store_true", default=False, help="Evaluate on BON preference sets")
-argparser.add_argument("--image", type=str, default="nathanl/rb_v21", help="Beaker image to use")
+argparser.add_argument("--image", type=str, default="nathanl/rb_v23", help="Beaker image to use")
 argparser.add_argument("--cluster", type=str, default="ai2/allennlp-cirrascale", help="Beaker cluster to use")
 argparser.add_argument("--priority", type=str, default="normal", help="Priority of the job")
 argparser.add_argument("--upload_to_hub", action="store_false", default=True, help="Upload to results to HF hub")
@@ -95,6 +95,13 @@ for model in models_to_evaluate:
     else:
         eval_gen = False
 
+    # check if bfloat16
+    if "torch_dtype" in model_config:
+        if model_config["torch_dtype"] == "torch.bfloat16":
+            eval_bfloat16 = True
+        else:
+            eval_bfloat16 = False
+
     # ignore models depending on eval_dpo_only and eval_rm_only
     if args.eval_dpo_only:
         if not eval_dpo:
@@ -149,6 +156,9 @@ for model in models_to_evaluate:
         d["tasks"][0]["arguments"][0] += " --do_not_save"
     if eval_on_pref_sets:
         d["tasks"][0]["arguments"][0] += " --pref_sets"
+    if eval_bfloat16:
+        d["tasks"][0]["arguments"][0] += " --torch_dtype=bfloat16"
+
     if "ref_model" in model_config:
         if not args.ref_free:  # if passed, ignore logic in eval configs
             d["tasks"][0]["arguments"][0] += f" --ref_model {model_config['ref_model']}"

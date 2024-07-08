@@ -31,6 +31,7 @@ from rewardbench import (
     check_tokenizer_chat_template,
     load_eval_dataset,
     save_to_hub,
+    torch_dtype_mapping,
 )
 from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
 from rewardbench.utils import calculate_scores_per_section
@@ -74,7 +75,15 @@ def get_args():
     parser.add_argument(
         "--not_quantized", action="store_true", help="disable quantization for models that are quantized by default"
     )
+    parser.add_argument(
+        "--torch_dtype",
+        type=str,
+        default="float16",
+        choices=["float16", "bfloat16", "float32", "float64"],
+        help="PyTorch dtype (default: float16)",
+    )
     args = parser.parse_args()
+    args.torch_dtype = torch_dtype_mapping(args.torch_dtype)
     return args
 
 
@@ -137,6 +146,14 @@ def main():
     model_builder = config["model_builder"]
     pipeline_builder = config["pipeline_builder"]
     torch_dtype = config.get("torch_dtype", None)
+    # if not datatype in config (default), check args
+    if torch_dtype is None:
+        # if datatype is bfloat16, then manually turn off quantizaiton (done with bitsandbytes)
+        if args.torch_dtype == torch.bfloat16:
+            quantized = False
+            logger.info("Disabling quantization for bfloat16 datatype")
+        torch_dtype = args.torch_dtype
+
     # not included in config to make user explicitly understand they are passing this
     trust_remote_code = args.trust_remote_code
 
@@ -183,7 +200,7 @@ def main():
         model_kwargs = {
             "load_in_8bit": True,
             "device_map": {"": current_device},
-            "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
+            "torch_dtype": torch_dtype if torch.cuda.is_available() else None,
         }
     else:
         model_kwargs = {
@@ -287,8 +304,10 @@ def main():
                     score_rejected_batch = [result["score"] for result in rewards_rejected]
                 # for classes that directly output scores (custom code)
                 else:
-                    score_chosen_batch = rewards_chosen.cpu().numpy().tolist()
-                    score_rejected_batch = rewards_rejected.cpu().numpy().tolist()
+                    score_chosen_batch = (
+                        rewards_chosen.float().cpu().numpy().tolist()
+                    )  # cast to float in case of bfloat16
+                    score_rejected_batch = rewards_rejected.float().cpu().numpy().tolist()
 
                 # log results
                 [

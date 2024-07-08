@@ -24,6 +24,7 @@ from .utils import (
     prepare_dialogue,
     prepare_dialogue_from_tokenizer,
     save_to_hub,
+    torch_dtype_mapping,
 )
 
 __all__ = [
@@ -37,4 +38,5 @@ __all__ = [
     prepare_dialogue_from_tokenizer,
     REWARD_MODEL_CONFIG,
     save_to_hub,
+    torch_dtype_mapping,
 ]

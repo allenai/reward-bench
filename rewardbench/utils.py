@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import json
 import logging
 import os
 from typing import Any, Dict, List, Union
 
 import pandas as pd
+import torch
 from datasets import Dataset, DatasetDict, Value, concatenate_datasets, load_dataset
 from fastchat.conversation import Conversation
 from huggingface_hub import HfApi
@@ -34,6 +36,21 @@ EVAL_REPO = "allenai/reward-bench-results"  # data repo to upload results
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
 api = HfApi(token=HF_TOKEN)
+
+
+def torch_dtype_mapping(dtype_str):
+    """
+    Helper function for argparse to map string to torch dtype.
+    """
+    dtype_map = {
+        "float16": torch.float16,
+        "bfloat16": torch.bfloat16,
+        "float32": torch.float32,
+        "float64": torch.float64,
+    }
+    if dtype_str not in dtype_map:
+        raise argparse.ArgumentTypeError(f"Invalid torch dtype: {dtype_str}")
+    return dtype_map[dtype_str]
 
 
 def calculate_scores_per_section(example_counts, subset_mapping, metrics):
