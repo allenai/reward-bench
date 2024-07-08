@@ -31,6 +31,7 @@ from rewardbench import (
     check_tokenizer_chat_template,
     load_eval_dataset,
     save_to_hub,
+    torch_dtype,
 )
 from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
 from rewardbench.utils import calculate_scores_per_section
@@ -74,6 +75,9 @@ def get_args():
     parser.add_argument(
         "--not_quantized", action="store_true", help="disable quantization for models that are quantized by default"
     )
+    parser.add_argument("--torch_dtype", type=torch_dtype, default='float16',
+                        choices=['float16', 'bfloat16', 'float32', 'float64'],
+                        help="PyTorch dtype (default: float16)")
     args = parser.parse_args()
     return args
 
@@ -137,6 +141,16 @@ def main():
     model_builder = config["model_builder"]
     pipeline_builder = config["pipeline_builder"]
     torch_dtype = config.get("torch_dtype", None)
+    # if not datatype in config (default), check args
+    if torch_dtype is None:
+        # if datatype is bfloat16, then manually turn off quantizaiton (done with bitsandbytes)
+        if args.torch_dtype == torch.bfloat16:
+            quantized = False
+            logger.info(f"Disabling quantization for bfloat16 datatype")
+        elif args.torch_dtype == torch.float16:
+            assert quantized, "Quantization must be enabled for float16 datatype"
+        torch_dtype = args.torch_dtype
+
     # not included in config to make user explicitly understand they are passing this
     trust_remote_code = args.trust_remote_code
 
