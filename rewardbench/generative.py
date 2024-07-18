@@ -61,7 +61,7 @@ OPENAI_MODEL_LIST = (
 
 # feel free to add more models to this list via PR
 # available models: https://docs.together.ai/docs/inference-models
-TOGETHER_MODEL_LIST = ("meta-llama/Llama-3-70b-chat-hf", "meta-llama/Llama-3-8b-chat-hf")
+TOGETHER_MODEL_LIST = ("meta-llama/Llama-3-70b-chat-hf", "meta-llama/Llama-3-8b-chat-hf", "google/gemma-2-27b-it")
 
 GEMINI_MODEL_LIST = ("gemini-1.5-flash-001", "gemini-1.5-pro-001")
 
