@@ -688,3 +688,24 @@ CIR-AMS/BTRM_Qwen2_7b_0613:
   trust_remote_code: False
   dpo: False
   torch_dtype: bfloat16
+internlm/internlm2-1_8b-reward:
+  model: internlm/internlm2-1_8b-reward
+  tokenizer: internlm/internlm2-1_8b-reward
+  chat_template: # none for tokenizer
+  batch_size: 16
+  trust_remote_code: True
+  dpo: False
+internlm/internlm2-8b-reward:
+  model: internlm/internlm2-8b-reward
+  tokenizer: internlm/internlm2-8b-reward
+  chat_template: # none for tokenizer
+  batch_size: 4
+  trust_remote_code: True
+  dpo: False
+internlm/internlm2-20b-reward:
+  model: internlm/internlm2-20b-reward
+  tokenizer: internlm/internlm2-20b-reward
+  chat_template: # none for tokenizer
+  batch_size: 2
+  trust_remote_code: True
+  dpo: False
