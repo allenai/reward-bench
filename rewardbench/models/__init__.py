@@ -27,6 +27,7 @@ from .armorm import ArmoRMPipeline
 from .beaver import BeaverCostPipeline, BeaverPipeline, LlamaForScore
 from .betterpairrm import BetterPairRMPipeline
 from .grm import GRewardModel, GRMPipeline
+from .internlm import InternLMPipeline
 from .openassistant import *  # noqa
 from .openbmb import LlamaRewardModel, OpenBMBPipeline
 from .pairrm import DebertaV2PairRM, PairRMPipeline
@@ -166,6 +167,27 @@ REWARD_MODEL_CONFIG = {
         "model_builder": GRewardModel.from_pretrained,
         "pipeline_builder": GRMPipeline,
         "quantized": False,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+    },
+    "internlm/internlm2-20b-reward": {
+        "model_builder": AutoModel.from_pretrained,
+        "pipeline_builder": InternLMPipeline,
+        "quantized": True,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+    },
+    "internlm/internlm2-8b-reward": {
+        "model_builder": AutoModel.from_pretrained,
+        "pipeline_builder": InternLMPipeline,
+        "quantized": True,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+    },
+    "internlm/internlm2-1_8b-reward": {
+        "model_builder": AutoModel.from_pretrained,
+        "pipeline_builder": InternLMPipeline,
+        "quantized": True,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
     },
