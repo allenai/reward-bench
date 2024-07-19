@@ -695,9 +695,9 @@ internlm/internlm2-1_8b-reward:
   batch_size: 16
   trust_remote_code: True
   dpo: False
-internlm/internlm2-8b-reward:
-  model: internlm/internlm2-8b-reward
-  tokenizer: internlm/internlm2-8b-reward
+internlm/internlm2-7b-reward:
+  model: internlm/internlm2-7b-reward
+  tokenizer: internlm/internlm2-7b-reward
   chat_template: # none for tokenizer
   batch_size: 4
   trust_remote_code: True

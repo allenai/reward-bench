@@ -177,7 +177,7 @@ REWARD_MODEL_CONFIG = {
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
     },
-    "internlm/internlm2-8b-reward": {
+    "internlm/internlm2-7b-reward": {
         "model_builder": AutoModel.from_pretrained,
         "pipeline_builder": InternLMPipeline,
         "quantized": True,
