@@ -56,11 +56,12 @@ OPENAI_MODEL_LIST = (
     "gpt-4-0125-preview",
     "gpt-4-turbo-2024-04-09",
     "gpt-4o-2024-05-13",
+    "gpt-4o-mini-2024-07-18",
 )
 
 # feel free to add more models to this list via PR
 # available models: https://docs.together.ai/docs/inference-models
-TOGETHER_MODEL_LIST = ("meta-llama/Llama-3-70b-chat-hf", "meta-llama/Llama-3-8b-chat-hf")
+TOGETHER_MODEL_LIST = ("meta-llama/Llama-3-70b-chat-hf", "meta-llama/Llama-3-8b-chat-hf", "google/gemma-2-27b-it")
 
 GEMINI_MODEL_LIST = ("gemini-1.5-flash-001", "gemini-1.5-pro-001")
 
