@@ -138,11 +138,11 @@ def main():
         )
 
     # handle off-case models
-    is_prometheus = False  # handles output tokens differently (less flexible)
     # use different prompt for prometheus/gemini models
     if "prometheus" in args.model:
         model_modifier = "prometheus"
-        is_prometheus = True
+    elif "OffsetBias" in args.model:
+        model_modifier = "offsetbias"
     elif "gemini" in args.model:
         model_modifier = "gemini"
     else:
@@ -300,7 +300,7 @@ def main():
         logger.info("*** Inference done ***")
 
         answers = [o.outputs[0].text for o in outputs]
-        winners = [process_judgement(a, is_prometheus=is_prometheus) for a in answers]
+        winners = [process_judgement(a, model_modifier) for a in answers]
 
         def process_shuffled(win, shuffle):
             if shuffle:
