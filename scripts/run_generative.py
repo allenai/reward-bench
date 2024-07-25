@@ -117,7 +117,10 @@ def main():
         assert len(args.model) % 2 == 1
 
     # define variable if is API or local
-    is_api_models = isinstance(args.model, list) or args.model in API_MODEL_LIST or not args.force_local
+    if args.force_local:
+        is_api_models = False
+    else:
+        is_api_models = isinstance(args.model, list) or args.model in API_MODEL_LIST
 
     # if model isn't API, load via vllm
     if not is_api_models:
