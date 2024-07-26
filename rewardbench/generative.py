@@ -343,7 +343,7 @@ def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False, model_
     else:
         raise ValueError(f"Model {model} not supported")
 
-    winner = process_judgement(judgment)
+    winner = process_judgement(judgment, model_modifier)
     return winner, user_prompt, judgment
 
 
