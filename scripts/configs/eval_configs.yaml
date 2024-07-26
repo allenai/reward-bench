@@ -518,6 +518,7 @@ sfairXC/FsfairX-LLaMA3-RM-v0.1:
   batch_size: 4
   trust_remote_code: False
   dpo: False
+  torch_dtype: bfloat16
 RLHFlow/pair-preference-model-LLaMA3-8B:
   model: RLHFlow/pair-preference-model-LLaMA3-8B
   tokenizer: RLHFlow/pair-preference-model-LLaMA3-8B
@@ -709,3 +710,11 @@ internlm/internlm2-20b-reward:
   batch_size: 2
   trust_remote_code: True
   dpo: False
+NCSOFT/Llama-3-OffsetBias-RM-8B:
+  model: NCSOFT/Llama-3-OffsetBias-RM-8B
+  tokenizer: NCSOFT/Llama-3-OffsetBias-RM-8B
+  chat_template: # none for tokenizer
+  batch_size: 4
+  torch_dtype: bfloat16
+  dpo: False
+  trust_remote_code: False
