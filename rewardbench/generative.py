@@ -57,6 +57,7 @@ OPENAI_MODEL_LIST = (
     "gpt-4-turbo-2024-04-09",
     "gpt-4o-2024-05-13",
     "gpt-4o-mini-2024-07-18",
+    "gpt-4o-2024-08-06",
 )
 
 # feel free to add more models to this list via PR
