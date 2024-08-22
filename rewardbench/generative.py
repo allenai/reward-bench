@@ -57,6 +57,7 @@ OPENAI_MODEL_LIST = (
     "gpt-4-turbo-2024-04-09",
     "gpt-4o-2024-05-13",
     "gpt-4o-mini-2024-07-18",
+    "gpt-4o-2024-08-06",
 )
 
 # feel free to add more models to this list via PR
@@ -70,9 +71,9 @@ TOGETHER_MODEL_LIST = (
     "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo",
 )
 
-GEMINI_MODEL_LIST = ("gemini-1.5-flash-001", "gemini-1.5-pro-001")
+GEMINI_MODEL_LIST = ("gemini-1.5-flash-001", "gemini-1.5-pro-001", "gemini-1.5-pro-exp-0801")
 
-API_MODEL_LIST = OPENAI_MODEL_LIST + ANTHROPIC_MODEL_LIST + TOGETHER_MODEL_LIST
+API_MODEL_LIST = OPENAI_MODEL_LIST + ANTHROPIC_MODEL_LIST + TOGETHER_MODEL_LIST + GEMINI_MODEL_LIST
 
 
 # API setting constants
