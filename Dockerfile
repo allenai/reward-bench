@@ -40,7 +40,6 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-py310_23.1.0-1-Linux-x86
 ENV PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:$PATH
 ENV LD_LIBRARY_PATH=/usr/local/cuda/lib:/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 
-
 # Ensure users can modify their container environment.
 RUN echo '%users ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
@@ -61,7 +60,7 @@ RUN pip install -e .
 RUN chmod +x scripts/*
 
 # this is just very slow
-RUN pip install flash-attn==2.5.0 --no-build-isolation
+# RUN pip install flash-attn==2.5.0 --no-build-isolation
 
 # for olmo-instruct v1, weird install requirements
 # RUN pip install ai2-olmo 
