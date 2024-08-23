@@ -56,6 +56,13 @@ jobs:
       - name: Delete huge unnecessary tools folder
         run: rm -rf /opt/hostedtoolcache /usr/share/dotnet "$AGENT_TOOLSDIRECTORY"
   
+      - name: Update Dockerfile with latest Beaker image
+        run: |
+          BEAKER_OUTPUT=$(beaker image pull ai2/cuda11.8-cudnn8-dev-ubuntu20.04)
+          IMAGE_ID=$(echo "$BEAKER_OUTPUT" | grep -oP 'gcr\.io/ai2-beaker-core/public/\K\w+')
+          sed -i 's/\(FROM gcr\.io\/ai2-beaker-core\/public\/\)[^:]*:/\1'"$IMAGE_ID"':/' Dockerfile
+          echo "Updated Dockerfile with image ID: $IMAGE_ID"
+
       - name: Build image
         run: |
           docker build \
