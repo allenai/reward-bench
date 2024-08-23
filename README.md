@@ -234,20 +234,10 @@ Notes: Do not use the character - in image names for beaker,
 
 When updating the `Dockerfile`, make sure to see the instructions at the top to update the base cuda version. 
 
-In development, we have the following docker images (most recent first as it's likely what you need).
-TODO: Update it so one image has VLLM (for generative RM only) and one without. Without will load much faster.
+We recently switched to automatic beaker image building workflows. 
+You can use this image, or the last image with the previous Dockerfile
+- `nathanl/rewardbench_auto`: Automatic image [here](https://beaker.org/im/01J60RQ6Y1KGNAD0NEPK01K03T/details).
 - `nathanl/rb_v23`, Jul. 2024: Include support for bfloat16 models from command line
-- `nathanl/rb_v22`, Jul. 2024: Include new [Generalizable Reward Model](https://arxiv.org/abs/2406.10216)
-- `nathanl/rb_v20`: Fixes to DPO handling (minor) + llama 3 not quantized for dpo
-- `nathanl/rb_v18`: Improvements to RewardBench CLI
-- `nathanl/rb_v17` (with VLLM): add support for vllm + llm as a judge, `rb_v16` is similar without prometheus and some OpenAI models
-- `nathanl/rb_v12`: add support for llama3
-- `nathanl/rewardbench_v10`: add support for `mightbe/Better-PairRM` via jinja2
-- `nathanl/rewardbench_v8`: add support for `openbmb/Eurus-RM-7b` and starcoder2
-- `nathanl/rewardbench_v5`: improve saving with DPO script
-- `nathanl/rewardbench_v4`: fix EOS token bug on FastChat models (GH #90)
-- `nathanl/rewardbench_v2`: fix beaver cost model
-- `nathanl/rewardbench_v1`: release version
 
 ## Citation
 Please cite our work with the following:
