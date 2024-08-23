@@ -26,7 +26,7 @@ RUN chmod +x scripts/*
 RUN pip install flash-attn==2.5.0 --no-build-isolation
 
 # for olmo-instruct v1, weird install requirements
-RUN pip install ai2-olmo 
+# RUN pip install ai2-olmo 
 
 # for better-pairRM
 RUN pip install jinja2 
