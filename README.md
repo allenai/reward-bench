@@ -236,7 +236,7 @@ When updating the `Dockerfile`, make sure to see the instructions at the top to 
 
 We recently switched to automatic beaker image building workflows. 
 You can use this image, or the last image with the previous Dockerfile
-- `nathanl/rewardbench_auto`: Automatic image.
+- `nathanl/rewardbench_auto`: Automatic image [here](https://beaker.org/im/01J60RQ6Y1KGNAD0NEPK01K03T/details).
 - `nathanl/rb_v23`, Jul. 2024: Include support for bfloat16 models from command line
 
 ## Citation
