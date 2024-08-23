@@ -1,13 +1,10 @@
-# This dockerfile is forked from ai2/cuda11.8-cudnn8-dev-ubuntu20.04
-# To get the latest id, run `beaker image pull ai2/cuda11.8-cudnn8-dev-ubuntu20.04` 
-# and then `docker image list`, to verify docker image is pulled
-# e.g. `Image is up to date for gcr.io/ai2-beaker-core/public/cncl3kcetc4q9nvqumrg:latest`
-
-# for auto images, does nothing for local builds (still must update the FROM gcr.io... line)
-RUN beaker image pull ai2/cuda11.8-cudnn8-dev-ubuntu20.04 
-FROM gcr.io/ai2-beaker-core/public/cr2hl693dl1ut1akc8v0:latest
+# Use public Nvidia images (rather than Beaker), for reproducibility
+FROM --platform=linux/amd64 nvidia/cuda:11.8-cudnn8-devel-ubuntu20.04
 
 RUN apt update && apt install -y openjdk-8-jre-headless
+
+# Ensure users can modify their container environment.
+RUN echo '%users ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
 RUN apt-get -y install git-lfs
