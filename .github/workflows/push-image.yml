@@ -48,6 +48,10 @@ jobs:
         with:
           beaker_token: ${{ secrets.BEAKER_TOKEN }}
 
+      - name: Verify Beaker install
+        run: |
+          beaker account whoami
+        
       # big images fail, trying this
       - name: Delete huge unnecessary tools folder
         run: rm -rf /opt/hostedtoolcache /usr/share/dotnet "$AGENT_TOOLSDIRECTORY"
