@@ -64,7 +64,7 @@ setup(
     ],
     extras_require={
         "generative": [
-            "vllm>=0.4.1",
+            "vllm>=0.5.5",
             "openai",
             "anthropic",
             "together",
