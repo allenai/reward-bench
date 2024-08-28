@@ -71,7 +71,14 @@ TOGETHER_MODEL_LIST = (
     "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo",
 )
 
-GEMINI_MODEL_LIST = ("gemini-1.5-flash-001", "gemini-1.5-pro-001", "gemini-1.5-pro-exp-0801")
+GEMINI_MODEL_LIST = (
+    "gemini-1.5-flash-001",
+    "gemini-1.5-pro-001",
+    "gemini-1.5-pro-exp-0801",
+    "gemini-1.5-pro-exp-0827",
+    "gemini-1.5-flash-exp-0827",
+    "gemini-1.5-flash-8b",
+)
 
 API_MODEL_LIST = OPENAI_MODEL_LIST + ANTHROPIC_MODEL_LIST + TOGETHER_MODEL_LIST + GEMINI_MODEL_LIST
 
