@@ -215,6 +215,8 @@ def main():
             "torch_dtype": torch_dtype,
         }
     
+    # if attn_implementation is not specified, this falls back to Hugging Face's default
+    # strategy (which chooses between sdpa and eager depending on pytorch version)
     if args.attn_implementation:
         model_kwargs["attn_implementation"] = args.attn_implementation
 
