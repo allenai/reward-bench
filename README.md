@@ -30,7 +30,6 @@ The repository includes the following:
 The two primary scripts to generate results (more in `scripts/`):
 1. `scripts/run_rm.py`: Run evaluations for reward models.
 2. `scripts/run_dpo.py`: Run evaluations for direct preference optimization (DPO) models (and other models using implicit rewards, such as KTO).
-3. `scripts/train_rm.py`: A basic RM training script built on [TRL](https://github.com/huggingface/trl).
 
 ## Quick Usage
 RewardBench let's you quickly evaluate any reward model on any preference set. 
@@ -80,6 +79,10 @@ Add the following to your `.bashrc`:
 ```
 export HF_TOKEN="{your_token}"
 ```
+
+## Training
+
+For training, we recommend using [`open-instruct`](https://github.com/allenai/open-instruct).
 
 ## Contribute Your Model
 
@@ -208,7 +211,7 @@ print(scores_per_section)
 ├── rewardbench/                <- Core utils and modeling files
 |   ├── models/                     ├── Standalone files for running existing reward models
 |   └── *.py                        └── RewardBench tools and utilities
-├── scripts/                    <- Scripts and configs to train and evaluate reward models
+├── scripts/                    <- Scripts and configs to evaluate reward models
 ├── tests                       <- Unit tests
 ├── Dockerfile                  <- Build file for reproducible and scaleable research at AI2
 ├── LICENSE
