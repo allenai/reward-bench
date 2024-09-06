@@ -82,6 +82,13 @@ def get_args():
         choices=["float16", "bfloat16", "float32", "float64"],
         help="PyTorch dtype (default: float16)",
     )
+    parser.add_argument(
+        "--attn_implementation",
+        type=str,
+        default=None,
+        choices=["eager", "sdpa", "flash_attention_2"],
+        help="Attention implementation to use (default: None)",
+    )
     args = parser.parse_args()
     args.torch_dtype = torch_dtype_mapping(args.torch_dtype)
     return args
@@ -207,6 +214,11 @@ def main():
             "device_map": "auto",
             "torch_dtype": torch_dtype,
         }
+
+    # if attn_implementation is not specified, this falls back to Hugging Face's default
+    # strategy (which chooses between sdpa and eager depending on pytorch version)
+    if args.attn_implementation:
+        model_kwargs["attn_implementation"] = args.attn_implementation
 
     model = model_builder(args.model, **model_kwargs, trust_remote_code=trust_remote_code)
     reward_pipe = pipeline_builder(
