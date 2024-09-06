@@ -127,16 +127,16 @@ def main():
         # load model
         model = LLM(args.model, trust_remote_code=args.trust_remote_code, tensor_parallel_size=args.num_gpus)
         tokenizer = AutoTokenizer.from_pretrained(args.model)
-        if "Llama-3" in args.model or "llama3-8b" in args.model:
+        if "Llama-3" in args.model or "llama3-8b" in args.model and "3.1" not in args.model:
             stop_token_ids = [128009]
         else:
-            stop_token_ids = []
+            stop_token_ids = None
 
         sampling_params = SamplingParams(
             n=1,
             temperature=0,
             top_p=1,
-            max_tokens=1024,
+            max_tokens=2048,
             stop_token_ids=stop_token_ids,
         )
 
@@ -273,7 +273,7 @@ def main():
                 optional_chat_template.append_message(optional_chat_template.roles[0], user_prompt)
                 optional_chat_template.append_message(optional_chat_template.roles[1], None)
                 prompt = optional_chat_template.get_prompt()
-            elif model_modifier:
+            else:
                 messages = [
                     {
                         "role": "system",

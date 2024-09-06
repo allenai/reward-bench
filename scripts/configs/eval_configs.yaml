@@ -718,3 +718,20 @@ NCSOFT/Llama-3-OffsetBias-RM-8B:
   torch_dtype: bfloat16
   dpo: False
   trust_remote_code: False
+Skywork/Skywork-Reward-Gemma-2-27B:
+  model: Skywork/Skywork-Reward-Gemma-2-27B
+  tokenizer: Skywork/Skywork-Reward-Gemma-2-27B
+  chat_template: # none for tokenizer
+  batch_size: 2
+  dpo: False
+  torch_dtype: bfloat16
+  trust_remote_code: False
+  attention_implementation: flash_attention_2
+Skywork/Skywork-Reward-Llama-3.1-8B:
+  model: Skywork/Skywork-Reward-Llama-3.1-8B
+  tokenizer: Skywork/Skywork-Reward-Llama-3.1-8B
+  chat_template: # none for tokenizer
+  batch_size: 8
+  dpo: False
+  torch_dtype: bfloat16
+  trust_remote_code: False

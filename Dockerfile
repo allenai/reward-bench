@@ -60,7 +60,7 @@ RUN pip install -e .
 RUN chmod +x scripts/*
 
 # this is just very slow
-# RUN pip install flash-attn==2.5.0 --no-build-isolation
+RUN pip install flash-attn==2.6.3 --no-build-isolation
 
 # for olmo-instruct v1, weird install requirements
 # RUN pip install ai2-olmo 
