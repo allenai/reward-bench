@@ -56,7 +56,7 @@ COPY scripts scripts
 COPY setup.py setup.py
 COPY Makefile Makefile
 COPY README.md README.md
-RUN pip install -e .
+RUN pip install -e .[generative]
 RUN chmod +x scripts/*
 
 # this is just very slow
@@ -73,10 +73,6 @@ RUN pip install anthropic
 RUN pip install openai
 RUN pip install together
 RUN pip install google-generativeai
-
-# updated for Gemma 2
-RUN pip install vllm==0.5.1
-# from git+https://github.com/vllm-project/vllm.git@d87f39e9a9dd149f5dd7a58b4d98b21f713827b6
 
 # for interactive session
 RUN chmod -R 777 /stage/
