@@ -49,7 +49,7 @@ RUN apt-get -y install git-lfs
 WORKDIR /stage/
 
 RUN pip install --upgrade pip setuptools wheel
-RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+RUN pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu118
 
 COPY rewardbench rewardbench
 COPY scripts scripts
