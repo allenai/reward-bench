@@ -158,6 +158,9 @@ for model in models_to_evaluate:
         d["tasks"][0]["arguments"][0] += " --pref_sets"
     if eval_bfloat16:
         d["tasks"][0]["arguments"][0] += " --torch_dtype=bfloat16"
+    if model_config["quantized"] is not None:
+        if not model_config["quantized"] and not eval_dpo:
+            d["tasks"][0]["arguments"][0] += " --not_quantized"
 
     # for run_rm only, for now, and gemma-2-27b RMs
     if "attention_implementation" in model_config:

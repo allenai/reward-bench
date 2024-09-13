@@ -735,3 +735,28 @@ Skywork/Skywork-Reward-Llama-3.1-8B:
   dpo: False
   torch_dtype: bfloat16
   trust_remote_code: False
+LxzGordon/URM-LLaMa-3.1-8B:
+  model: LxzGordon/URM-LLaMa-3.1-8B
+  tokenizer: LxzGordon/URM-LLaMa-3.1-8B
+  chat_template: # none for tokenizer
+  batch_size: 4
+  dpo: False
+  trust_remote_code: True
+  quantized: False
+LxzGordon/URM-LLaMa-3-8B:
+  model: LxzGordon/URM-LLaMa-3-8B
+  tokenizer: LxzGordon/URM-LLaMa-3-8B
+  chat_template: # none for tokenizer
+  batch_size: 4
+  dpo: False
+  trust_remote_code: True
+  quantized: False
+# Skywork/Skywork-Critic-Llama-3.1-8B:
+#   model: Skywork/Skywork-Critic-Llama-3.1-8B
+#   tokenizer: Skywork/Skywork-Critic-Llama-3.1-8B
+#   chat_template: # none for tokenizer
+#   batch_size: 4
+#   dpo: False
+#   generative: True
+#   num_gpus: 1
+  
