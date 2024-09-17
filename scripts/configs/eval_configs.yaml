@@ -759,4 +759,28 @@ LxzGordon/URM-LLaMa-3-8B:
 #   dpo: False
 #   generative: True
 #   num_gpus: 1
+Ray2333/GRM-Gemma-2B-rewardmodel-ft:
+  model: Ray2333/GRM-Gemma-2B-rewardmodel-ft
+  tokenizer: Ray2333/GRM-Gemma-2B-rewardmodel-ft
+  chat_template: # none for tokenizer
+  batch_size: 16
+  trust_remote_code: False
+  dpo: False
+  quantized: False
+Ray2333/Gemma-2B-rewardmodel-ft:
+  model: Ray2333/Gemma-2B-rewardmodel-ft
+  tokenizer: Ray2333/Gemma-2B-rewardmodel-ft
+  chat_template: # none for tokenizer
+  batch_size: 16
+  trust_remote_code: False
+  dpo: False
+  quantized: False
+Ray2333/GRM-Llama3-8B-rewardmodel-ft:
+  model: Ray2333/GRM-Llama3-8B-rewardmodel-ft
+  tokenizer: Ray2333/GRM-Llama3-8B-rewardmodel-ft
+  chat_template: # none for tokenizer
+  batch_size: 8
+  trust_remote_code: False
+  dpo: False
+  quantized: False
   
