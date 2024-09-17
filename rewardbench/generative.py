@@ -58,6 +58,8 @@ OPENAI_MODEL_LIST = (
     "gpt-4o-2024-05-13",
     "gpt-4o-mini-2024-07-18",
     "gpt-4o-2024-08-06",
+    "o1-preview-2024-09-12",
+    "o1-mini-2024-09-12",
 )
 
 # feel free to add more models to this list via PR
@@ -78,6 +80,7 @@ GEMINI_MODEL_LIST = (
     "gemini-1.5-pro-exp-0827",
     "gemini-1.5-flash-exp-0827",
     "gemini-1.5-flash-8b",
+    "gemini-1.5-flash-8b-exp-0827",
 )
 
 API_MODEL_LIST = OPENAI_MODEL_LIST + ANTHROPIC_MODEL_LIST + TOGETHER_MODEL_LIST + GEMINI_MODEL_LIST
@@ -470,9 +473,17 @@ def chat_completion_openai(model, conv, temperature, max_tokens, api_dict=None):
     for _ in range(API_MAX_RETRY):
         try:
             messages = conv.to_openai_api_messages()
-            response = client.chat.completions.create(
-                model=model, messages=messages, n=1, temperature=temperature, max_tokens=max_tokens
-            )
+            # remove system prompt for o1 models
+            if "o1-" in model:
+                messages = messages[1:]
+                response = client.chat.completions.create(
+                    model=model, messages=messages, n=1, temperature=1
+                )
+            else:
+                response = client.chat.completions.create(
+                    model=model, messages=messages, n=1, temperature=temperature, max_tokens=max_tokens
+                )
+
             output = response.choices[0].message.content
             break
         except openai.APIError as e:
