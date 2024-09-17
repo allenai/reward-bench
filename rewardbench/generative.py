@@ -476,9 +476,7 @@ def chat_completion_openai(model, conv, temperature, max_tokens, api_dict=None):
             # remove system prompt for o1 models
             if "o1-" in model:
                 messages = messages[1:]
-                response = client.chat.completions.create(
-                    model=model, messages=messages, n=1, temperature=1
-                )
+                response = client.chat.completions.create(model=model, messages=messages, n=1, temperature=1)
             else:
                 response = client.chat.completions.create(
                     model=model, messages=messages, n=1, temperature=temperature, max_tokens=max_tokens
