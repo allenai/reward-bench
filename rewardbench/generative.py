@@ -28,6 +28,8 @@ from fastchat.conversation import get_conv_template
 from google.generativeai.types import HarmBlockThreshold, HarmCategory
 from openai import OpenAI
 from together import Together
+import json
+import re
 
 ANTHROPIC_MODEL_LIST = (
     "claude-1",
@@ -228,6 +230,10 @@ Here are some rules of the evaluation:
 {output_2}
 # Which is better, Output (a) or Output (b)? Your response should be either "Output (a)" or "Output (b)":"""
 
+CON_J_PROMPT = """作为一个评价专家，给定一个问题和它的两个可能的回答，请选出哪一个回答在连贯性、准确性、覆盖度和上述定义的整体质量方面最为符合。请用JSON格式输出你的判断, 其中"原因"是你提供的解释，"更好的回答"是整数类型的1或2，例如{{"原因": "你的解释", "更好的回答": 1}}。以下是问题和候选回答的内容：
+    \n问题：{instruction}
+回答1：{output_1}
+回答2：{output_2}"""
 
 # format with prompt_template.format(question=question, answer_a=answer_a, answer_b=answer_b)
 def format_judge_answers(question, answer_a, answer_b, multi_turn=False, model_modifier=None):
@@ -243,6 +249,14 @@ def format_judge_answers(question, answer_a, answer_b, multi_turn=False, model_m
                 response_B=answer_b[1]["content"],
                 score_rubric=AUTOJ_COARSE_SCORE_RUBRIC,
                 **kwargs,
+            )
+    elif model_modifier == "Con-J":
+        if multi_turn:
+            raise ValueError("Con-J prompts do not support multi-turn prompts")
+        else:
+            system_prompt = ""
+            user_prompt = CON_J_PROMPT.format(
+                instruction=question, output_1=answer_a[1]["content"], output_2=answer_b[1]["content"]
             )
     elif model_modifier == "offsetbias":
         if multi_turn:
@@ -280,6 +294,79 @@ def format_judge_answers(question, answer_a, answer_b, multi_turn=False, model_m
 
     return system_prompt, user_prompt
 
+def con_j_evaluate(gen):
+    def normalize_digit(digit):
+        digit_map = {'１': '1', '２': '2'}
+        return digit_map.get(digit, digit)
+
+    def parse_evaluation(text, soft=True):
+        json_content = None
+        keywords = [
+            '更好的回答', '更好回答', '更好得回答', '更好地回答', 'better_answer',
+            'better answer', '更好答案', '更好得答案', '更好的答案', '更好地答案',
+            '更佳回答', '更佳答案', '更好答', '最佳答案', '更好答 案', '更好 的 回答',
+            'betterAnswer', '更好 的 回应', '更好得回应回答', '答案', '回答'
+        ]
+        for key in keywords:
+            if key in text:
+                pattern = rf'"{key}"\s*:\s*.*?([12１２])'
+                match = re.search(pattern, text)
+                if match:
+                    value = normalize_digit(match.group(1))
+                    json_content = {'更好的回答': value}
+                elif soft:
+                    pattern = rf'{key}.*?([12１２])'
+                    match = re.search(pattern, text)
+                    if match:
+                        value = normalize_digit(match.group(1))
+                        json_content = {'更好的回答': value}
+                    else:
+                        pattern = rf'([12１２]).*?{key}'
+                        match = re.search(pattern, text)
+                        if match:
+                            value = normalize_digit(match.group(1))
+                            json_content = {'更好的回答': value}
+                if json_content:
+                    break
+        return json_content
+    gen = gen.replace('\n', ' ').strip()
+    json_content = None
+    if "```json" in gen:
+        matches = re.findall(r'```json(.*?)```', gen, re.DOTALL)
+        for match in matches:
+            try:
+                json_content_candidate = json.loads(match)
+                if isinstance(json_content_candidate, dict) and '更好的回答' in json_content_candidate:
+                    json_content = json_content_candidate
+                    break
+            except json.JSONDecodeError:
+                continue 
+    if json_content is None:
+        try:
+            json_content_candidate = json.loads(gen)
+            if isinstance(json_content_candidate, dict) and '更好的回答' in json_content_candidate:
+                json_content = json_content_candidate
+        except json.JSONDecodeError:
+            pass
+    if json_content is None:
+        matches = re.findall(r'{.*?}', gen)
+        for match in matches:
+            try:
+                json_content_candidate = json.loads(match)
+                if isinstance(json_content_candidate, dict) and '更好的回答' in json_content_candidate:
+                    json_content = json_content_candidate
+                    break
+            except json.JSONDecodeError:
+                continue 
+    if json_content is None or '更好的回答' not in json_content:
+        json_content = parse_evaluation(gen)
+    if isinstance(json_content, dict) and '更好的回答' in json_content:
+        value = normalize_digit(str(json_content['更好的回答']))
+        if value == '1':
+            return 'A'
+        elif value == '2':
+            return 'B'
+    return 'None'
 
 def process_judgement(judgment, model_modifier):
     if model_modifier == "prometheus":
@@ -294,6 +381,8 @@ def process_judgement(judgment, model_modifier):
                 return "error"
         else:
             return "error"
+    elif model_modifier == "Con-J":
+        return con_j_evaluate(judgment)
     elif model_modifier == "offsetbias":
         if "Output (a)" in judgment:
             return "A"
