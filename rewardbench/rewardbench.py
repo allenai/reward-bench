@@ -419,4 +419,4 @@ def main(args: Args):
 
 if __name__ == "__main__":
     parser = HfArgumentParser((Args))
-    main(*parser.parse())
+    main(*parser.parse_args_into_dataclasses())
