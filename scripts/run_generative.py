@@ -25,7 +25,6 @@ import logging
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import sys
 
 import numpy as np
 from fastchat.conversation import get_conv_template

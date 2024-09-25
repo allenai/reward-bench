@@ -235,6 +235,7 @@ CON_J_PROMPT = """作为一个评价专家，给定一个问题和它的两个�
 回答1：{output_1}
 回答2：{output_2}"""
 
+
 # format with prompt_template.format(question=question, answer_a=answer_a, answer_b=answer_b)
 def format_judge_answers(question, answer_a, answer_b, multi_turn=False, model_modifier=None):
     kwargs = {}
@@ -294,6 +295,7 @@ def format_judge_answers(question, answer_a, answer_b, multi_turn=False, model_m
 
     return system_prompt, user_prompt
 
+
 def con_j_evaluate(gen):
     def normalize_digit(digit):
         digit_map = {'１': '1', '２': '2'}
@@ -340,7 +342,7 @@ def con_j_evaluate(gen):
                     json_content = json_content_candidate
                     break
             except json.JSONDecodeError:
-                continue 
+                continue
     if json_content is None:
         try:
             json_content_candidate = json.loads(gen)
@@ -357,7 +359,7 @@ def con_j_evaluate(gen):
                     json_content = json_content_candidate
                     break
             except json.JSONDecodeError:
-                continue 
+                continue
     if json_content is None or '更好的回答' not in json_content:
         json_content = parse_evaluation(gen)
     if isinstance(json_content, dict) and '更好的回答' in json_content:
@@ -367,6 +369,7 @@ def con_j_evaluate(gen):
         elif value == '2':
             return 'B'
     return 'None'
+
 
 def process_judgement(judgment, model_modifier):
     if model_modifier == "prometheus":
