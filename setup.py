@@ -61,6 +61,7 @@ setup(
         "tiktoken==0.6.0",  # added for llama 3
         "transformers==4.43.4",  # pinned at llama 3
         "trl>=0.8.2",  # fixed transformers import error, for DPO
+        "wandb",  # for loading model path / reivisions from wandb
     ],
     extras_require={
         "generative": [
