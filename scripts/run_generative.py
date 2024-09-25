@@ -144,6 +144,8 @@ def main():
     # use different prompt for prometheus/gemini models
     if "prometheus" in args.model:
         model_modifier = "prometheus"
+    elif "Con-J" in args.model:
+        model_modifier = "Con-J"
     elif "OffsetBias" in args.model:
         model_modifier = "offsetbias"
     elif "gemini" in args.model:
