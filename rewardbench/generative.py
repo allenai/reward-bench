@@ -18,7 +18,9 @@
 # pip install together>=1.1.3
 # pip install google-generativeai>=0.6.4
 
+import json
 import os
+import re
 import time as time
 
 import anthropic
@@ -28,8 +30,6 @@ from fastchat.conversation import get_conv_template
 from google.generativeai.types import HarmBlockThreshold, HarmCategory
 from openai import OpenAI
 from together import Together
-import json
-import re
 
 ANTHROPIC_MODEL_LIST = (
     "claude-1",
@@ -298,16 +298,33 @@ def format_judge_answers(question, answer_a, answer_b, multi_turn=False, model_m
 
 def con_j_evaluate(gen):
     def normalize_digit(digit):
-        digit_map = {'１': '1', '２': '2'}
+        digit_map = {"１": "1", "２": "2"}
         return digit_map.get(digit, digit)
 
     def parse_evaluation(text, soft=True):
         json_content = None
         keywords = [
-            '更好的回答', '更好回答', '更好得回答', '更好地回答', 'better_answer',
-            'better answer', '更好答案', '更好得答案', '更好的答案', '更好地答案',
-            '更佳回答', '更佳答案', '更好答', '最佳答案', '更好答 案', '更好 的 回答',
-            'betterAnswer', '更好 的 回应', '更好得回应回答', '答案', '回答'
+            "更好的回答",
+            "更好回答",
+            "更好得回答",
+            "更好地回答",
+            "better_answer",
+            "better answer",
+            "更好答案",
+            "更好得答案",
+            "更好的答案",
+            "更好地答案",
+            "更佳回答",
+            "更佳答案",
+            "更好答",
+            "最佳答案",
+            "更好答 案",
+            "更好 的 回答",
+            "betterAnswer",
+            "更好 的 回应",
+            "更好得回应回答",
+            "答案",
+            "回答",
         ]
         for key in keywords:
             if key in text:
@@ -315,30 +332,31 @@ def con_j_evaluate(gen):
                 match = re.search(pattern, text)
                 if match:
                     value = normalize_digit(match.group(1))
-                    json_content = {'更好的回答': value}
+                    json_content = {"更好的回答": value}
                 elif soft:
-                    pattern = rf'{key}.*?([12１２])'
+                    pattern = rf"{key}.*?([12１２])"
                     match = re.search(pattern, text)
                     if match:
                         value = normalize_digit(match.group(1))
-                        json_content = {'更好的回答': value}
+                        json_content = {"更好的回答": value}
                     else:
-                        pattern = rf'([12１２]).*?{key}'
+                        pattern = rf"([12１２]).*?{key}"
                         match = re.search(pattern, text)
                         if match:
                             value = normalize_digit(match.group(1))
-                            json_content = {'更好的回答': value}
+                            json_content = {"更好的回答": value}
                 if json_content:
                     break
         return json_content
-    gen = gen.replace('\n', ' ').strip()
+
+    gen = gen.replace("\n", " ").strip()
     json_content = None
     if "```json" in gen:
-        matches = re.findall(r'```json(.*?)```', gen, re.DOTALL)
+        matches = re.findall(r"```json(.*?)```", gen, re.DOTALL)
         for match in matches:
             try:
                 json_content_candidate = json.loads(match)
-                if isinstance(json_content_candidate, dict) and '更好的回答' in json_content_candidate:
+                if isinstance(json_content_candidate, dict) and "更好的回答" in json_content_candidate:
                     json_content = json_content_candidate
                     break
             except json.JSONDecodeError:
@@ -346,29 +364,29 @@ def con_j_evaluate(gen):
     if json_content is None:
         try:
             json_content_candidate = json.loads(gen)
-            if isinstance(json_content_candidate, dict) and '更好的回答' in json_content_candidate:
+            if isinstance(json_content_candidate, dict) and "更好的回答" in json_content_candidate:
                 json_content = json_content_candidate
         except json.JSONDecodeError:
             pass
     if json_content is None:
-        matches = re.findall(r'{.*?}', gen)
+        matches = re.findall(r"{.*?}", gen)
         for match in matches:
             try:
                 json_content_candidate = json.loads(match)
-                if isinstance(json_content_candidate, dict) and '更好的回答' in json_content_candidate:
+                if isinstance(json_content_candidate, dict) and "更好的回答" in json_content_candidate:
                     json_content = json_content_candidate
                     break
             except json.JSONDecodeError:
                 continue
-    if json_content is None or '更好的回答' not in json_content:
+    if json_content is None or "更好的回答" not in json_content:
         json_content = parse_evaluation(gen)
-    if isinstance(json_content, dict) and '更好的回答' in json_content:
-        value = normalize_digit(str(json_content['更好的回答']))
-        if value == '1':
-            return 'A'
-        elif value == '2':
-            return 'B'
-    return 'None'
+    if isinstance(json_content, dict) and "更好的回答" in json_content:
+        value = normalize_digit(str(json_content["更好的回答"]))
+        if value == "1":
+            return "A"
+        elif value == "2":
+            return "B"
+    return "None"
 
 
 def process_judgement(judgment, model_modifier):
