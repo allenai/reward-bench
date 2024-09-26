@@ -47,9 +47,10 @@ RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.d
 RUN apt-get -y install git-lfs
 
 WORKDIR /stage/
+ENV HF_HUB_ENABLE_HF_TRANSFER=1
 
 RUN pip install --upgrade pip setuptools wheel
-RUN pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu118
+RUN pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cu118
 
 COPY rewardbench rewardbench
 COPY scripts scripts
