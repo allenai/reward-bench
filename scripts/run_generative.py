@@ -70,7 +70,7 @@ def get_args():
         "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
     )
     parser.add_argument("--num_gpus", type=int, default=1, help="number of gpus to use, for multi-node vllm")
-    parser.add_arugment("--vllm_gpu_util", type=float, default=0.9, help="gpu utilization for vllm")
+    parser.add_argument("--vllm_gpu_util", type=float, default=0.9, help="gpu utilization for vllm")
     parser.add_argument("--vllm_max_seq_length", type=int, default=None, help="max sequence length for vllm")
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
     parser.add_argument(
