@@ -62,6 +62,8 @@ class Args:
     # wandb args
     wandb_run: Optional[str] = None
     """The wandb run to extract model and revision from."""
+    upload_metadata_to_hf: bool = False
+    """Upload metadata to Hugging Face Hub."""
 
     # inference args
     batch_size: int = 8
@@ -448,6 +450,17 @@ def actual_main(args: Args):
 
             # If there are extra results (per subset), add them as separate EvalResults
             if args.dataset == "allenai/reward-bench" and results_grouped:
+                for section, section_accuracy in results_section.items():
+                    print(f"Adding section {section} with accuracy {section_accuracy}")
+                    section_eval = EvalResult(
+                        task_type="preference_evaluation",
+                        dataset_type=section.replace(" ", "_"),
+                        dataset_name=section,
+                        metric_type="accuracy",
+                        metric_value=section_accuracy,
+                    )
+                    card_data.eval_results.append(section_eval)
+
                 for subset, subset_accuracy in results_grouped.items():
                     print(f"Adding subset {subset} with accuracy {subset_accuracy}")
                     subset_eval = EvalResult(
