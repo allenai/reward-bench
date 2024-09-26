@@ -27,6 +27,7 @@ import transformers
 import wandb
 from accelerate import Accelerator
 from accelerate.logging import get_logger
+from huggingface_hub import EvalResult, ModelCard, ModelCardData
 from tqdm import tqdm
 from transformers import AutoTokenizer, HfArgumentParser
 
@@ -61,6 +62,8 @@ class Args:
     # wandb args
     wandb_run: Optional[str] = None
     """The wandb run to extract model and revision from."""
+    upload_metadata_to_hf: bool = False
+    """Upload metadata to Hugging Face Hub."""
 
     # inference args
     batch_size: int = 8
@@ -423,6 +426,65 @@ def actual_main(args: Args):
         with open(output_path, "w") as f:
             for chosen, rejected in zip(scores_chosen, scores_rejected):
                 f.write(json.dumps({"chosen": chosen, "rejected": rejected}) + "\n")
+
+    ############################
+    # Upload metadata to Hugging Face Hub
+    ############################
+    if args.upload_metadata_to_hf:
+        logger.info("*** Uploading metadata to Hugging Face Hub ***")
+        try:
+            # Initialize ModelCardData with basic metadata
+            card_data = ModelCardData(
+                language="en",
+                model_name=args.model,
+                eval_results=[
+                    EvalResult(
+                        task_type="preference_evaluation",
+                        dataset_type=args.dataset,
+                        dataset_name=args.dataset.split("/")[-1],  # Assuming dataset ID is like 'owner/dataset'
+                        metric_type="accuracy",
+                        metric_value=accuracy,
+                    )
+                ],
+            )
+
+            # If there are extra results (per subset), add them as separate EvalResults
+            if args.dataset == "allenai/reward-bench" and results_grouped:
+                for section, section_accuracy in results_section.items():
+                    print(f"Adding section {section} with accuracy {section_accuracy}")
+                    section_eval = EvalResult(
+                        task_type="preference_evaluation",
+                        dataset_type=section.replace(" ", "_"),
+                        dataset_name=section,
+                        metric_type="accuracy",
+                        metric_value=section_accuracy,
+                    )
+                    card_data.eval_results.append(section_eval)
+
+                for subset, subset_accuracy in results_grouped.items():
+                    print(f"Adding subset {subset} with accuracy {subset_accuracy}")
+                    subset_eval = EvalResult(
+                        task_type="preference_evaluation",
+                        dataset_type=subset,
+                        dataset_name=subset,
+                        metric_type="accuracy",
+                        metric_value=subset_accuracy,
+                    )
+                    card_data.eval_results.append(subset_eval)
+
+            # Create a ModelCard
+            card = ModelCard.from_template(
+                card_data,
+                model_id=args.model,
+            )
+
+            # Push the updated ModelCard to the Hugging Face Hub
+            card.push_to_hub(
+                args.model, revision=args.revision, commit_message="Update evaluation results via RewardBench"
+            )
+            logger.info(f"Successfully pushed updated ModelCard to Hugging Face Hub for {args.model}")
+        except Exception as e:
+            logger.error(f"Failed to upload metadata to Hugging Face Hub: {e}")
 
 
 if __name__ == "__main__":
