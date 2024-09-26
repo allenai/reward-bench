@@ -66,7 +66,7 @@ setup(
     ],
     extras_require={
         "generative": [
-            "vllm>=0.5.5",
+            "vllm==0.5.5",  # TODO bump when needed for a model
             "openai",
             "anthropic",
             "together",
