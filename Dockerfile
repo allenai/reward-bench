@@ -1,5 +1,6 @@
 # Use public Nvidia images (rather than Beaker), for reproducibility
-FROM --platform=linux/amd64 nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04
+FROM --platform=linux/amd64 nvidia/cuda:12.1.0-cudnn8-devel-ubuntu20.04 
+#nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04
 
 RUN apt update && apt install -y openjdk-8-jre-headless
 
