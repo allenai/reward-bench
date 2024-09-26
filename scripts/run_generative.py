@@ -70,8 +70,8 @@ def get_args():
         "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
     )
     parser.add_argument("--num_gpus", type=int, default=1, help="number of gpus to use, for multi-node vllm")
-    parser.add_arugment("--vllm_gpu_util", type=float, default=0.9, help="gpu utilization for vllm")
-    parser.add_argument("--vllm_max_seq_length", type=int, default=None, help="max sequence length for vllm")
+    parser.add_argument("--vllm_gpu_util", type=float, default=0.9, help="gpu utilization for vllm")
+    # parser.add_argument("--vllm_max_seq_length", type=int, default=None, help="max sequence length for vllm")
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
     parser.add_argument(
         "--pref_sets", action="store_true", help="run on common preference sets instead of our custom eval set"
@@ -137,7 +137,7 @@ def main():
             trust_remote_code=args.trust_remote_code,
             tensor_parallel_size=args.num_gpus,
             gpu_memory_utilization=args.vllm_gpu_util,
-            max_seq_length=args.vllm_max_seq_length,
+            # max_seq_length=args.vllm_max_seq_length,
         )
         tokenizer = AutoTokenizer.from_pretrained(args.model)
         if "Llama-3" in args.model or "llama3-8b" in args.model and "3.1" not in args.model:
