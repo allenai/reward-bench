@@ -48,12 +48,13 @@ RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.d
 RUN apt-get -y install git-lfs
 
 WORKDIR /stage/
+ENV HF_HUB_ENABLE_HF_TRANSFER=1
 
 RUN pip install --upgrade pip setuptools wheel
 # designed for cuda 12.1
 RUN pip3 install torch torchvision torchaudio
 # If you need to use cuda 11.8, use this and the below vllm code for installing with cuda 11.8
-# RUN pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu118
+# RUN pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cu118
 # Install vLLM with CUDA 11.8.
 # RUN export VLLM_VERSION=0.6.1.post1
 # RUN export PYTHON_VERSION=310

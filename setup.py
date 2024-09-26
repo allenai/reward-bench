@@ -49,6 +49,7 @@ setup(
         "flake8>=6.0",
         "fschat",
         "huggingface_hub",
+        "hf_transfer",
         "isort>=5.12.0",
         "pandas",
         "peft",
