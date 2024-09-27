@@ -18,7 +18,7 @@ import unittest
 from fastchat.conversation import get_conv_template
 from transformers import AutoTokenizer
 
-from rewardbench import load_preference_dataset
+from rewardbench import load_and_process_dataset
 
 
 class LoadAnyDataTest(unittest.TestCase):
@@ -31,15 +31,21 @@ class LoadAnyDataTest(unittest.TestCase):
         self.conv = get_conv_template("tulu")
 
     def test_load_standard_tokenizer(self):
-        load_preference_dataset(
+        load_and_process_dataset(
             "allenai/ultrafeedback_binarized_cleaned", split="test_prefs", tokenizer=self.tokenizer
         )
 
     def test_load_standard_conv(self):
-        load_preference_dataset("allenai/ultrafeedback_binarized_cleaned", split="test_prefs", conv=self.conv)
+        load_and_process_dataset("allenai/ultrafeedback_binarized_cleaned", split="test_prefs", conv=self.conv)
 
     def test_load_alt_tokenizer(self):
-        load_preference_dataset("allenai/preference-test-sets", split="shp", tokenizer=self.tokenizer)
+        load_and_process_dataset("allenai/preference-test-sets", split="shp", tokenizer=self.tokenizer)
 
     def test_load_alt_conv(self):
-        load_preference_dataset("allenai/preference-test-sets", split="shp", conv=self.conv)
+        load_and_process_dataset("allenai/preference-test-sets", split="shp", conv=self.conv)
+
+    def test_load_sft_tokenizer(self):
+        load_and_process_dataset("HuggingFaceH4/no_robots", split="test", tokenizer=self.tokenizer)
+
+    def test_load_sft_conv(self):
+        load_and_process_dataset("HuggingFaceH4/no_robots", split="test", conv=self.conv)

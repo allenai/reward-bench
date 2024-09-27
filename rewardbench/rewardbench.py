@@ -133,7 +133,7 @@ def push_results_to_hub(args, results):
     if not args.hf_name:
         args.hf_name = f"rewardbench_eval_{timestamp}"
 
-    full_repo_id = f"{args.hf_entity}/{args.hf_name}_{timestamp}"
+    full_repo_id = f"{args.hf_entity}/{args.hf_name}"
 
     # Create repository on Hugging Face Hub
     api.create_repo(full_repo_id, repo_type="dataset", exist_ok=True)
@@ -476,8 +476,8 @@ def rewardbench(args: Args):
 
     # Consolidate chosen and rejected scores along with prompts and texts
     if is_preference_ranking:
-        combined_data["scores_chosen"] = scores_chosen
-        combined_data["scores_rejected"] = scores_rejected
+        combined_data["scores_chosen"] = [item for sublist in scores_chosen for item in sublist]
+        combined_data["scores_rejected"] = [item for sublist in scores_rejected for item in sublist]
         combined_data["text_chosen"] = dataset["text_chosen"]
         combined_data["text_rejected"] = dataset["text_rejected"]
     # or take instruction
