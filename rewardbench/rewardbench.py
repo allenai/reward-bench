@@ -12,14 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Run RewardBench (evaluate any reward model on any dataet)
+# Run RewardBench (evaluate any reward model on any dataset)
 
 import json
 import logging
 import os
 import sys
+import time
 from dataclasses import dataclass
-from typing import Optional
+from pprint import pformat
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import torch
@@ -27,7 +29,8 @@ import transformers
 import wandb
 from accelerate import Accelerator
 from accelerate.logging import get_logger
-from huggingface_hub import EvalResult, ModelCard, ModelCardData
+from huggingface_hub import EvalResult, HfApi, ModelCard, ModelCardData
+from huggingface_hub.repocard import RepoCard
 from tqdm import tqdm
 from transformers import AutoTokenizer, HfArgumentParser
 
@@ -35,7 +38,7 @@ from rewardbench import (
     DPO_MODEL_CONFIG,
     REWARD_MODEL_CONFIG,
     check_tokenizer_chat_template,
-    load_preference_dataset,
+    load_and_process_dataset,
 )
 
 
@@ -58,12 +61,22 @@ class Args:
     """The chat template to use (defaults to from tokenizer, from chattemplate)."""
     not_quantized: bool = False
     """Disable quantization for models that are quantized by default."""
+    prioritize_scoring: bool = False
+    """Prioritize scoring of the messages key, rather than accuracy rankings."""
+
+    # hf saving args
+    push_results_to_hub: bool = False
+    """Push distribution of scores and labels to randomly generated HuggingFace dataset."""
+    upload_model_metadata_to_hf: bool = False
+    """Upload metadata to Hugging Face Hub."""
+    hf_entity: Optional[str] = None
+    """The Hugging Face entity to push results to."""
+    hf_name: Optional[str] = None
+    """[Default is random] The Hugging Face dataset name to push results to."""
 
     # wandb args
     wandb_run: Optional[str] = None
     """The wandb run to extract model and revision from."""
-    upload_metadata_to_hf: bool = False
-    """Upload metadata to Hugging Face Hub."""
 
     # inference args
     batch_size: int = 8
@@ -86,12 +99,120 @@ class Args:
     """Force truncation (for if model errors)."""
 
 
+def save_jsonl(save_filename: str, table: Dict[str, List[Union[int, float, str]]]):
+    # Ensure directory exists
+    dirname = os.path.dirname(save_filename)
+    if dirname:
+        os.makedirs(dirname, exist_ok=True)
+
+    # Write the dictionary data to JSONL file
+    with open(save_filename, "w") as outfile:
+        # Iterate through each index and write corresponding row as JSON
+        for i in range(len(next(iter(table.values())))):  # Get the first key's length
+            json.dump({key: table[key][i] for key in table}, outfile)
+            outfile.write("\n")
+
+
+def push_results_to_hub(args):
+    """
+    Push dataset to Hugging Face Hub.
+
+    Args:
+        args: Argument object with the following attributes:
+            - push_to_hub: Boolean, whether to push to Hub.
+            - hf_entity: Hugging Face entity (e.g., username or organization).
+            - hf_repo_id: ID of the repository to create or use.
+            - hf_repo_id_scores: ID of the repository for storing scores.
+            - save_filename: Path to the file to save in the repository.
+            - save_filename_scores: Path to the file for score-related saving.
+            - add_timestamp: Boolean, whether to add a timestamp to the repo ID.
+    """
+    api = HfApi()
+
+    if args.push_to_hub:
+        if args.hf_entity is None:
+            args.hf_entity = api.whoami()["name"]
+
+        # Generate default hf_repo_id if not set
+        if not args.hf_repo_id:
+            args.hf_repo_id = f"rewardbench_eval_{time.strftime('%H%M%S%d%m%Y')}"
+
+        full_repo_id = f"{args.hf_entity}/{args.hf_repo_id}"
+        timestamp = f"_{int(time.time())}" if args.add_timestamp else ""
+
+        # Append timestamp to repo_id if required
+        full_repo_id += timestamp
+
+        # Create repository on Hugging Face Hub
+        api.create_repo(full_repo_id, repo_type="dataset", exist_ok=True)
+
+        # Upload files to the repository
+        for f in [__file__, args.save_filename]:
+            api.upload_file(
+                path_or_fileobj=f,
+                path_in_repo=f.split("/")[-1],
+                repo_id=full_repo_id,
+                repo_type="dataset",
+            )
+
+        # Print and prepare the repository URL
+        repo_full_url = f"https://huggingface.co/datasets/{full_repo_id}"
+        print(f"Pushed to {repo_full_url}")
+
+        # Generate the command that was run
+        run_command = " ".join(["python"] + sys.argv)
+
+        # Create and push a repo card
+        sft_card = RepoCard(
+            content=f"""\
+# {args.hf_repo_id}: RewardBench CLI Eval. Outputs
+
+See https://github.com/allenai/rewardbench for more details
+
+## Configs
+args: {pformat(vars(args))}
+
+## Additional Information
+
+1. Command used to run `{run_command}`
+"""
+        )
+        sft_card.push_to_hub(
+            full_repo_id,
+            repo_type="dataset",
+        )
+
+        # Repeat process for scores repository
+        full_repo_id_scores = f"{args.hf_entity}/{args.hf_repo_id_scores}"
+        full_repo_id_scores += timestamp
+
+        api.create_repo(full_repo_id_scores, repo_type="dataset", exist_ok=True)
+
+        for f in [__file__, args.save_filename_scores]:
+            api.upload_file(
+                path_or_fileobj=f,
+                path_in_repo=f.split("/")[-1],
+                repo_id=full_repo_id_scores,
+                repo_type="dataset",
+            )
+
+        repo_full_url_scores = f"https://huggingface.co/datasets/{full_repo_id_scores}"
+        print(f"Pushed to {repo_full_url_scores}")
+
+        # Push card to scores repo
+        sft_card.push_to_hub(
+            full_repo_id_scores,
+            repo_type="dataset",
+        )
+
+
 def main():
     parser = HfArgumentParser((Args))
-    actual_main(*parser.parse_args_into_dataclasses())
+    rewardbench(*parser.parse_args_into_dataclasses())
 
 
-def actual_main(args: Args):
+# Structure eeded to accomodate HuggingFace Args with CLI binding
+def rewardbench(args: Args):
     if args.wandb_run is not None:
         wandb_run = wandb.Api().run(args.wandb_run)
         args.model = wandb_run.config["hf_repo_id"]
@@ -195,9 +316,20 @@ def actual_main(args: Args):
             keep_columns=["text_chosen", "text_rejected", "prompt"],
         )
     else:
-        dataset = load_preference_dataset(
-            args.dataset, split=args.split, json=args.load_json, tokenizer=tokenizer, conv=conv
+        dataset = load_and_process_dataset(
+            args.dataset,
+            split=args.split,
+            json=args.load_json,
+            tokenizer=tokenizer,
+            conv=conv,
+            prioritize_instructions=args.prioritize_scoring,
         )
+
+    # check if "chosen" and "rejected" in the dataset features
+    if "chosen" in dataset.features and "rejected" in dataset.features:
+        is_preference_ranking = True
+    else:
+        is_preference_ranking = False
 
     if args.debug:
         dataset = dataset.select(range(10))
@@ -208,6 +340,9 @@ def actual_main(args: Args):
     # Load DPO model pipeline
     ############################
     if is_dpo:
+        # if not preference data, raise NotImplementedError (only implemented for pairwise)
+        if not is_preference_ranking:
+            raise NotImplementedError("DPO only implemented for pairwise preference data.")
         tokenizer.pad_token = tokenizer.eos_token
         # if no BOS token, set as pad token, e.g. QWEN models
         if tokenizer.bos_token is None:
@@ -322,100 +457,109 @@ def actual_main(args: Args):
     ############################
 
     results = []
-    scores_chosen = []
-    scores_rejected = []
+    if is_preference_ranking:
+        scores_chosen = []
+        scores_rejected = []
+
     for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
         logger.info(f"RM inference step {step}/{len(dataloader)}")
 
-        if is_dpo:
-            rewards_chosen, rewards_rejected = dpo.inference_step(batch)
+        if is_preference_ranking:
+            if is_dpo:
+                rewards_chosen, rewards_rejected = dpo.inference_step(batch)
+            else:
+                rewards_chosen = reward_pipe(batch["text_chosen"], **reward_pipeline_kwargs)
+                rewards_rejected = reward_pipe(batch["text_rejected"], **reward_pipeline_kwargs)
+
+            # for each item in batch, record 1 if chosen > rejected
+            # extra score from dict within batched results (e.g. logits)
+            # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
+            if isinstance(rewards_chosen[0], dict):
+                score_chosen_batch = [result["score"] for result in rewards_chosen]
+                score_rejected_batch = [result["score"] for result in rewards_rejected]
+            # for classes that directly output scores (custom code)
+            else:
+                score_chosen_batch = rewards_chosen.cpu().numpy().tolist()
+                score_rejected_batch = rewards_rejected.cpu().numpy().tolist()
+
+            # log results
+            [
+                results.append(1) if chosen > rejected else results.append(0)
+                for chosen, rejected in zip(score_chosen_batch, score_rejected_batch)
+            ]
+            scores_chosen.extend(score_chosen_batch)
+            scores_rejected.extend(score_rejected_batch)
         else:
-            rewards_chosen = reward_pipe(batch["text_chosen"], **reward_pipeline_kwargs)
-            rewards_rejected = reward_pipe(batch["text_rejected"], **reward_pipeline_kwargs)
-
-        # for each item in batch, record 1 if chosen > rejected
-        # extra score from dict within batched results (e.g. logits)
-        # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
-        if isinstance(rewards_chosen[0], dict):
-            score_chosen_batch = [result["score"] for result in rewards_chosen]
-            score_rejected_batch = [result["score"] for result in rewards_rejected]
-        # for classes that directly output scores (custom code)
-        else:
-            score_chosen_batch = rewards_chosen.cpu().numpy().tolist()
-            score_rejected_batch = rewards_rejected.cpu().numpy().tolist()
-
-        # log results
-        [
-            results.append(1) if chosen > rejected else results.append(0)
-            for chosen, rejected in zip(score_chosen_batch, score_rejected_batch)
-        ]
-        scores_chosen.extend(score_chosen_batch)
-        scores_rejected.extend(score_rejected_batch)
+            rewards = reward_pipe(batch["text"], **reward_pipeline_kwargs)
+            if isinstance(rewards[0], dict):
+                scores = [result["score"] for result in rewards]
+            else:
+                scores = rewards.cpu().numpy().tolist()
+            results.extend(scores)
 
     ############################
-    # compile scores
+    # save outputs directly
     ############################
-    # calculate accuracy
-    accuracy = sum(results) / len(results)
-    logger.info(f"Results: {accuracy}, on {len(results)} prompts")
 
-    # compute mean and std of scores, chosen and rejected, then margin between them
-    logger.info(f"Mean chosen: {np.mean(scores_chosen)}, std: {np.std(scores_chosen)}")
-    logger.info(f"Mean rejected: {np.mean(scores_rejected)}, std: {np.std(scores_rejected)}")
-    logger.info(f"Mean margin: {np.mean(np.array(scores_chosen) - np.array(scores_rejected))}")
-
-    if args.dataset == "allenai/reward-bench":
-        out_dataset = dataset.add_column("results", results)
-        if args.debug:
-            subsets = subsets[:10]
-        out_dataset = out_dataset.add_column("subsets", subsets)
-        out_dataset = out_dataset.to_pandas()  # I know this is meh
-
-        results_grouped = {}
-        present_subsets = np.unique(out_dataset["subsets"])
-        for subset in present_subsets:
-            subset_dataset = out_dataset[out_dataset["subsets"] == subset]
-            num_correct = sum(subset_dataset["results"])
-            num_total = len(subset_dataset["results"])
-            logger.info(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
-            results_grouped[subset] = num_correct / num_total
-
-        results_section = calculate_scores_per_section(EXAMPLE_COUNTS, SUBSET_MAPPING, results_grouped)
-        logger.info(f"Results: {results_section}")
-
-    ############################
-    # compile scores
-    ############################
-    # save score in json to args.output_dir + args.model + ".json"
-    output_path = args.output_dir + args.model + ".json"
-    dirname = os.path.dirname(output_path)
-    os.makedirs(dirname, exist_ok=True)
-
-    # remove old data
-    if os.path.exists(output_path):
-        os.remove(output_path)
-
-    final_results = {
-        "accuracy": accuracy,
-        "num_prompts": len(results),
-        "model": args.model,
-        "ref_model": args.ref_model,
-        "tokenizer": tokenizer_path,
-        "chat_template": args.chat_template,
-        "extra_results": results_grouped if args.dataset == "allenai/reward-bench" else None,
+    combined_data = {
+        "prompt": dataset["prompts"],  # Assuming `prompts` is a list of prompts matching scores
+        "results": results,
     }
-    with open(output_path, "w") as f:
-        json.dump(final_results, f)
 
-    if args.wandb_run is not None:
-        for key in final_results:
-            wandb_run.summary[f"rewardbench/{key}"] = final_results[key]
-        wandb_run.update()
-        print(f"Logged metrics to {wandb_run.url}")
+    # Consolidate chosen and rejected scores along with prompts and texts
+    if is_preference_ranking:
+        combined_data["scores_chosen"] = scores_chosen
+        combined_data["scores_rejected"] = scores_rejected
+        combined_data["text_chosen"] = dataset["text_chosen"]
+        combined_data["text_rejected"] = dataset["text_rejected"]
+    # or take instruction
+    else:
+        combined_data["messages"] = dataset["messages"]
 
-    # if save_all is passed, save a large jsonl with all scores_chosen, scores_rejected
-    if args.save_all:
-        output_path = args.output_dir + args.model + "_all.jsonl"
+    # Save combined scores and metadata to JSONL
+    scores_output_path = os.path.join(args.output_dir, f"{args.model}_outputs.jsonl")
+    save_jsonl(scores_output_path, combined_data)
+
+    ############################
+    # the rest is just for preferences (accuracies)
+    ############################
+    if is_preference_ranking:
+        ############################
+        # compile scores
+        ############################
+        # calculate accuracy
+        accuracy = sum(results) / len(results)
+        logger.info(f"Results: {accuracy}, on {len(results)} prompts")
+
+        # compute mean and std of scores, chosen and rejected, then margin between them
+        logger.info(f"Mean chosen: {np.mean(scores_chosen)}, std: {np.std(scores_chosen)}")
+        logger.info(f"Mean rejected: {np.mean(scores_rejected)}, std: {np.std(scores_rejected)}")
+        logger.info(f"Mean margin: {np.mean(np.array(scores_chosen) - np.array(scores_rejected))}")
+
+        if args.dataset == "allenai/reward-bench":
+            out_dataset = dataset.add_column("results", results)
+            if args.debug:
+                subsets = subsets[:10]
+            out_dataset = out_dataset.add_column("subsets", subsets)
+            out_dataset = out_dataset.to_pandas()  # I know this is meh
+
+            results_grouped = {}
+            present_subsets = np.unique(out_dataset["subsets"])
+            for subset in present_subsets:
+                subset_dataset = out_dataset[out_dataset["subsets"] == subset]
+                num_correct = sum(subset_dataset["results"])
+                num_total = len(subset_dataset["results"])
+                logger.info(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
+                results_grouped[subset] = num_correct / num_total
+
+            results_section = calculate_scores_per_section(EXAMPLE_COUNTS, SUBSET_MAPPING, results_grouped)
+            logger.info(f"Results: {results_section}")
+
+        ############################
+        # save scores
+        ############################
+        # save score in json to args.output_dir + args.model + ".json"
+        output_path = args.output_dir + args.model + ".json"
         dirname = os.path.dirname(output_path)
         os.makedirs(dirname, exist_ok=True)
 
@@ -423,68 +567,96 @@ def actual_main(args: Args):
         if os.path.exists(output_path):
             os.remove(output_path)
 
+        final_results = {
+            "accuracy": accuracy,
+            "num_prompts": len(results),
+            "model": args.model,
+            "ref_model": args.ref_model,
+            "tokenizer": tokenizer_path,
+            "chat_template": args.chat_template,
+            "extra_results": results_grouped if args.dataset == "allenai/reward-bench" else None,
+        }
         with open(output_path, "w") as f:
-            for chosen, rejected in zip(scores_chosen, scores_rejected):
-                f.write(json.dumps({"chosen": chosen, "rejected": rejected}) + "\n")
+            json.dump(final_results, f)
 
-    ############################
-    # Upload metadata to Hugging Face Hub
-    ############################
-    if args.upload_metadata_to_hf:
-        logger.info("*** Uploading metadata to Hugging Face Hub ***")
-        try:
-            # Initialize ModelCardData with basic metadata
-            card_data = ModelCardData(
-                language="en",
-                model_name=args.model,
-                eval_results=[
-                    EvalResult(
-                        task_type="preference_evaluation",
-                        dataset_type=args.dataset,
-                        dataset_name=args.dataset.split("/")[-1],  # Assuming dataset ID is like 'owner/dataset'
-                        metric_type="accuracy",
-                        metric_value=accuracy,
-                    )
-                ],
-            )
+        if args.wandb_run is not None:
+            for key in final_results:
+                wandb_run.summary[f"rewardbench/{key}"] = final_results[key]
+            wandb_run.update()
+            print(f"Logged metrics to {wandb_run.url}")
 
-            # If there are extra results (per subset), add them as separate EvalResults
-            if args.dataset == "allenai/reward-bench" and results_grouped:
-                for section, section_accuracy in results_section.items():
-                    print(f"Adding section {section} with accuracy {section_accuracy}")
-                    section_eval = EvalResult(
-                        task_type="preference_evaluation",
-                        dataset_type=section.replace(" ", "_"),
-                        dataset_name=section,
-                        metric_type="accuracy",
-                        metric_value=section_accuracy,
-                    )
-                    card_data.eval_results.append(section_eval)
+        # if save_all is passed, save a large jsonl with all scores_chosen, scores_rejected
+        if args.save_all:
+            output_path = args.output_dir + args.model + "_all.jsonl"
+            dirname = os.path.dirname(output_path)
+            os.makedirs(dirname, exist_ok=True)
 
-                for subset, subset_accuracy in results_grouped.items():
-                    print(f"Adding subset {subset} with accuracy {subset_accuracy}")
-                    subset_eval = EvalResult(
-                        task_type="preference_evaluation",
-                        dataset_type=subset,
-                        dataset_name=subset,
-                        metric_type="accuracy",
-                        metric_value=subset_accuracy,
-                    )
-                    card_data.eval_results.append(subset_eval)
+            # remove old data
+            if os.path.exists(output_path):
+                os.remove(output_path)
 
-            # Create a ModelCard
-            card = ModelCard.from_template(
-                card_data,
-                model_id=args.model,
-            )
+            with open(output_path, "w") as f:
+                for chosen, rejected in zip(scores_chosen, scores_rejected):
+                    f.write(json.dumps({"chosen": chosen, "rejected": rejected}) + "\n")
 
-            # Push the updated ModelCard to the Hugging Face Hub
-            card.push_to_hub(
-                args.model, revision=args.revision, commit_message="Update evaluation results via RewardBench"
-            )
-            logger.info(f"Successfully pushed updated ModelCard to Hugging Face Hub for {args.model}")
-        except Exception as e:
-            logger.error(f"Failed to upload metadata to Hugging Face Hub: {e}")
+        ############################
+        # Upload metadata to Hugging Face Hub
+        ############################
+        if args.upload_model_metadata_to_hf:
+            logger.info("*** Uploading metadata to Hugging Face Hub ***")
+            try:
+                # Initialize ModelCardData with basic metadata
+                card_data = ModelCardData(
+                    language="en",
+                    model_name=args.model,
+                    eval_results=[
+                        EvalResult(
+                            task_type="preference_evaluation",
+                            dataset_type=args.dataset,
+                            dataset_name=args.dataset.split("/")[-1],  # Assuming dataset ID is like 'owner/dataset'
+                            metric_type="accuracy",
+                            metric_value=accuracy,
+                        )
+                    ],
+                )
+
+                # If there are extra results (per subset), add them as separate EvalResults
+                if args.dataset == "allenai/reward-bench" and results_grouped:
+                    for section, section_accuracy in results_section.items():
+                        print(f"Adding section {section} with accuracy {section_accuracy}")
+                        section_eval = EvalResult(
+                            task_type="preference_evaluation",
+                            dataset_type=section.replace(" ", "_"),
+                            dataset_name=section,
+                            metric_type="accuracy",
+                            metric_value=section_accuracy,
+                        )
+                        card_data.eval_results.append(section_eval)
+
+                    for subset, subset_accuracy in results_grouped.items():
+                        print(f"Adding subset {subset} with accuracy {subset_accuracy}")
+                        subset_eval = EvalResult(
+                            task_type="preference_evaluation",
+                            dataset_type=subset,
+                            dataset_name=subset,
+                            metric_type="accuracy",
+                            metric_value=subset_accuracy,
+                        )
+                        card_data.eval_results.append(subset_eval)
+
+                # Create a ModelCard
+                card = ModelCard.from_template(
+                    card_data,
+                    model_id=args.model,
+                )
+
+                # Push the updated ModelCard to the Hugging Face Hub
+                card.push_to_hub(
+                    args.model, revision=args.revision, commit_message="Update evaluation results via RewardBench"
+                )
+                logger.info(f"Successfully pushed updated ModelCard to Hugging Face Hub for {args.model}")
+            except Exception as e:
+                logger.error(f"Failed to upload metadata to Hugging Face Hub: {e}")
 
 
 if __name__ == "__main__":
