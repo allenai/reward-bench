@@ -29,6 +29,7 @@ import transformers
 import wandb
 from accelerate import Accelerator
 from accelerate.logging import get_logger
+from datasets import Dataset
 from huggingface_hub import EvalResult, HfApi, ModelCard, ModelCardData
 from huggingface_hub.repocard import RepoCard
 from tqdm import tqdm
@@ -113,97 +114,64 @@ def save_jsonl(save_filename: str, table: Dict[str, List[Union[int, float, str]]
             outfile.write("\n")
 
 
-def push_results_to_hub(args):
+def push_results_to_hub(args, results):
     """
     Push dataset to Hugging Face Hub.
 
     Args:
         args: Argument object with the following attributes:
-            - push_to_hub: Boolean, whether to push to Hub.
             - hf_entity: Hugging Face entity (e.g., username or organization).
-            - hf_repo_id: ID of the repository to create or use.
-            - hf_repo_id_scores: ID of the repository for storing scores.
-            - save_filename: Path to the file to save in the repository.
-            - save_filename_scores: Path to the file for score-related saving.
-            - add_timestamp: Boolean, whether to add a timestamp to the repo ID.
+            - hf_name: ID of the repository to create or use.
     """
     api = HfApi()
 
-    if args.push_to_hub:
-        if args.hf_entity is None:
-            args.hf_entity = api.whoami()["name"]
+    if args.hf_entity is None:
+        args.hf_entity = api.whoami()["name"]
 
-        # Generate default hf_repo_id if not set
-        if not args.hf_repo_id:
-            args.hf_repo_id = f"rewardbench_eval_{time.strftime('%H%M%S%d%m%Y')}"
+    timestamp = time.strftime("%H%M%d%m%y")
+    # Generate default hf_name if not set
+    if not args.hf_name:
+        args.hf_name = f"rewardbench_eval_{timestamp}"
 
-        full_repo_id = f"{args.hf_entity}/{args.hf_repo_id}"
-        timestamp = f"_{int(time.time())}" if args.add_timestamp else ""
+    full_repo_id = f"{args.hf_entity}/{args.hf_name}_{timestamp}"
 
-        # Append timestamp to repo_id if required
-        full_repo_id += timestamp
+    # Create repository on Hugging Face Hub
+    api.create_repo(full_repo_id, repo_type="dataset", exist_ok=True)
 
-        # Create repository on Hugging Face Hub
-        api.create_repo(full_repo_id, repo_type="dataset", exist_ok=True)
+    # Print and prepare the repository URL
+    repo_full_url = f"https://huggingface.co/datasets/{full_repo_id}"
+    print(f"Pushed to {repo_full_url}")
 
-        # Upload files to the repository
-        for f in [__file__, args.save_filename]:
-            api.upload_file(
-                path_or_fileobj=f,
-                path_in_repo=f.split("/")[-1],
-                repo_id=full_repo_id,
-                repo_type="dataset",
-            )
+    # Generate the command that was run
+    run_command = " ".join(["python"] + sys.argv)
 
-        # Print and prepare the repository URL
-        repo_full_url = f"https://huggingface.co/datasets/{full_repo_id}"
-        print(f"Pushed to {repo_full_url}")
-
-        # Generate the command that was run
-        run_command = " ".join(["python"] + sys.argv)
-
-        # Create and push a repo card
-        sft_card = RepoCard(
-            content=f"""\
-# {args.hf_repo_id}: RewardBench CLI Eval. Outputs
+    # Create and push a repo card
+    rm_card = RepoCard(
+        content=f"""\
+# {args.hf_name}: RewardBench CLI Eval. Outputs
 
 See https://github.com/allenai/rewardbench for more details
 
 ## Configs
+```
 args: {pformat(vars(args))}
+```
 
 ## Additional Information
 
 1. Command used to run `{run_command}`
 """
-        )
-        sft_card.push_to_hub(
-            full_repo_id,
-            repo_type="dataset",
-        )
+    )
+    rm_card.push_to_hub(
+        full_repo_id,
+        repo_type="dataset",
+    )
 
-        # Repeat process for scores repository
-        full_repo_id_scores = f"{args.hf_entity}/{args.hf_repo_id_scores}"
-        full_repo_id_scores += timestamp
+    # Upload the dataset (after to add metadata to card)
+    data_to_upload = Dataset.from_dict(results)
+    data_to_upload.push_to_hub(full_repo_id)
 
-        api.create_repo(full_repo_id_scores, repo_type="dataset", exist_ok=True)
-
-        for f in [__file__, args.save_filename_scores]:
-            api.upload_file(
-                path_or_fileobj=f,
-                path_in_repo=f.split("/")[-1],
-                repo_id=full_repo_id_scores,
-                repo_type="dataset",
-            )
-
-        repo_full_url_scores = f"https://huggingface.co/datasets/{full_repo_id_scores}"
-        print(f"Pushed to {repo_full_url_scores}")
-
-        # Push card to scores repo
-        sft_card.push_to_hub(
-            full_repo_id_scores,
-            repo_type="dataset",
-        )
+    return full_repo_id
 
 
 def main():
@@ -215,7 +183,7 @@ def main():
 def rewardbench(args: Args):
     if args.wandb_run is not None:
         wandb_run = wandb.Api().run(args.wandb_run)
-        args.model = wandb_run.config["hf_repo_id"]
+        args.model = wandb_run.config["hf_name"]
         args.revision = wandb_run.config["hf_repo_revision"]
 
     ###############
@@ -326,7 +294,7 @@ def rewardbench(args: Args):
         )
 
     # check if "chosen" and "rejected" in the dataset features
-    if "chosen" in dataset.features and "rejected" in dataset.features:
+    if "text_chosen" in dataset.features and "text_rejected" in dataset.features:
         is_preference_ranking = True
     else:
         is_preference_ranking = False
@@ -502,7 +470,7 @@ def rewardbench(args: Args):
     ############################
 
     combined_data = {
-        "prompt": dataset["prompts"],  # Assuming `prompts` is a list of prompts matching scores
+        "prompt": dataset["prompt"],  # Assuming `prompts` is a list of prompts matching scores
         "results": results,
     }
 
@@ -519,6 +487,11 @@ def rewardbench(args: Args):
     # Save combined scores and metadata to JSONL
     scores_output_path = os.path.join(args.output_dir, f"{args.model}_outputs.jsonl")
     save_jsonl(scores_output_path, combined_data)
+
+    # Upload to HF
+    if args.push_results_to_hub:
+        hf_repo = push_results_to_hub(args, combined_data)
+        logger.info(f"Pushed results to Hugging Face Hub for {hf_repo}")
 
     ############################
     # the rest is just for preferences (accuracies)
@@ -657,6 +630,7 @@ def rewardbench(args: Args):
                 logger.info(f"Successfully pushed updated ModelCard to Hugging Face Hub for {args.model}")
             except Exception as e:
                 logger.error(f"Failed to upload metadata to Hugging Face Hub: {e}")
+                logger.info("(The most common issue is a model you do not have write permissions on).")
 
 
 if __name__ == "__main__":

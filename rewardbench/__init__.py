@@ -18,9 +18,9 @@ from .dpo import DPOInference
 from .models import DPO_MODEL_CONFIG, REWARD_MODEL_CONFIG
 from .utils import (
     check_tokenizer_chat_template,
+    load_and_process_dataset,
     load_bon_dataset,
     load_eval_dataset,
-    load_preference_dataset,
     prepare_dialogue,
     prepare_dialogue_from_tokenizer,
     save_to_hub,
@@ -33,7 +33,7 @@ __all__ = [
     DPO_MODEL_CONFIG,
     load_bon_dataset,
     load_eval_dataset,
-    load_preference_dataset,
+    load_and_process_dataset,
     prepare_dialogue,
     prepare_dialogue_from_tokenizer,
     REWARD_MODEL_CONFIG,
