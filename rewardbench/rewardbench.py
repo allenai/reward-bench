@@ -24,6 +24,7 @@ from pprint import pformat
 from typing import Dict, List, Optional, Union
 
 import numpy as np
+import pkg_resources
 import torch
 import transformers
 import wandb
@@ -114,7 +115,7 @@ def save_jsonl(save_filename: str, table: Dict[str, List[Union[int, float, str]]
             outfile.write("\n")
 
 
-def push_results_to_hub(args, results):
+def push_results_to_hub(args, results, accuracy=None):
     """
     Push dataset to Hugging Face Hub.
 
@@ -140,32 +141,50 @@ def push_results_to_hub(args, results):
 
     # Print and prepare the repository URL
     repo_full_url = f"https://huggingface.co/datasets/{full_repo_id}"
-    print(f"Pushed to {repo_full_url}")
 
     # Generate the command that was run
     run_command = " ".join(["python"] + sys.argv)
+
+    # Get package versions as a dictionary
+    package_versions = {package.key: package.version for package in pkg_resources.working_set}
+
+    # If accuracy is provided, create a string adding it to the results
+    if accuracy is not None:
+        accuracy_str = f"Accuracy: {accuracy}"
+    else:
+        accuracy_str = ""
 
     # Create and push a repo card
     rm_card = RepoCard(
         content=f"""\
 # {args.hf_name}: RewardBench CLI Eval. Outputs
 
-See https://github.com/allenai/rewardbench for more details
+See https://github.com/allenai/reward-bench for more details
+
+Built with the `rewardbench` CLI tool.
+{accuracy_str}
+
+Command used to run:
+```
+{run_command}
+```
 
 ## Configs
 ```
 args: {pformat(vars(args))}
 ```
 
-## Additional Information
-
-1. Command used to run `{run_command}`
+## Package Versions
+```
+{pformat(package_versions)}
+```
 """
     )
     rm_card.push_to_hub(
         full_repo_id,
         repo_type="dataset",
     )
+    print(f"Pushed to {repo_full_url}")
 
     # Upload the dataset (after to add metadata to card)
     data_to_upload = Dataset.from_dict(results)
@@ -469,15 +488,21 @@ def rewardbench(args: Args):
     # save outputs directly
     ############################
 
+    def unwrap_if_list_of_lists(data):
+        if isinstance(data, list):
+            if isinstance(data[0], list):
+                return [item for sublist in data for item in sublist]
+        return data
+
     combined_data = {
         "prompt": dataset["prompt"],  # Assuming `prompts` is a list of prompts matching scores
-        "results": [item for sublist in results for item in sublist],
+        "results": unwrap_if_list_of_lists(results),
     }
 
     # Consolidate chosen and rejected scores along with prompts and texts
     if is_preference_ranking:
-        combined_data["scores_chosen"] = [item for sublist in scores_chosen for item in sublist]
-        combined_data["scores_rejected"] = [item for sublist in scores_rejected for item in sublist]
+        combined_data["scores_chosen"] = unwrap_if_list_of_lists(scores_chosen)
+        combined_data["scores_rejected"] = unwrap_if_list_of_lists(scores_rejected)
         combined_data["text_chosen"] = dataset["text_chosen"]
         combined_data["text_rejected"] = dataset["text_rejected"]
     # or take instruction
@@ -487,11 +512,6 @@ def rewardbench(args: Args):
     # Save combined scores and metadata to JSONL
     scores_output_path = os.path.join(args.output_dir, f"{args.model}_outputs.jsonl")
     save_jsonl(scores_output_path, combined_data)
-
-    # Upload to HF
-    if args.push_results_to_hub:
-        hf_repo = push_results_to_hub(args, combined_data)
-        logger.info(f"Pushed results to Hugging Face Hub for https://huggingface.co/datasets/{hf_repo}")
 
     ############################
     # the rest is just for preferences (accuracies)
@@ -631,6 +651,15 @@ def rewardbench(args: Args):
             except Exception as e:
                 logger.error(f"Failed to upload metadata to Hugging Face Hub: {e}")
                 logger.info("(The most common issue is a model you do not have write permissions on).")
+    else:
+        accuracy = None
+
+    ############################
+    # Upload results to HF (as dataset)
+    ############################
+    if args.push_results_to_hub:
+        hf_repo = push_results_to_hub(args, combined_data, accuracy=accuracy)
+        logger.info(f"Pushed results to Hugging Face Hub for https://huggingface.co/datasets/{hf_repo}")
 
 
 if __name__ == "__main__":
