@@ -93,6 +93,12 @@ The key commands are:
 For an example of a model with accuracy metadata, look [here](https://huggingface.co/vwxyzjn/rm_zephyr_new).
 For an example of the outputs from a preference dataset, look [here](https://huggingface.co/datasets/natolambert/rewardbench_eval_2339270924_2339270924), and for instructions, look [here](https://huggingface.co/datasets/natolambert/rewardbench_eval_0329290924).
 
+This currently only works with DPO models for preference datasets, such as:
+```
+rewardbench --model Qwen/Qwen1.5-0.5B-Chat --ref_model Qwen/Qwen1.5-0.5B  --batch_size 128 --tokenizer=EleutherAI/pythia-14m --push_results_to_hub --upload_model_metadata_to_hf --chat_template raw
+```
+Open an issue if you would like complete functionality.
+
 ## Full Installation
 To install from source, please install `torch` on your system, and then install the following requirements.
 ```
