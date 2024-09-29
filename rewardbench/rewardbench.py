@@ -179,7 +179,7 @@ def main():
     rewardbench(*parser.parse_args_into_dataclasses())
 
 
-# Structure eeded to accomodate HuggingFace Args with CLI binding
+# Secondary function structure needed to accomodate HuggingFace Args with CLI binding
 def rewardbench(args: Args):
     if args.wandb_run is not None:
         wandb_run = wandb.Api().run(args.wandb_run)
@@ -471,7 +471,7 @@ def rewardbench(args: Args):
 
     combined_data = {
         "prompt": dataset["prompt"],  # Assuming `prompts` is a list of prompts matching scores
-        "results": results,
+        "results": [item for sublist in results for item in sublist],
     }
 
     # Consolidate chosen and rejected scores along with prompts and texts
@@ -482,7 +482,7 @@ def rewardbench(args: Args):
         combined_data["text_rejected"] = dataset["text_rejected"]
     # or take instruction
     else:
-        combined_data["messages"] = dataset["messages"]
+        combined_data["text"] = dataset["text"]
 
     # Save combined scores and metadata to JSONL
     scores_output_path = os.path.join(args.output_dir, f"{args.model}_outputs.jsonl")
@@ -491,7 +491,7 @@ def rewardbench(args: Args):
     # Upload to HF
     if args.push_results_to_hub:
         hf_repo = push_results_to_hub(args, combined_data)
-        logger.info(f"Pushed results to Hugging Face Hub for {hf_repo}")
+        logger.info(f"Pushed results to Hugging Face Hub for https://huggingface.co/datasets/{hf_repo}")
 
     ############################
     # the rest is just for preferences (accuracies)

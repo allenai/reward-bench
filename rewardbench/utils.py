@@ -197,24 +197,13 @@ def load_and_process_dataset(
         datasets_to_combine = [dataset[split] for split in available_splits]
         dataset = concatenate_datasets(datasets_to_combine)
 
-    # Handle column renaming
+    # Handle column renaming to track prompts
     if "question" in dataset.column_names and "prompt" not in dataset.column_names:
         dataset = dataset.rename_column("question", "prompt")
     if "input" in dataset.column_names and "prompt" not in dataset.column_names:
         dataset = dataset.rename_column("input", "prompt")
 
     features = dataset.features
-
-    def process_preference_data(example):
-        example["prompt"] = example["chosen"][:-1]
-        example["chosen"] = example["chosen"][-1]["content"]
-        example["rejected"] = example["rejected"][-1]["content"]
-        return example
-
-    def process_instruction_data(example):
-        messages = example["messages"]
-        example["prompt"] = messages[0]
-        return example
 
     # Determine if it's preference data or instruction data
     has_preference_data = "chosen" in dataset.column_names and "rejected" in dataset.column_names
@@ -238,6 +227,18 @@ def load_and_process_dataset(
             "Dataset format not recognized. It should contain either 'chosen' and 'rejected'"
             " columns for preference data, or a 'messages' column for instruction data."
         )
+
+    # Process the data for input to RM
+    def process_preference_data(example):
+        example["prompt"] = example["chosen"][:-1]
+        example["chosen"] = example["chosen"][-1]["content"]
+        example["rejected"] = example["rejected"][-1]["content"]
+        return example
+
+    def process_instruction_data(example):
+        messages = example["messages"]
+        example["prompt"] = messages[0]["content"]
+        return example
 
     if is_preference_data:
         if "prompt" not in dataset.column_names or not isinstance(features["prompt"], list):
@@ -272,13 +273,13 @@ def load_and_process_dataset(
             logger.info("*** Preparing dataset with FastChat ***")
         dataset = dataset.map(
             prepare_dialogue,
-            fn_kwargs={"dialogue_template": conv},
+            fn_kwargs={"dialogue_template": conv, "ift": not is_preference_data},
             num_proc=8,
             load_from_cache_file=False,
         )
 
     # Remove excess data
-    keep_columns = ["prompt", "text_chosen", "text_rejected"] if is_preference_data else ["prompt", "messages"]
+    keep_columns = ["prompt", "text_chosen", "text_rejected"] if is_preference_data else ["prompt", "text"]
     all_cols = dataset.column_names
     dataset = dataset.remove_columns([c for c in all_cols if c not in keep_columns])
     return dataset
@@ -594,11 +595,13 @@ def prepare_dialogue_from_tokenizer(
             )
             example["prompt"] = temp_prompt
     elif ift:
-        # TODO adapt this for DPO models with tokenize_row function
-        messages = [
-            {"role": "user", "content": example["prompt"]},
-            {"role": "assistant", "content": example["input"]},
-        ]
+        if "messages" in example:
+            messages = example["messages"]
+        else:
+            messages = [
+                {"role": "user", "content": example["prompt"]},
+                {"role": "assistant", "content": example["input"]},
+            ]
         example["text"] = tokenizer.apply_chat_template(
             messages,
             tokenize=False,
@@ -669,14 +672,29 @@ def prepare_dialogue(
         if isinstance(example["prompt"], list):
             example["prompt"] = example["prompt"][0]
 
+        # get prompt
         dialogue_template.messages = [
             [dialogue_template.roles[0], example["prompt"]],
         ]
         temp_prompt = dialogue_template.get_prompt()
-        dialogue_template.messages = [
-            [dialogue_template.roles[0], example["prompt"]],
-            [dialogue_template.roles[1], example["input"]],
-        ]
+
+        # get messages
+        if "messages" in example:
+            # convert to FastChat format (list of list)
+            # original format:
+            # [
+            #     {"role": "user", "content": example["prompt"]},
+            #     {"role": "assistant", "content": example["rejected"]},
+            # ]
+            dialogue_template.messages = []
+            for i, line in enumerate(example["messages"]):
+                role = dialogue_template.roles[0] if i % 2 == 0 else dialogue_template.roles[1]
+                dialogue_template.messages.append([role, line["content"]])
+        else:
+            dialogue_template.messages = [
+                [dialogue_template.roles[0], example["prompt"]],
+                [dialogue_template.roles[1], example["input"]],
+            ]
         example["text"] = dialogue_template.get_prompt()
         example["prompt"] = temp_prompt  # needed for DPO
 

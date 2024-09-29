@@ -80,6 +80,10 @@ For example, the following command does both:
 ```
 rewardbench --model vwxyzjn/reward_modeling__EleutherAI_pythia-14m --batch_size 128 --tokenizer=EleutherAI/pythia-14m --push_results_to_hub --upload_model_metadata_to_hf --chat_template raw
 ```
+Or, for an instruction dataset:
+```
+rewardbench --model vwxyzjn/reward_modeling__EleutherAI_pythia-14m --dataset HuggingFaceH4/no_robots --split test --batch_size 128 --tokenizer=EleutherAI/pythia-14m --push_results_to_hub --chat_template raw
+```
 (Note that chat templates only need to be specififed for older models)
 
 The key commands are:
@@ -87,7 +91,7 @@ The key commands are:
 * ` --upload_model_metadata_to_hf` adds results directly to model.
 
 For an example of a model with accuracy metadata, look [here](https://huggingface.co/vwxyzjn/rm_zephyr_new).
-For an example of the outputs from a preference dataset, look [here]().
+For an example of the outputs from a preference dataset, look [here](https://huggingface.co/datasets/natolambert/rewardbench_eval_2339270924_2339270924), and for instructions, look [here](https://huggingface.co/datasets/natolambert/rewardbench_eval_0329290924).
 
 ## Full Installation
 To install from source, please install `torch` on your system, and then install the following requirements.
