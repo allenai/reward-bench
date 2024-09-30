@@ -19,7 +19,7 @@ import logging
 import os
 import sys
 from dataclasses import dataclass
-from typing import Optional
+from typing import Literal, Optional
 
 import numpy as np
 import torch
@@ -36,6 +36,7 @@ from rewardbench import (
     REWARD_MODEL_CONFIG,
     check_tokenizer_chat_template,
     load_preference_dataset,
+    torch_dtype_mapping,
 )
 
 
@@ -70,6 +71,10 @@ class Args:
     """The batch size to use."""
     max_length: int = 512
     """The max length to use."""
+    torch_dtype: Literal["float16", "bfloat16", "float32", "float64"] = "float16"
+    """PyTorch dtype (default: float16)"""
+    attn_implementation: Optional[Literal["eager", "sdpa", "flash_attention_2"]] = None
+    """Attention implementation to use (default: None)"""
 
     # system args
     load_json: bool = False
@@ -171,6 +176,16 @@ def actual_main(args: Args):
             raise NotImplementedError("Custom dialogue not implemented yet for simpler data formatting.")
 
     model_builder = config["model_builder"]
+
+    # Handle datatype
+    args.torch_dtype = torch_dtype_mapping(args.torch_dtype)
+    # if not datatype in config (default), check args
+    if torch_dtype is None:
+        # if datatype is bfloat16, then manually turn off quantizaiton (done with bitsandbytes)
+        if args.torch_dtype == torch.bfloat16:
+            quantized = False
+            logger.info("Disabling quantization for bfloat16 datatype")
+        torch_dtype = args.torch_dtype
 
     #########################
     # load dataset
@@ -278,14 +293,10 @@ def actual_main(args: Args):
             "return_token_type_ids": False,
         }
         if quantized:
-            if torch_dtype is not None:
-                torch_dtype = torch_dtype
-            else:
-                torch_dtype = torch.float16
             model_kwargs = {
                 "load_in_8bit": True,
                 "device_map": {"": current_device},
-                "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
+                "torch_dtype": torch_dtype if torch.cuda.is_available() else None,
             }
         else:
             # note, device map auto does not work for bitsandbytes quantized models
@@ -293,6 +304,11 @@ def actual_main(args: Args):
                 "device_map": "auto",
                 "torch_dtype": torch_dtype,
             }
+
+        # if attn_implementation is not specified, this falls back to Hugging Face's default
+        # strategy (which chooses between sdpa and eager depending on pytorch version)
+        if args.attn_implementation:
+            model_kwargs["attn_implementation"] = args.attn_implementation
 
         model = model_builder(
             args.model, **model_kwargs, revision=args.revision, trust_remote_code=args.trust_remote_code
