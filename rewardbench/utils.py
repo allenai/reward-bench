@@ -278,10 +278,6 @@ def load_and_process_dataset(
             load_from_cache_file=False,
         )
 
-    # Remove excess data
-    keep_columns = ["prompt", "text_chosen", "text_rejected"] if is_preference_data else ["prompt", "text"]
-    all_cols = dataset.column_names
-    dataset = dataset.remove_columns([c for c in all_cols if c not in keep_columns])
     return dataset
 
 
@@ -292,6 +288,7 @@ def load_eval_dataset(
     tokenizer: PreTrainedTokenizer = None,
     logger: logging.Logger = None,
     keep_columns: List[str] = ["text_chosen", "text_rejected", "id"],
+    return_extra_data: bool = False,
     max_turns: int = None,
 ) -> tuple[Dataset, list[str]]:
     """
@@ -305,6 +302,7 @@ def load_eval_dataset(
         tokenizer: HuggingFace tokenizer to use. The tokenizer's chat template, if available, has precedence over conv.
         logger: logger to use for logging. If None (default), no logging is done.
         keep_columns: list of columns to keep in the dataset.
+        return_extra_data: return extra metadata for expanded logging (mostly in CLI)
         max_turns: maximum number of turns in the dialogue (usually even). If None (default), no filtering is done.
 
     Returns:
@@ -399,6 +397,8 @@ def load_eval_dataset(
 
     # take column subset from dataset
     subsets = dataset["subset"]
+    if return_extra_data:
+        return dataset, subsets
 
     # remove columns if set and not custom_dialogue_formatting
     all_cols = dataset.column_names

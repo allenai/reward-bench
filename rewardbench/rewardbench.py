@@ -300,7 +300,7 @@ def rewardbench(args: Args):
             custom_dialogue_formatting=False,
             tokenizer=tokenizer,
             logger=logger,
-            keep_columns=["text_chosen", "text_rejected", "prompt"],
+            return_extra_data=True,
         )
     else:
         dataset = load_and_process_dataset(
@@ -320,6 +320,12 @@ def rewardbench(args: Args):
 
     if args.debug:
         dataset = dataset.select(range(10))
+
+    # Move extra columns to extra metadata (merged later)
+    keep_columns = ["prompt", "text_chosen", "text_rejected"] if is_preference_ranking else ["prompt", "text"]
+    all_cols = dataset.column_names
+    metadata = dataset.remove_columns(keep_columns)
+    dataset = dataset.remove_columns([c for c in all_cols if c not in keep_columns])
 
     logger.info("*** Load reward model ***")
 
@@ -508,6 +514,10 @@ def rewardbench(args: Args):
     # or take instruction
     else:
         combined_data["text"] = dataset["text"]
+
+    # add columns in metadata to combined_data
+    for col in metadata.column_names:
+        combined_data[col] = metadata[col]
 
     # Save combined scores and metadata to JSONL
     scores_output_path = os.path.join(args.output_dir, f"{args.model}_outputs.jsonl")
