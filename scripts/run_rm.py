@@ -76,6 +76,9 @@ def get_args():
         "--not_quantized", action="store_true", help="disable quantization for models that are quantized by default"
     )
     parser.add_argument(
+        "--no_model_kwargs", action="store_true", help="disable quantization for models that are quantized by default"
+    )
+    parser.add_argument(
         "--torch_dtype",
         type=str,
         default="float16",
@@ -214,6 +217,9 @@ def main():
             "device_map": "auto",
             "torch_dtype": torch_dtype,
         }
+
+    if args.no_model_kwargs:
+        model_kwargs = {}
 
     # if attn_implementation is not specified, this falls back to Hugging Face's default
     # strategy (which chooses between sdpa and eager depending on pytorch version)
