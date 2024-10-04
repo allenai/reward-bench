@@ -33,6 +33,8 @@ The two primary scripts to generate results (more in `scripts/`):
 
 ## Quick Usage
 RewardBench let's you quickly evaluate any reward model on any preference set. 
+It also will detect if a instruction dataset is passed (by checking for not having `chosen`/`rejected`, and having `messages`) -- for these, just a model outputs are logged (not accuracy).
+
 To install for quick usage, install with pip as:
 ```
 pip install rewardbench
@@ -69,6 +71,33 @@ rewardbench-gen --model={}
 ```
 For more information, see `scripts/run_generative.py`. 
 The extra requirement for local models is VLLM and the requesite API for API models (OpenAI, Anthropic, and Together are supported).
+
+### Logging
+
+The CLI comes with multiple advanced saving features for **model outputs** and **accuracy scores**. 
+These can be tied in metadata to reward models you own or uploaded as separate datasets to HuggingFace, such as for rejection sampling.
+For example, the following command does both:
+```
+rewardbench --model vwxyzjn/reward_modeling__EleutherAI_pythia-14m --batch_size 128 --tokenizer=EleutherAI/pythia-14m --push_results_to_hub --upload_model_metadata_to_hf --chat_template raw
+```
+Or, for an instruction dataset:
+```
+rewardbench --model vwxyzjn/reward_modeling__EleutherAI_pythia-14m --dataset HuggingFaceH4/no_robots --split test --batch_size 128 --tokenizer=EleutherAI/pythia-14m --push_results_to_hub --chat_template raw
+```
+(Note that chat templates only need to be specififed for older models)
+
+The key commands are:
+* `--push_results_to_hub` which uploads a dataset of scores and correctness.
+* ` --upload_model_metadata_to_hf` adds results directly to model.
+
+For an example of a model with accuracy metadata, look [here](https://huggingface.co/vwxyzjn/rm_zephyr_new).
+For an example of the outputs from a preference dataset, look [here](https://huggingface.co/datasets/natolambert/rewardbench_eval_2339270924_2339270924), and for instructions, look [here](https://huggingface.co/datasets/natolambert/rewardbench_eval_0329290924).
+
+This currently only works with DPO models for preference datasets, such as:
+```
+rewardbench --model Qwen/Qwen1.5-0.5B-Chat --ref_model Qwen/Qwen1.5-0.5B  --batch_size 128 --tokenizer=EleutherAI/pythia-14m --push_results_to_hub --upload_model_metadata_to_hf --chat_template raw
+```
+Open an issue if you would like complete functionality.
 
 ## Full Installation
 To install from source, please install `torch` on your system, and then install the following requirements.

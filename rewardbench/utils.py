@@ -150,31 +150,41 @@ def map_conversations_testsets(example):
     return example
 
 
-def load_preference_dataset(
+def load_and_process_dataset(
     dataset_name: str,
     split: str = "train",
     json: bool = False,
     conv: Conversation = None,
     tokenizer: PreTrainedTokenizer = None,
     logger: logging.Logger = None,
+    prioritize_instructions: bool = False,
 ) -> Dataset:
     """
-    Load a preference dataset from the datasets library.
+    Load a preference dataset or an instruction dataset from the datasets library.
+    Works for both preference datasets (with chosen/rejected) and SFT datasets (with messages).
 
-    Expects the data the following schema.
-    - prompt (string): question
-    - chosen (list): all turns of the conversation (including the prompt), chosen answer
-    - rejected (list): all turns of the conversation (including the prompt), rejected answer
+    Expects the data to follow one of these schemas:
+    1. Preference data:
+       - prompt (string): question
+       - chosen (list): all turns of the conversation (including the prompt), chosen answer
+       - rejected (list): all turns of the conversation (including the prompt), rejected answer
+    2. Instruction data:
+       - messages (list): all turns of the conversation
 
-    Removes all excess columns, only returns scores over the provided data in order.
+    Removes all excess columns, only returns processed data in order.
 
     Args:
         dataset_name (str): The name of the dataset to load (HuggingFace or local directory)
         split (str): The split of the dataset to load (train, validation, test, ...)
+        json (bool): Whether to load the dataset from a JSON file
+        conv (Conversation): FastChat conversation template
+        tokenizer (PreTrainedTokenizer): HuggingFace tokenizer
+        logger (logging.Logger): Logger object
+        prioritize_instructions (bool): If True, prioritize processing as instruction data when both types are present
 
     Returns:
-        dataset (Dataset): The loaded dataset with prompt, text_chosen, and text_rejected columns.
-            text_ indicates a full conversation ending with that turn
+        dataset (Dataset): The loaded dataset with prompt, text_chosen, and text_rejected columns for preference data,
+                           or prompt and response columns for instruction data.
     """
     if json:
         dataset = load_dataset("json", data_files=dataset_name)
@@ -187,86 +197,87 @@ def load_preference_dataset(
         datasets_to_combine = [dataset[split] for split in available_splits]
         dataset = concatenate_datasets(datasets_to_combine)
 
-    # if has column question without prompt, rename question column to prompt
-    if "question" in dataset.column_names:
-        assert "prompt" not in dataset.column_names, "Both prompt and question columns found"
+    # Handle column renaming to track prompts
+    if "question" in dataset.column_names and "prompt" not in dataset.column_names:
         dataset = dataset.rename_column("question", "prompt")
-    if "input" in dataset.column_names:
-        assert "prompt" not in dataset.column_names, "Both prompt and question columns found"
+    if "input" in dataset.column_names and "prompt" not in dataset.column_names:
         dataset = dataset.rename_column("input", "prompt")
 
-    # switch to format used for data utils
-    # e.g. for evaluating this data https://huggingface.co/datasets/allenai/preference-test-sets
-    # python -m rewardbench/rewardbench.py --dataset-name allenai/preference-test-sets --split shp
     features = dataset.features
 
-    def switch_format(example):
-        # chosen/rejected append {"role": "assistnat", "content": chosen}
+    # Determine if it's preference data or instruction data
+    has_preference_data = "chosen" in dataset.column_names and "rejected" in dataset.column_names
+    has_instruction_data = "messages" in dataset.column_names
+
+    # Decide which processing to use based on the prioritize_instructions flag
+    if prioritize_instructions and has_instruction_data:
+        is_preference_data = False
+        if logger:
+            logger.info("Processing as instruction data (prioritized)")
+    elif has_preference_data:
+        is_preference_data = True
+        if logger:
+            logger.info("Processing as preference data")
+    elif has_instruction_data:
+        is_preference_data = False
+        if logger:
+            logger.info("Processing as instruction data")
+    else:
+        raise ValueError(
+            "Dataset format not recognized. It should contain either 'chosen' and 'rejected'"
+            " columns for preference data, or a 'messages' column for instruction data."
+        )
+
+    # Process the data for input to RM
+    def process_preference_data(example):
         example["prompt"] = example["chosen"][:-1]
         example["chosen"] = example["chosen"][-1]["content"]
         example["rejected"] = example["rejected"][-1]["content"]
         return example
 
-    # NOTE: We do NOT want to support every schema. These are the main three to start with
-    # 1. Prompt is in a list of previous turns, chosen and rejected are final message from assistant
-    # 2. Prompt is a string, chosen and rejected are full conversations with different final turns
-    # 3. Prompt is not existent, chosen and rejected are full conversations with different final turns
-    # TODO implement system prompts correctly (though, often doesn't work for Reward Models)
+    def process_instruction_data(example):
+        messages = example["messages"]
+        example["prompt"] = messages[0]["content"]
+        return example
 
-    # if prompt isn't a column,
-    if "prompt" not in dataset.column_names:
+    if is_preference_data:
+        if "prompt" not in dataset.column_names or not isinstance(features["prompt"], list):
+            dataset = dataset.map(
+                process_preference_data,
+                num_proc=8,
+                load_from_cache_file=False,
+            )
+    else:
         dataset = dataset.map(
-            switch_format,
+            process_instruction_data,
             num_proc=8,
             load_from_cache_file=False,
         )
-    # elif prompt is a list and not a str, same function works
-    elif not isinstance(features["prompt"], list):
-        dataset = dataset.map(
-            switch_format,
-            num_proc=8,
-            load_from_cache_file=False,
-        )
 
-    # update features
-    features = dataset.features
-
-    # assert the correct types
-    assert features["chosen"].dtype == "string", f"chosen is wrong type (should be string): {features['chosen']}"
-    assert features["rejected"].dtype == "string", f"rejected is wrong type (should be string): {features['rejected']}"
-
-    # tokenize the data
+    # Tokenize the data
     usable_tokenizer = check_tokenizer_chat_template(tokenizer)
 
-    # assert either conv is passed or tokenizer has chat_template
-    assert conv is not None or usable_tokenizer
+    assert conv is not None or usable_tokenizer, "Either conv or a tokenizer with a chat template must be provided."
 
     if usable_tokenizer:
         if logger is not None:
             logger.info("*** Preparing dataset with HF Transformers ***")
-        # docs https://huggingface.co/docs/transformers/main/en/chat_templating
         dataset = dataset.map(
             prepare_dialogue_from_tokenizer,
-            fn_kwargs={"tokenizer": tokenizer},
+            fn_kwargs={"tokenizer": tokenizer, "ift": not is_preference_data},
             num_proc=8,
             load_from_cache_file=False,
         )
-
-    # else use FastChat to get chat template
     else:
         if logger is not None:
             logger.info("*** Preparing dataset with FastChat ***")
         dataset = dataset.map(
             prepare_dialogue,
-            fn_kwargs={"dialogue_template": conv},
+            fn_kwargs={"dialogue_template": conv, "ift": not is_preference_data},
             num_proc=8,
             load_from_cache_file=False,
         )
 
-    # remove excess data
-    keep_columns = ["prompt", "text_chosen", "text_rejected"]
-    all_cols = dataset.column_names
-    dataset = dataset.remove_columns([c for c in all_cols if c not in keep_columns])
     return dataset
 
 
@@ -277,19 +288,21 @@ def load_eval_dataset(
     tokenizer: PreTrainedTokenizer = None,
     logger: logging.Logger = None,
     keep_columns: List[str] = ["text_chosen", "text_rejected", "id"],
+    return_extra_data: bool = False,
     max_turns: int = None,
 ) -> tuple[Dataset, list[str]]:
     """
-    Loads either the core eval set for HERM or the existing preference data test sets.
+    Loads either the core eval set for RewardBench or the existing preference data test sets.
 
     Args:
-        core_set: if True, load the core eval set for HERM.
+        core_set: if True, load the core eval set for RewardBench.
         custom_dialogue_formatting: if True, format the dialogue as needed for custom models (e.g. SHP and PairRM).
         conv: fastchat conversation template.
                 If None (default) the passed tokenizer needs to have a usable chat template.
         tokenizer: HuggingFace tokenizer to use. The tokenizer's chat template, if available, has precedence over conv.
         logger: logger to use for logging. If None (default), no logging is done.
         keep_columns: list of columns to keep in the dataset.
+        return_extra_data: return extra metadata for expanded logging (mostly in CLI)
         max_turns: maximum number of turns in the dialogue (usually even). If None (default), no filtering is done.
 
     Returns:
@@ -384,6 +397,8 @@ def load_eval_dataset(
 
     # take column subset from dataset
     subsets = dataset["subset"]
+    if return_extra_data:
+        return dataset, subsets
 
     # remove columns if set and not custom_dialogue_formatting
     all_cols = dataset.column_names
@@ -580,11 +595,13 @@ def prepare_dialogue_from_tokenizer(
             )
             example["prompt"] = temp_prompt
     elif ift:
-        # TODO adapt this for DPO models with tokenize_row function
-        messages = [
-            {"role": "user", "content": example["prompt"]},
-            {"role": "assistant", "content": example["input"]},
-        ]
+        if "messages" in example:
+            messages = example["messages"]
+        else:
+            messages = [
+                {"role": "user", "content": example["prompt"]},
+                {"role": "assistant", "content": example["input"]},
+            ]
         example["text"] = tokenizer.apply_chat_template(
             messages,
             tokenize=False,
@@ -655,14 +672,29 @@ def prepare_dialogue(
         if isinstance(example["prompt"], list):
             example["prompt"] = example["prompt"][0]
 
+        # get prompt
         dialogue_template.messages = [
             [dialogue_template.roles[0], example["prompt"]],
         ]
         temp_prompt = dialogue_template.get_prompt()
-        dialogue_template.messages = [
-            [dialogue_template.roles[0], example["prompt"]],
-            [dialogue_template.roles[1], example["input"]],
-        ]
+
+        # get messages
+        if "messages" in example:
+            # convert to FastChat format (list of list)
+            # original format:
+            # [
+            #     {"role": "user", "content": example["prompt"]},
+            #     {"role": "assistant", "content": example["rejected"]},
+            # ]
+            dialogue_template.messages = []
+            for i, line in enumerate(example["messages"]):
+                role = dialogue_template.roles[0] if i % 2 == 0 else dialogue_template.roles[1]
+                dialogue_template.messages.append([role, line["content"]])
+        else:
+            dialogue_template.messages = [
+                [dialogue_template.roles[0], example["prompt"]],
+                [dialogue_template.roles[1], example["input"]],
+            ]
         example["text"] = dialogue_template.get_prompt()
         example["prompt"] = temp_prompt  # needed for DPO
 

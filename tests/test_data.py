@@ -78,6 +78,17 @@ class PrepareDialoguesTest(unittest.TestCase):
         desired_text = "<|user|>\nWhat are different drawers I should have for clothes?<|endoftext|>\n<|assistant|>\nUtensils!<|endoftext|>\n"  # noqa
         assert prepared["text"] == desired_text
 
+    def test_prepare_dialogue_from_tokenizer_messages_ift(self):
+        example = {}
+        example["messages"] = [
+            {"role": "user", "content": "Who are you?"},
+            {"role": "assistant", "content": "I am a bot."},
+        ]
+        example["prompt"] = "Who are you?"
+        prepared = prepare_dialogue_from_tokenizer(example, self.tokenizer, ift=True)
+        desired_text = "<|user|>\nWho are you?<|endoftext|>\n<|assistant|>\nI am a bot.<|endoftext|>\n"
+        assert prepared["text"] == desired_text
+
     def test_prepare_dialogue_single_turn(self):
         example = {}
         example["prompt"] = "What are different drawers I should have for clothes?"
@@ -124,6 +135,17 @@ class PrepareDialoguesTest(unittest.TestCase):
 
         prepared = prepare_dialogue(example, self.conv, ift=True)
         desired_text = "<|user|>\nWhat are different drawers I should have for clothes?\n<|assistant|>\nUtensils!\n"
+        assert prepared["text"] == desired_text
+
+    def test_prepare_dialogue_messages_ift(self):
+        example = {}
+        example["messages"] = [
+            {"role": "user", "content": "Who are you?"},
+            {"role": "assistant", "content": "I am a bot."},
+        ]
+        example["prompt"] = "Who are you?"
+        prepared = prepare_dialogue(example, self.conv, ift=True)
+        desired_text = "<|user|>\nWho are you?\n<|assistant|>\nI am a bot.\n"
         assert prepared["text"] == desired_text
 
 
