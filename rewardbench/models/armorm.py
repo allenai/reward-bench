@@ -7,6 +7,35 @@ import torch
 class ArmoRMPipeline:
     def __init__(self, task, model, tokenizer):
         self.task = task
+        self.model = model.eval()
+        self.tokenizer = tokenizer
+
+    def __call__(self, samples, return_inputs=False, **kwargs):
+        _ = kwargs.get("batch_size", 1)
+        truncation = kwargs.get("truncation", True)
+        padding = kwargs.get("padding", True)
+        max_length = kwargs.get("max_length", 2048)
+        inputs = self.tokenizer(
+            samples,
+            truncation=truncation,
+            max_length=max_length,
+            padding=padding,
+            # return_special_tokens_mask=True,
+            return_tensors="pt",
+        ).to("cuda")
+
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+        if return_inputs:
+            return outputs.logits, inputs
+        else:
+            return outputs.logits
+
+
+# Moved to newer implementation that doesn't require "Custom Dialogue" tag
+class LegacyArmoRMPipeline:
+    def __init__(self, task, model, tokenizer):
+        self.task = task
         self.model = model
         self.tokenizer = tokenizer
         random.seed(0)

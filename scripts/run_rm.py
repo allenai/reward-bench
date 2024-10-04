@@ -153,6 +153,7 @@ def main():
     model_builder = config["model_builder"]
     pipeline_builder = config["pipeline_builder"]
     torch_dtype = config.get("torch_dtype", None)
+
     # if not datatype in config (default), check args
     if torch_dtype is None:
         # if datatype is bfloat16, then manually turn off quantizaiton (done with bitsandbytes)
@@ -211,7 +212,7 @@ def main():
         }
     else:
         model_kwargs = {
-            "device_map": "auto",
+            "device_map": "auto" if torch.cuda.is_available() else "cpu",
             "torch_dtype": torch_dtype,
         }
 
