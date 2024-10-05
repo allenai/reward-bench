@@ -22,7 +22,7 @@ class ArmoRMPipeline:
             padding=padding,
             # return_special_tokens_mask=True,
             return_tensors="pt",
-        ).to(self.model.device)
+        ).to("cuda")
 
         with torch.no_grad():
             outputs = self.model(**inputs)
