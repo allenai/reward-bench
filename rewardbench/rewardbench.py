@@ -511,7 +511,7 @@ def rewardbench(args: Args):
             if isinstance(rewards[0], dict):
                 scores = [result["score"] for result in rewards]
             else:
-                scores = rewards.cpu().numpy().tolist()
+                scores = rewards.cpu().float().numpy().tolist()
             results.extend(scores)
 
     ############################
