@@ -32,7 +32,7 @@ from .openassistant import *  # noqa
 from .openbmb import LlamaRewardModel, OpenBMBPipeline
 from .pairrm import DebertaV2PairRM, PairRMPipeline
 from .pipeline import RewardBenchPipeline
-from .qrm import LlamaForRewardModelWithGating31, LlamaForRewardModelWithGating3
+from .qrm import LlamaForRewardModelWithGating3, LlamaForRewardModelWithGating31
 from .shp import SHPPipeline
 from .slicpairpm import SlicPairPMPipeline
 from .starling import (
