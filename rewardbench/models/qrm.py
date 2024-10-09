@@ -1,12 +1,11 @@
 from dataclasses import dataclass
-from typing import Optional, List, Tuple
+from typing import Optional, List
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint
-from transformers import LlamaModel, LlamaPreTrainedModel, LlamaForSequenceClassification, \
-    AutoModelForSequenceClassification
+from transformers import LlamaModel, LlamaPreTrainedModel, AutoModelForSequenceClassification
 from transformers.models.llama.modeling_llama import LLAMA_INPUTS_DOCSTRING
 from transformers.utils import ModelOutput
 from transformers.utils import add_start_docstrings_to_model_forward
@@ -37,7 +36,8 @@ class GatingNetwork(nn.Module):
         # return x
 
 
-# token_pattern = tokenizer.encode("<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n", add_special_tokens=False, )
+# token_pattern = tokenizer.encode("<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+#                                   add_special_tokens=False, )
 token_pattern = [128009, 128006, 78191, 128007, 271]
 
 
@@ -82,9 +82,7 @@ class LlamaForRewardModelWithGating31(LlamaPreTrainedModel):
         # config = AutoConfig.from_pretrained("nicolinho/QRM-Llama3.1-8B")
         config.torch_dtype = torch.bfloat16
         super().__init__(config)
-        # self.model = AutoModelForSequenceClassification.from_pretrained(
-        #        "Skywork/Skywork-Reward-Llama-3.1-8B", num_labels=1, torch_dtype=torch.bfloat16, use_flash_attention_2=True).model
-        self.model = LlamaModel(config)  # .to(torch.bfloat16)
+        self.model = LlamaModel(config)
         self.num_labels = config.num_labels
         config_dict = config.to_dict()
         self.num_objectives = config_dict.get("num_objectives", 19)
@@ -93,9 +91,9 @@ class LlamaForRewardModelWithGating31(LlamaPreTrainedModel):
         self.regression_layer = nn.Linear(config.hidden_size, config.num_quantiles * self.num_objectives, bias=False)
         self.post_init()
         # Not using torch.eye because it is not supported in BF16
-        I = torch.zeros(self.num_objectives, self.num_objectives)
-        I[range(self.num_objectives), range(self.num_objectives)] = 1.
-        self.reward_transform_matrix = nn.Parameter(I)
+        t = torch.zeros(self.num_objectives, self.num_objectives)
+        t[range(self.num_objectives), range(self.num_objectives)] = 1.
+        self.reward_transform_matrix = nn.Parameter(t)
         self.reward_transform_matrix.requires_grad = False
 
         # Initialize weights and apply final processing
@@ -103,9 +101,14 @@ class LlamaForRewardModelWithGating31(LlamaPreTrainedModel):
                                     temperature=config_dict.get("gating_temperature", 10),
                                     hidden_dim=config_dict.get("gating_hidden_dim", 1024),
                                     n_hidden=config_dict.get("gating_n_hidden", 3))
+
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
-        return super().from_pretrained(pretrained_model_name_or_path, trust_remote_code=True, attn_implementation="flash_attention_2")
+        return super().from_pretrained(
+            pretrained_model_name_or_path,
+            trust_remote_code=True,
+            attn_implementation="flash_attention_2",
+        )
 
     @add_start_docstrings_to_model_forward(LLAMA_INPUTS_DOCSTRING)
     def forward(
@@ -187,14 +190,13 @@ class LlamaForRewardModelWithGating31(LlamaPreTrainedModel):
             logits=score,
         )
 
+
 class LlamaForRewardModelWithGating3(LlamaPreTrainedModel):
     def __init__(self, config):
         # config = AutoConfig.from_pretrained("nicolinho/QRM-Llama3-8B")
         config.torch_dtype = torch.bfloat16
         super().__init__(config)
-        self.model = AutoModelForSequenceClassification.from_pretrained(
-               "sfairXC/FsfairX-LLaMA3-RM-v0.1", num_labels=1, torch_dtype=torch.bfloat16, use_flash_attention_2=True, trust_remote_code=True,).model
-        # self.model = LlamaModel(config)
+        self.model = LlamaModel(config)
         self.num_labels = config.num_labels
         config_dict = config.to_dict()
         self.num_objectives = config_dict.get("num_objectives", 19)
@@ -203,9 +205,9 @@ class LlamaForRewardModelWithGating3(LlamaPreTrainedModel):
         self.regression_layer = nn.Linear(config.hidden_size, config.num_quantiles * self.num_objectives, bias=False)
         self.post_init()
         # Not using torch.eye because it is not supported in BF16
-        I = torch.zeros(self.num_objectives, self.num_objectives)
-        I[range(self.num_objectives), range(self.num_objectives)] = 1.
-        self.reward_transform_matrix = nn.Parameter(I)
+        t = torch.zeros(self.num_objectives, self.num_objectives).to(torch.bfloat16)
+        t[range(self.num_objectives), range(self.num_objectives)] = 1.
+        self.reward_transform_matrix = nn.Parameter(t)
         self.reward_transform_matrix.requires_grad = False
 
         # Initialize weights and apply final processing
@@ -216,7 +218,11 @@ class LlamaForRewardModelWithGating3(LlamaPreTrainedModel):
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
-        return super().from_pretrained(pretrained_model_name_or_path, trust_remote_code=True, attn_implementation="flash_attention_2")
+        return super().from_pretrained(
+            pretrained_model_name_or_path,
+            trust_remote_code=True,
+            attn_implementation="flash_attention_2"
+        )
 
     @add_start_docstrings_to_model_forward(LLAMA_INPUTS_DOCSTRING)
     def forward(
@@ -271,8 +277,6 @@ class LlamaForRewardModelWithGating3(LlamaPreTrainedModel):
         rewards = self.regression_layer(hidden_states.float())
         rewards = rewards.reshape(-1, self.config.num_objectives, self.config.num_quantiles)
 
-
-
         gating_token_positions = [find_token_for_gating(ids.tolist()) for ids in input_ids]
         prompt_embedding = tokens_hidden_states[dummy_iterator, gating_token_positions, :]
         gating_output = self.gating(prompt_embedding.float())
@@ -298,5 +302,3 @@ class LlamaForRewardModelWithGating3(LlamaPreTrainedModel):
             score=score,
             logits=score,
         )
-
-# llama3-8n: {'Chat': 0.9608938547486033, 'Chat Hard': 0.8157894736842105, 'Safety': 0.8945945945945946, 'Reasoning': 0.9747947018060784}
