@@ -198,6 +198,7 @@ REWARD_MODEL_CONFIG = {
         "quantized": False,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
+        "torch_dtype": torch.bfloat16,
     },
     "nicolinho/QRM-Llama3-8B": {
         "model_builder": LlamaForRewardModelWithGating3.from_pretrained,
@@ -205,6 +206,7 @@ REWARD_MODEL_CONFIG = {
         "quantized": False,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
+        "torch_dtype": torch.bfloat16,
     },
 }
 
