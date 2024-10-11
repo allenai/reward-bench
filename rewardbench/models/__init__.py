@@ -32,6 +32,7 @@ from .openassistant import *  # noqa
 from .openbmb import LlamaRewardModel, OpenBMBPipeline
 from .pairrm import DebertaV2PairRM, PairRMPipeline
 from .pipeline import RewardBenchPipeline
+from .qrm import LlamaForRewardModelWithGating3, LlamaForRewardModelWithGating31
 from .shp import SHPPipeline
 from .slicpairpm import SlicPairPMPipeline
 from .starling import (
@@ -190,6 +191,22 @@ REWARD_MODEL_CONFIG = {
         "quantized": True,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
+    },
+    "nicolinho/QRM-Llama3.1-8B": {
+        "model_builder": LlamaForRewardModelWithGating31.from_pretrained,
+        "pipeline_builder": RewardBenchPipeline,
+        "quantized": False,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+        "torch_dtype": torch.bfloat16,
+    },
+    "nicolinho/QRM-Llama3-8B": {
+        "model_builder": LlamaForRewardModelWithGating3.from_pretrained,
+        "pipeline_builder": RewardBenchPipeline,
+        "quantized": False,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+        "torch_dtype": torch.bfloat16,
     },
 }
 
