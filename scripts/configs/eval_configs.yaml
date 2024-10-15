@@ -783,4 +783,41 @@ Ray2333/GRM-Llama3-8B-rewardmodel-ft:
   trust_remote_code: False
   dpo: False
   quantized: False
-  
+# for QRM models, use export ACCELERATE_MIXED_PRECISION=bf16; for best performance
+nicolinho/QRM-Llama3.1-8B:
+  model: nicolinho/QRM-Llama3.1-8B
+  tokenizer: nicolinho/QRM-Llama3.1-8B
+  chat_template: # none for tokenizer
+  batch_size: 8
+  dpo: False
+  trust_remote_code: True
+  quantized: False
+  attention_implementation: flash_attention_2
+nicolinho/QRM-Llama3-8B:
+  model: nicolinho/QRM-Llama3-8B
+  tokenizer: nicolinho/QRM-Llama3-8B
+  chat_template: # none for tokenizer
+  batch_size: 8
+  dpo: False
+  trust_remote_code: True
+  quantized: False
+  attention_implementation: flash_attention_2
+Skywork/Skywork-Reward-Gemma-2-27B-v0.2:
+  model: Skywork/Skywork-Reward-Gemma-2-27B-v0.2
+  tokenizer: Skywork/Skywork-Reward-Gemma-2-27B-v0.2
+  chat_template: # none for tokenizer
+  batch_size: 2
+  dpo: False
+  torch_dtype: bfloat16
+  trust_remote_code: False
+  attention_implementation: flash_attention_2
+  quantized: False
+Skywork/Skywork-Reward-Llama-3.1-8B-v0.2:
+  model: Skywork/Skywork-Reward-Llama-3.1-8B-v0.2
+  tokenizer: Skywork/Skywork-Reward-Llama-3.1-8B-v0.2
+  chat_template: # none for tokenizer
+  batch_size: 8
+  dpo: False
+  torch_dtype: bfloat16
+  trust_remote_code: False
+  quantized: False
