@@ -41,7 +41,7 @@ from .starling import (
     build_starling_rm,
 )
 from .ziya import ZiyaPipeline
-
+from .gpm import GPMPipeline
 # Please open a PR if you need to add more custom modeling code / utilize existing code for you model
 REWARD_MODEL_CONFIG = {
     "default": {
@@ -208,6 +208,20 @@ REWARD_MODEL_CONFIG = {
         "model_type": "Seq. Classifier",
         "torch_dtype": torch.bfloat16,
     },
+    "general-preference/GPM-Llama-3.1-8B": {
+        "model_builder": AutoModelForCausalLM.from_pretrained,
+        "pipeline_builder": GPMPipeline,
+        "quantized": False,
+        "custom_dialogue": True,
+        "model_type": "Custom Classifier",
+    },
+    "general-preference/GPM-Gemma-2B": {
+        "model_builder": AutoModelForCausalLM.from_pretrained,
+        "pipeline_builder": GPMPipeline,
+        "quantized": False,
+        "custom_dialogue": True,
+        "model_type": "Custom Classifier",
+    }
 }
 
 DPO_MODEL_CONFIG = {
