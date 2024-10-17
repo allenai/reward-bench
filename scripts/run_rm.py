@@ -89,6 +89,13 @@ def get_args():
         choices=["eager", "sdpa", "flash_attention_2"],
         help="Attention implementation to use (default: None)",
     )
+    #### custom arguments added for general-preference/GPM-Llama-3.1-8B and general-preference/GPM-Gemma-2B
+    parser.add_argument("--is_custom_model", action="store_true", default=False, help="Use custom defined model, Default to False")
+    parser.add_argument("--value_head_dim", type=int, default=2, help="Dimension of the value_head (embedding head) in the General Preference Model. Ignored by the Bradley Terry model. Should be even.")
+    parser.add_argument("--is_general_preference", action="store_true", default=False, help="Whether to use General Preference Model. Default to False (Bradley Terry model by default).")
+    parser.add_argument("--add_prompt_head", action="store_true", default=False, help="Add a prompt head (scale gate mentioned in the paper) to the model if set. Default to False.")
+    parser.add_argument("--general_preference_tau", type=float, default=0.1, help="Hyperparameter tau used in general preference loss.")
+    
     args = parser.parse_args()
     args.torch_dtype = torch_dtype_mapping(args.torch_dtype)
     return args
@@ -126,6 +133,10 @@ def main():
         config = REWARD_MODEL_CONFIG[args.model]
     else:
         config = REWARD_MODEL_CONFIG["default"]
+    
+    # #### added for general-preference/GPM-Llama-3.1-8B and general-preference/GPM-Gemma-2B for debugging 
+    # config = REWARD_MODEL_CONFIG["general-preference/GPM-Gemma-2B"] 
+        
     logger.info(f"Using reward model config: {config}")
 
     # Default entries
@@ -173,6 +184,11 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=args.trust_remote_code)
     if not custom_dialogue:  # not needed for PairRM / SteamSHP
         tokenizer.truncation_side = "left"  # copied from Starling, but few samples are above context length
+        
+    #### added for general-preference/GPM-Llama-3.1-8B and general-preference/GPM-Gemma-2B
+    tokenizer.truncation_side = "right"
+    tokenizer.padding_side = "left"
+    
     dataset, subsets = load_eval_dataset(
         core_set=not args.pref_sets,
         conv=conv,
@@ -221,11 +237,16 @@ def main():
     if args.attn_implementation:
         model_kwargs["attn_implementation"] = args.attn_implementation
 
-    model = model_builder(args.model, **model_kwargs, trust_remote_code=trust_remote_code)
+    # model = model_builder(args.model, **model_kwargs, trust_remote_code=trust_remote_code)
+    # reward_pipe = pipeline_builder(
+    #     "text-classification",
+    #     model=model,
+    #     tokenizer=tokenizer,
+    # )
+    
+    ##### added for general-preference/GPM-Llama-3.1-8B and general-preference/GPM-Gemma-2B
     reward_pipe = pipeline_builder(
-        "text-classification",
-        model=model,
-        tokenizer=tokenizer,
+        model_name_or_path=args.model, is_general_preference=args.is_general_preference, add_prompt_head=args.add_prompt_head, value_head_dim=args.value_head_dim, tau=args.general_preference_tau, trust_remote_code=trust_remote_code, **model_kwargs
     )
 
     ############################
@@ -299,12 +320,50 @@ def main():
             logger.info(f"RM inference step {step}/{len(dataloader)}")
 
             if model_type == "Custom Classifier":
+                # text_rejected = [b["text_rejected"] for b in batch]
+                # text_chosen = [b["text_chosen"] for b in batch]
+                # results_sub = reward_pipe(text_chosen, text_rejected, **reward_pipeline_kwargs)
+                # [results.append(1) if result else results.append(0) for result in results_sub.cpu().numpy().tolist()]
+                # scores_chosen.extend([None] * len(results_sub))
+                # scores_rejected.extend([None] * len(results_sub))
+                
+                #### added for general-preference/GPM-Llama-3.1-8B and general-preference/GPM-Gemma-2B
                 text_rejected = [b["text_rejected"] for b in batch]
                 text_chosen = [b["text_chosen"] for b in batch]
-                results_sub = reward_pipe(text_chosen, text_rejected, **reward_pipeline_kwargs)
-                [results.append(1) if result else results.append(0) for result in results_sub.cpu().numpy().tolist()]
-                scores_chosen.extend([None] * len(results_sub))
-                scores_rejected.extend([None] * len(results_sub))
+                if hasattr(reward_pipe.model, 'prompt_head'):
+                    chosen_reward, prompt_hidden_state = reward_pipe(text_chosen, return_prompt=True, **reward_pipeline_kwargs)
+                else:
+                    chosen_reward = reward_pipe(text_chosen, return_prompt=False, **reward_pipeline_kwargs)
+                reject_reward = reward_pipe(text_rejected, return_prompt=False, **reward_pipeline_kwargs)
+                score_chosen_batch = (
+                    chosen_reward.float().cpu().numpy().tolist()
+                )  # cast to float in case of bfloat16
+                score_rejected_batch = reject_reward.float().cpu().numpy().tolist()
+                
+                if args.is_general_preference:
+                    if not hasattr(reward_pipe.model, 'prompt_head'):
+                        result = reward_pipe.generate_high_dim_result(chosen_reward, reject_reward)
+                        result_batch = result.float().cpu().detach().numpy().tolist()
+                        [
+                            results.append(1) if result > 0 else results.append(0)
+                            for result in result_batch
+                        ]
+                    else:    
+                        result = reward_pipe.generate_high_dim_result_with_prompt(chosen_reward, reject_reward, prompt_hidden_state)
+                        result_batch = result.float().cpu().detach().numpy().tolist()
+                        [
+                            results.append(1) if result > 0 else results.append(0)
+                            for result in result_batch
+                        ]
+                else:
+                    [
+                        results.append(1) if chosen > rejected else results.append(0)
+                        for chosen, rejected in zip(score_chosen_batch, score_rejected_batch)
+                    ]
+                
+                scores_chosen.extend(score_chosen_batch)
+                scores_rejected.extend(score_rejected_batch)
+
             else:
                 rewards_chosen = reward_pipe(batch["text_chosen"], **reward_pipeline_kwargs)
                 rewards_rejected = reward_pipe(batch["text_rejected"], **reward_pipeline_kwargs)
