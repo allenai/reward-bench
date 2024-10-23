@@ -222,7 +222,6 @@ REWARD_MODEL_CONFIG = {
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
     },
-
 }
 
 DPO_MODEL_CONFIG = {
