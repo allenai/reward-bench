@@ -208,6 +208,20 @@ REWARD_MODEL_CONFIG = {
         "model_type": "Seq. Classifier",
         "torch_dtype": torch.bfloat16,
     },
+    "Ray2333/GRM-Gemma2-2B-sftreg": {
+        "model_builder": GRewardModel.from_pretrained,
+        "pipeline_builder": GRMPipeline,
+        "quantized": False,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+    },
+    "Ray2333/GRM-llama3.2-3B-sftreg": {
+        "model_builder": GRewardModel.from_pretrained,
+        "pipeline_builder": GRMPipeline,
+        "quantized": False,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+    },
 }
 
 DPO_MODEL_CONFIG = {

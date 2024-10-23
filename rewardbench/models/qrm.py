@@ -5,10 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint
-from transformers import (
-    LlamaModel,
-    LlamaPreTrainedModel,
-)
+from transformers import LlamaModel, LlamaPreTrainedModel
 from transformers.models.llama.modeling_llama import LLAMA_INPUTS_DOCSTRING
 from transformers.utils import ModelOutput, add_start_docstrings_to_model_forward
 
