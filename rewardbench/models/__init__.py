@@ -214,6 +214,7 @@ REWARD_MODEL_CONFIG = {
         "quantized": False,
         "custom_dialogue": True,
         "model_type": "Custom Classifier",
+        "torch_dtype": torch.bfloat16,
     },
     "general-preference/GPM-Gemma-2B": {
         "model_builder": AutoModelForCausalLM.from_pretrained,
@@ -221,6 +222,7 @@ REWARD_MODEL_CONFIG = {
         "quantized": False,
         "custom_dialogue": True,
         "model_type": "Custom Classifier",
+        "torch_dtype": torch.bfloat16,
     }
 }
 
