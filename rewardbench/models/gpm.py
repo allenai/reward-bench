@@ -4,6 +4,9 @@ import torch.nn as nn
 from transformers import AutoConfig, AutoModel, AutoModelForCausalLM
 import torch.nn.functional as F
 from transformers import AutoTokenizer
+import os
+from safetensors.torch import load_file
+from huggingface_hub import snapshot_download
 
 def get_tokenizer(pretrain, model, padding_side="left", use_fast=True):
     tokenizer = AutoTokenizer.from_pretrained(pretrain, trust_remote_code=True, use_fast=use_fast)
@@ -14,22 +17,17 @@ def get_tokenizer(pretrain, model, padding_side="left", use_fast=True):
         model.config.pad_token_id = tokenizer.pad_token_id
     return tokenizer
 
-def get_reward_model(base_causal_model, base_llm_model, is_general_preference: bool=False, add_prompt_head: bool=False, value_head_dim: int=2):
+def get_reward_model(base_causal_model, base_llm_model, value_head_dim: int, add_prompt_head: bool, is_general_preference: bool=False):
     class CustomRewardModel(base_causal_model):
 
         def __init__(self, config: AutoConfig):
             super().__init__(config)
             setattr(self, self.base_model_prefix, base_llm_model(config))
-            if not is_general_preference:
-                self.value_head = nn.Linear(config.hidden_size, 1, bias=False)
-            else: 
-                self.value_head = nn.Linear(config.hidden_size, value_head_dim, bias=False) 
-                if add_prompt_head:
-                    self.prompt_head = nn.Linear(config.hidden_size, value_head_dim // 2, bias=False) 
-        
-            self.is_general_preference = is_general_preference    
+            self.is_general_preference = is_general_preference   
             
-            self.post_init()
+            self.value_head = nn.Linear(config.hidden_size, value_head_dim, bias=False) 
+            if add_prompt_head:
+                self.prompt_head = nn.Linear(config.hidden_size, value_head_dim // 2, bias=False)
 
         def custom_forward(
             self,
@@ -112,20 +110,35 @@ def get_reward_model(base_causal_model, base_llm_model, is_general_preference: b
     return CustomRewardModel
 
 class GPMPipeline:
-    def __init__(self, model_name_or_path, device=torch.device("cuda:0"), is_general_preference: bool=True, add_prompt_head: bool=True, value_head_dim: int=2, tau: float=0.1, trust_remote_code: bool=True, **kwargs):
+    def __init__(self, model_name_or_path, device=torch.device("cuda:0"), is_general_preference: bool=True, tau: float=0.1, trust_remote_code: bool=True, **kwargs):
         
         self.device = device
         self.is_general_preference = is_general_preference
-        self.add_prompt_head = add_prompt_head
-        self.value_head_dim = value_head_dim
         self.tau = tau
         
         config = AutoConfig.from_pretrained(model_name_or_path, trust_remote_code=trust_remote_code)
         config._attn_implementation = kwargs.get("attn_implementation", None)
         base_class = AutoModel._model_mapping[type(config)]
         base_causal_class = AutoModelForCausalLM._model_mapping.get(type(config), None)
-        cls_class = get_reward_model(base_causal_class, base_class, is_general_preference, add_prompt_head, value_head_dim)
 
+        try:
+            dir_path = snapshot_download(repo_id=model_name_or_path)
+        except Exception as e:
+            dir_path = model_name_or_path
+        combined_weights = {}
+        for filename in os.listdir(dir_path):
+            if filename.endswith(".safetensors"):
+                file_path = os.path.join(dir_path, filename)
+                weights = load_file(file_path)
+                combined_weights.update(weights)
+
+        if "value_head.weight" in combined_weights:
+            self.value_head_dim = combined_weights["value_head.weight"].shape[0]
+
+        self.add_prompt_head = True if "prompt_head.weight" in combined_weights else False
+
+        cls_class = get_reward_model(base_causal_class, base_class, value_head_dim=self.value_head_dim, add_prompt_head=self.add_prompt_head, is_general_preference=self.is_general_preference)
+        
         # configure model
         self.model = cls_class.from_pretrained(
             model_name_or_path,

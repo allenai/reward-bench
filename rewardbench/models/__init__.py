@@ -208,7 +208,7 @@ REWARD_MODEL_CONFIG = {
         "model_type": "Seq. Classifier",
         "torch_dtype": torch.bfloat16,
     },
-    "general-preference/GPM-Llama-3.1-8B": {
+    "general-preference/GPM-Llama-3.1-8B-Instruct": {
         "model_builder": AutoModelForCausalLM.from_pretrained,
         "pipeline_builder": GPMPipeline,
         "quantized": False,
@@ -217,6 +217,22 @@ REWARD_MODEL_CONFIG = {
         "torch_dtype": torch.bfloat16,
     },
     "general-preference/GPM-Gemma-2B": {
+        "model_builder": AutoModelForCausalLM.from_pretrained,
+        "pipeline_builder": GPMPipeline,
+        "quantized": False,
+        "custom_dialogue": True,
+        "model_type": "Custom Classifier",
+        "torch_dtype": torch.bfloat16,
+    },
+    "general-preference/GPM-Gemma-2-2B": {
+        "model_builder": AutoModelForCausalLM.from_pretrained,
+        "pipeline_builder": GPMPipeline,
+        "quantized": False,
+        "custom_dialogue": True,
+        "model_type": "Custom Classifier",
+        "torch_dtype": torch.bfloat16,
+    },
+    "general-preference/GPM-Gemma-2-9B": {
         "model_builder": AutoModelForCausalLM.from_pretrained,
         "pipeline_builder": GPMPipeline,
         "quantized": False,

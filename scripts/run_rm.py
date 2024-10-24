@@ -133,7 +133,7 @@ def main():
     #     config = REWARD_MODEL_CONFIG["default"]
     
     #### added for general preference model including GPM-Llama-3.1-8B-Instruct, GPM-Gemma-2B, GPM-Gemma-2-2B and GPM-Gemma-2-9B for debugging 
-    config = REWARD_MODEL_CONFIG["general-preference/GPM-Gemma-2B"] 
+    # config = REWARD_MODEL_CONFIG["general-preference/GPM-Gemma-2B"] 
         
     logger.info(f"Using reward model config: {config}")
 
