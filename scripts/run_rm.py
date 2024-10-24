@@ -89,11 +89,9 @@ def get_args():
         choices=["eager", "sdpa", "flash_attention_2"],
         help="Attention implementation to use (default: None)",
     )
-    #### custom arguments added for general-preference/GPM-Llama-3.1-8B and general-preference/GPM-Gemma-2B
+    #### custom arguments added for general preference model including GPM-Llama-3.1-8B-Instruct, GPM-Gemma-2B, GPM-Gemma-2-2B and GPM-Gemma-2-9B
     parser.add_argument("--is_custom_model", action="store_true", default=False, help="Use custom defined model, Default to False")
-    parser.add_argument("--value_head_dim", type=int, default=2, help="Dimension of the value_head (embedding head) in the General Preference Model. Ignored by the Bradley Terry model. Should be even.")
     parser.add_argument("--is_general_preference", action="store_true", default=False, help="Whether to use General Preference Model. Default to False (Bradley Terry model by default).")
-    parser.add_argument("--add_prompt_head", action="store_true", default=False, help="Add a prompt head (scale gate mentioned in the paper) to the model if set. Default to False.")
     parser.add_argument("--general_preference_tau", type=float, default=0.1, help="Hyperparameter tau used in general preference loss.")
     
     args = parser.parse_args()
@@ -129,13 +127,13 @@ def main():
     chat_template = args.chat_template
     conv = get_conv_template(chat_template)
 
-    if args.model in REWARD_MODEL_CONFIG:
-        config = REWARD_MODEL_CONFIG[args.model]
-    else:
-        config = REWARD_MODEL_CONFIG["default"]
+    # if args.model in REWARD_MODEL_CONFIG:
+    #     config = REWARD_MODEL_CONFIG[args.model]
+    # else:
+    #     config = REWARD_MODEL_CONFIG["default"]
     
-    # #### added for general-preference/GPM-Llama-3.1-8B and general-preference/GPM-Gemma-2B for debugging 
-    # config = REWARD_MODEL_CONFIG["general-preference/GPM-Gemma-2B"] 
+    #### added for general preference model including GPM-Llama-3.1-8B-Instruct, GPM-Gemma-2B, GPM-Gemma-2-2B and GPM-Gemma-2-9B for debugging 
+    config = REWARD_MODEL_CONFIG["general-preference/GPM-Gemma-2B"] 
         
     logger.info(f"Using reward model config: {config}")
 
@@ -185,7 +183,7 @@ def main():
     if not custom_dialogue:  # not needed for PairRM / SteamSHP
         tokenizer.truncation_side = "left"  # copied from Starling, but few samples are above context length
         
-    #### added for general-preference/GPM-Llama-3.1-8B and general-preference/GPM-Gemma-2B
+    #### added for general preference model including GPM-Llama-3.1-8B-Instruct, GPM-Gemma-2B, GPM-Gemma-2-2B and GPM-Gemma-2-9B
     tokenizer.truncation_side = "right"
     tokenizer.padding_side = "left"
     
@@ -244,9 +242,9 @@ def main():
     #     tokenizer=tokenizer,
     # )
     
-    ##### added for general-preference/GPM-Llama-3.1-8B and general-preference/GPM-Gemma-2B
+    ##### added for general preference model including GPM-Llama-3.1-8B-Instruct, GPM-Gemma-2B, GPM-Gemma-2-2B and GPM-Gemma-2-9B
     reward_pipe = pipeline_builder(
-        model_name_or_path=args.model, is_general_preference=args.is_general_preference, add_prompt_head=args.add_prompt_head, value_head_dim=args.value_head_dim, tau=args.general_preference_tau, trust_remote_code=trust_remote_code, **model_kwargs
+        model_name_or_path=args.model, is_general_preference=args.is_general_preference, tau=args.general_preference_tau, trust_remote_code=trust_remote_code, **model_kwargs
     )
 
     ############################
@@ -327,7 +325,7 @@ def main():
                 # scores_chosen.extend([None] * len(results_sub))
                 # scores_rejected.extend([None] * len(results_sub))
                 
-                #### added for general-preference/GPM-Llama-3.1-8B and general-preference/GPM-Gemma-2B
+                #### added for general preference model including GPM-Llama-3.1-8B-Instruct, GPM-Gemma-2B, GPM-Gemma-2-2B and GPM-Gemma-2-9B
                 text_rejected = [b["text_rejected"] for b in batch]
                 text_chosen = [b["text_chosen"] for b in batch]
                 if hasattr(reward_pipe.model, 'prompt_head'):
@@ -424,6 +422,8 @@ def main():
     if not args.pref_sets:
         results_leaderboard = calculate_scores_per_section(EXAMPLE_COUNTS, SUBSET_MAPPING, results_grouped)
         print(results_leaderboard)
+        average = sum(results_leaderboard.values())/len(results_leaderboard) if results_leaderboard else 0
+        print("Average", average)
 
     ############################
     # Upload results to hub
