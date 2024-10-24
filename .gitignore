@@ -9,7 +9,6 @@
 Thumbs.db
 
 # model outputs/files
-results/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -176,3 +175,7 @@ beaker_configs/auto_created
 hf_snapshot_evals/
 data/
 output/
+
+scripts/results/eval-set/cephfs/
+scripts/run_rm_rewardbench_27b.sh
+scripts/run_batch_rm_rewardbench.sh
