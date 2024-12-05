@@ -22,7 +22,7 @@ from transformers import (
     MixtralForCausalLM,
     T5ForConditionalGeneration,
 )
-
+from .inform import INFORMForSequenceClassification
 from .armorm import ArmoRMPipeline
 from .beaver import BeaverCostPipeline, BeaverPipeline, LlamaForScore
 from .betterpairrm import BetterPairRMPipeline
@@ -221,6 +221,14 @@ REWARD_MODEL_CONFIG = {
         "quantized": False,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
+    },
+    "infly/INF-ORM-Llama3.1-70B": {
+        "model_builder": INFORMForSequenceClassification.from_pretrained,
+        "pipeline_builder": RewardBenchPipeline,
+        "quantized": False,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+        "torch_dtype": torch.bfloat16,
     },
 }
 
