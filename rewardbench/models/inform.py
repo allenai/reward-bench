@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List, Optional, Union
-
+from typing import List, Optional
 import torch
 import torch.nn as nn
-from transformers import LlamaPreTrainedModel,LlamaConfig, LlamaModel
+from transformers import LlamaPreTrainedModel, LlamaModel
 from transformers.modeling_outputs import SequenceClassifierOutputWithPast
 
 class INFORMForSequenceClassification(LlamaPreTrainedModel):
@@ -32,7 +31,6 @@ class INFORMForSequenceClassification(LlamaPreTrainedModel):
 
         # Initialize weights and apply final processing
         self.post_init()
-
 
     def forward(
         self,
@@ -86,3 +84,4 @@ class INFORMForSequenceClassification(LlamaPreTrainedModel):
             hidden_states=transformer_outputs.hidden_states,
             attentions=transformer_outputs.attentions,
         )
+        
