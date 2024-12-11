@@ -18,6 +18,7 @@ import torch.nn as nn
 from transformers import LlamaPreTrainedModel, LlamaModel
 from transformers.modeling_outputs import SequenceClassifierOutputWithPast
 
+
 class INFORMForSequenceClassification(LlamaPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
@@ -84,4 +85,3 @@ class INFORMForSequenceClassification(LlamaPreTrainedModel):
             hidden_states=transformer_outputs.hidden_states,
             attentions=transformer_outputs.attentions,
         )
-        
