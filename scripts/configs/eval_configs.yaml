@@ -853,3 +853,42 @@ Ray2333/GRM-llama3.2-3B-rewardmodel-ft:
   trust_remote_code: False
   dpo: False
   quantized: False
+infly/INF-ORM-Llama3.1-70B:
+  model: infly/INF-ORM-Llama3.1-70B
+  tokenizer: infly/INF-ORM-Llama3.1-70B
+  chat_template: # none for tokenizer
+  batch_size: 16
+  torch_dtype: bfloat16
+  attention_implementation: flash_attention_2
+  trust_remote_code: False
+  dpo: False
+  quantized: False
+SultanR/SmolTulu-1.7b-RM:
+  model: SultanR/SmolTulu-1.7b-RM
+  tokenizer: SultanR/SmolTulu-1.7b-RM
+  chat_template: # none for tokenizer
+  batch_size: 16
+  trust_remote_code: False
+  dpo: False
+  quantized: False
+nicolinho/QRM-Gemma-2-27B:
+  model: nicolinho/QRM-Gemma-2-27B
+  tokenizer: nicolinho/QRM-Gemma-2-27B
+  chat_template: # none for tokenizer
+  batch_size: 1
+  torch_dtype: bfloat16
+  attention_implementation: flash_attention_2
+  max_length: 4096
+  quantized: False
+  dpo: False
+  trust_remote_code: True
+nicolinho/QRM-Llama3.1-8B-v2:
+  model: nicolinho/QRM-Llama3.1-8B-v2
+  tokenizer: nicolinho/QRM-Llama3.1-8B-v2
+  chat_template: # none for tokenizer
+  batch_size: 1
+  torch_dtype: bfloat16
+  attention_implementation: flash_attention_2
+  quantized: False
+  dpo: False
+  trust_remote_code: True
