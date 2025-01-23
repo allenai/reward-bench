@@ -30,6 +30,7 @@ import numpy as np
 from fastchat.conversation import get_conv_template
 from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams
+import numpy as np
 
 from rewardbench import load_eval_dataset, save_to_hub
 from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
@@ -51,7 +52,6 @@ if HF_TOKEN is not None:
     from huggingface_hub._login import _login
 
     _login(token=HF_TOKEN, add_to_git_credential=False)
-
 
 def get_args():
     """
@@ -161,6 +161,9 @@ def main():
         model_modifier = "Con-J"
     elif "OffsetBias" in args.model:
         model_modifier = "offsetbias"
+    elif "Atla" in args.model:
+        logger.info("Using ATLA model")
+        model_modifier = "Atla"
     elif "gemini" in args.model:
         model_modifier = "gemini"
     else:
@@ -297,8 +300,11 @@ def main():
                     {"role": "user", "content": user_prompt},
                 ]
                 prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+                tokenized_prompt = tokenizer(prompt, add_special_tokens=False, return_length=True) # chat template already include special tokens
+                prompt_ids = tokenized_prompt["input_ids"]
             batch["text"] = prompt
             batch["is_shuffled"] = is_shuffled
+            batch["prompt_ids"] = prompt_ids
             return batch
 
         # format the dataset for the model, with optional fastchat templating
@@ -307,14 +313,17 @@ def main():
         else:
             chat_template = None
         dataset_prompts = dataset.map(format_judgements, fn_kwargs={"optional_chat_template": chat_template})
-
         # collect texts of dataset in list
         prompts = dataset_prompts["text"]
         is_shuffled = dataset_prompts["is_shuffled"]
 
         # generate
         logger.info("*** Run inference ***")
-        outputs = model.generate(prompts, sampling_params)
+        if model_modifier == "Atla":
+            logger.info(f"Using Atla model for inference")
+            outputs = model.generate(prompt_token_ids=prompt_ids, sampling_params=sampling_params)
+        else:
+            outputs = model.generate(prompts, sampling_params=sampling_params)
         logger.info("*** Inference done ***")
 
         answers = [o.outputs[0].text for o in outputs]
