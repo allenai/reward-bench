@@ -30,7 +30,6 @@ import numpy as np
 from fastchat.conversation import get_conv_template
 from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams
-import numpy as np
 
 from rewardbench import load_eval_dataset, save_to_hub
 from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
@@ -300,10 +299,10 @@ def main():
                     {"role": "user", "content": user_prompt},
                 ]
                 prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-                 # chat template already include special tokens
-                 # when vllm runs model.generate on prompts, the tokenizer is applied to the prompts
-                 # defaulting to add_special_tokens=True - this will end up duplicating the special tokens
-                 # so we need to tokenize without adding special tokens
+                # chat template already include special tokens
+                # when vllm runs model.generate on prompts, the tokenizer is applied to the prompts
+                # defaulting to add_special_tokens=True - this will end up duplicating the special tokens
+                # so we need to tokenize without adding special tokens
                 tokenized_prompt = tokenizer(prompt, add_special_tokens=False, return_length=True)
                 prompt_ids = tokenized_prompt["input_ids"]
             batch["text"] = prompt
@@ -325,7 +324,7 @@ def main():
         # generate
         logger.info("*** Run inference ***")
         if model_modifier == "Atla":
-            logger.info(f"Using Atla model for inference")
+            logger.info("Using Atla model for inference")
             outputs = model.generate(prompt_token_ids=prompt_ids, sampling_params=sampling_params)
         else:
             outputs = model.generate(prompts, sampling_params=sampling_params)
