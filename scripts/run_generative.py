@@ -300,7 +300,11 @@ def main():
                     {"role": "user", "content": user_prompt},
                 ]
                 prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-                tokenized_prompt = tokenizer(prompt, add_special_tokens=False, return_length=True) # chat template already include special tokens
+                 # chat template already include special tokens
+                 # when vllm runs model.generate on prompts, the tokenizer is applied to the prompts
+                 # defaulting to add_special_tokens=True - this will end up duplicating the special tokens
+                 # so we need to tokenize without adding special tokens
+                tokenized_prompt = tokenizer(prompt, add_special_tokens=False, return_length=True)
                 prompt_ids = tokenized_prompt["input_ids"]
             batch["text"] = prompt
             batch["is_shuffled"] = is_shuffled
