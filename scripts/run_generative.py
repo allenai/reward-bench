@@ -52,6 +52,7 @@ if HF_TOKEN is not None:
 
     _login(token=HF_TOKEN, add_to_git_credential=False)
 
+
 def get_args():
     """
     Parse arguments strings model and chat_template
