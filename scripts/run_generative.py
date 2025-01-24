@@ -315,6 +315,7 @@ def main():
         dataset_prompts = dataset.map(format_judgements, fn_kwargs={"optional_chat_template": chat_template})
         # collect texts of dataset in list
         prompts = dataset_prompts["text"]
+        prompt_ids = dataset_prompts["prompt_ids"]
         is_shuffled = dataset_prompts["is_shuffled"]
 
         # generate
