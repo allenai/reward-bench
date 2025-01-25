@@ -25,9 +25,7 @@ class INFORMForSequenceClassification(LlamaPreTrainedModel):
         self.num_labels = config.num_labels
         self.model = LlamaModel(config)
         self.score = nn.Sequential(
-            nn.Linear(config.hidden_size, config.hidden_size),
-            nn.ReLU(),
-            nn.Linear(config.hidden_size, 1)
+            nn.Linear(config.hidden_size, config.hidden_size), nn.ReLU(), nn.Linear(config.hidden_size, 1)
         )
 
         # Initialize weights and apply final processing

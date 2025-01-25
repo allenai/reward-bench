@@ -161,6 +161,9 @@ def main():
         model_modifier = "Con-J"
     elif "OffsetBias" in args.model:
         model_modifier = "offsetbias"
+    elif "Atla" in args.model:
+        logger.info("Using ATLA model")
+        model_modifier = "Atla"
     elif "gemini" in args.model:
         model_modifier = "gemini"
     else:
@@ -297,8 +300,15 @@ def main():
                     {"role": "user", "content": user_prompt},
                 ]
                 prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+                # chat template already include special tokens
+                # when vllm runs model.generate on prompts, the tokenizer is applied to the prompts
+                # defaulting to add_special_tokens=True - this will end up duplicating the special tokens
+                # so we need to tokenize without adding special tokens
+                tokenized_prompt = tokenizer(prompt, add_special_tokens=False, return_length=True)
+                prompt_ids = tokenized_prompt["input_ids"]
             batch["text"] = prompt
             batch["is_shuffled"] = is_shuffled
+            batch["prompt_ids"] = prompt_ids
             return batch
 
         # format the dataset for the model, with optional fastchat templating
@@ -307,14 +317,18 @@ def main():
         else:
             chat_template = None
         dataset_prompts = dataset.map(format_judgements, fn_kwargs={"optional_chat_template": chat_template})
-
         # collect texts of dataset in list
         prompts = dataset_prompts["text"]
+        prompt_ids = dataset_prompts["prompt_ids"]
         is_shuffled = dataset_prompts["is_shuffled"]
 
         # generate
         logger.info("*** Run inference ***")
-        outputs = model.generate(prompts, sampling_params)
+        if model_modifier == "Atla":
+            logger.info("Using Atla model for inference")
+            outputs = model.generate(prompt_token_ids=prompt_ids, sampling_params=sampling_params)
+        else:
+            outputs = model.generate(prompts, sampling_params=sampling_params)
         logger.info("*** Inference done ***")
 
         answers = [o.outputs[0].text for o in outputs]
