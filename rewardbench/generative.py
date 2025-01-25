@@ -270,6 +270,7 @@ Response B:
 {assistant_response_b}
 ```"""
 
+
 # format with prompt_template.format(question=question, answer_a=answer_a, answer_b=answer_b)
 def format_judge_answers(question, answer_a, answer_b, multi_turn=False, model_modifier=None):
     kwargs = {}
@@ -307,7 +308,9 @@ def format_judge_answers(question, answer_a, answer_b, multi_turn=False, model_m
         else:
             system_prompt = ""
             user_prompt = Atla_PROMPT.format(
-                user_input=question, assistant_response_a=answer_a[1]["content"], assistant_response_b=answer_b[1]["content"]
+                user_input=question,
+                assistant_response_a=answer_a[1]["content"],
+                assistant_response_b=answer_b[1]["content"],
             )
     else:
         if multi_turn:
@@ -454,9 +457,7 @@ def process_judgement(judgment, model_modifier):
         else:
             return "error"
     elif model_modifier == "Atla":
-        patterns = [
-            r"\*\*Result:\*\*\s*(\w+)"
-        ]
+        patterns = [r"\*\*Result:\*\*\s*(\w+)"]
 
         for pattern in patterns:
             match = re.search(pattern, judgment, re.DOTALL)
