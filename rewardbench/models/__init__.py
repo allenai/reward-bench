@@ -41,7 +41,7 @@ from .starling import (
     build_starling_rm,
 )
 from .ziya import ZiyaPipeline
-
+from .lenovo import LenovoPipeline, LDLRewardModel27B
 # Please open a PR if you need to add more custom modeling code / utilize existing code for you model
 REWARD_MODEL_CONFIG = {
     "default": {
@@ -50,6 +50,14 @@ REWARD_MODEL_CONFIG = {
         "quantized": True,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
+    },
+    "lenovo/Lenovo-Reward-Gemma-2-27B-v0.1": {
+        "model_builder": LDLRewardModel27B.from_pretrained,
+        "pipeline_builder": LenovoPipeline,
+        "quantized": False,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+        "torch_dtype": torch.bfloat16,
     },
     "berkeley-nest/Starling-RM-7B-alpha": {
         "model_builder": build_starling_rm,
