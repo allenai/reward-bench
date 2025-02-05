@@ -53,7 +53,7 @@ REWARD_MODEL_CONFIG = {
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
     },
-    "lenovo/Lenovo-Reward-Gemma-2-27B-v0.1": {
+    "lenovo/LDL-Reward-Gemma-2-27B-v0.1": {
         "model_builder": LDLRewardModel27B.from_pretrained,
         "pipeline_builder": LenovoPipeline,
         "quantized": False,
