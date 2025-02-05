@@ -5,9 +5,8 @@ import os
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint
-from transformers import Gemma2PreTrainedModel, Gemma2Model, Gemma2Config
+from transformers import Gemma2PreTrainedModel, Gemma2Model
 from transformers.utils import ModelOutput
-from transformers.utils import add_start_docstrings_to_model_forward
 from accelerate import infer_auto_device_map, dispatch_model
 from accelerate.utils import get_balanced_memory
 from huggingface_hub import snapshot_download
