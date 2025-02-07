@@ -29,7 +29,7 @@ from .betterpairrm import BetterPairRMPipeline
 from .grm import GRewardModel, GRMPipeline
 from .inform import INFORMForSequenceClassification
 from .internlm import InternLMPipeline
-from .lenovo import LDLRewardModel27B, LenovoPipeline
+from .ldlreward import LDLPipeline, LDLRewardModel27B
 from .openassistant import *  # noqa
 from .openbmb import LlamaRewardModel, OpenBMBPipeline
 from .pairrm import DebertaV2PairRM, PairRMPipeline
@@ -53,9 +53,9 @@ REWARD_MODEL_CONFIG = {
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
     },
-    "lenovo/LDL-Reward-Gemma-2-27B-v0.1": {
+    "ShikaiChen/LDL-Reward-Gemma-2-27B-v0.1": {
         "model_builder": LDLRewardModel27B.from_pretrained,
-        "pipeline_builder": LenovoPipeline,
+        "pipeline_builder": LDLPipeline,
         "quantized": False,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",

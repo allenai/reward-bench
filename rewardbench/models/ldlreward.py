@@ -192,7 +192,7 @@ class LDLRewardModel27B(Gemma2PreTrainedModel):
         return model
 
 
-class LenovoPipeline:
+class LDLPipeline:
     def __init__(self, task, model, tokenizer):
         self.task = task
         self.model = model.eval()
