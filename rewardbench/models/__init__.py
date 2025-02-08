@@ -22,12 +22,14 @@ from transformers import (
     MixtralForCausalLM,
     T5ForConditionalGeneration,
 )
-from .inform import INFORMForSequenceClassification
+
 from .armorm import ArmoRMPipeline
 from .beaver import BeaverCostPipeline, BeaverPipeline, LlamaForScore
 from .betterpairrm import BetterPairRMPipeline
 from .grm import GRewardModel, GRMPipeline
+from .inform import INFORMForSequenceClassification
 from .internlm import InternLMPipeline
+from .ldlreward import LDLPipeline, LDLRewardModel27B
 from .openassistant import *  # noqa
 from .openbmb import LlamaRewardModel, OpenBMBPipeline
 from .pairrm import DebertaV2PairRM, PairRMPipeline
@@ -50,6 +52,14 @@ REWARD_MODEL_CONFIG = {
         "quantized": True,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
+    },
+    "ShikaiChen/LDL-Reward-Gemma-2-27B-v0.1": {
+        "model_builder": LDLRewardModel27B.from_pretrained,
+        "pipeline_builder": LDLPipeline,
+        "quantized": False,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+        "torch_dtype": torch.bfloat16,
     },
     "berkeley-nest/Starling-RM-7B-alpha": {
         "model_builder": build_starling_rm,
