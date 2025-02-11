@@ -70,6 +70,8 @@ setup(
             "openai",
             "anthropic",
             "together",
+            "fastchat",
+            "google-generativeai",
         ],
     },
 )
