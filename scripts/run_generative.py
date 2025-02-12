@@ -166,6 +166,8 @@ def main():
         model_modifier = "Atla"
     elif "gemini" in args.model:
         model_modifier = "gemini"
+    elif "RISE-Judge" in args.model:
+        model_modifier = "RISE-Judge"
     else:
         model_modifier = None
 
