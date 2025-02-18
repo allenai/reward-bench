@@ -19,6 +19,7 @@ import argparse
 import logging
 import os
 import sys
+import json
 
 import torch
 import transformers
@@ -27,13 +28,28 @@ from accelerate.logging import get_logger
 from fastchat.conversation import get_conv_template
 from tqdm import tqdm
 from transformers import AutoTokenizer, pipeline
+from typing import Dict, List, Literal, Optional, Union
 
-from rewardbench import (
+
+from bon_utils import (
     REWARD_MODEL_CONFIG,
     check_tokenizer_chat_template,
     load_bon_dataset,
     save_to_hub,
 )
+
+def save_jsonl(save_filename: str, table: Dict[str, List[Union[int, float, str]]]):
+    # Ensure directory exists
+    dirname = os.path.dirname(save_filename)
+    if dirname:
+        os.makedirs(dirname, exist_ok=True)
+
+    # Write the dictionary data to JSONL file
+    with open(save_filename, "w") as outfile:
+        # Iterate through each index and write corresponding row as JSON
+        for i in range(len(next(iter(table.values())))):  # Get the first key's length
+            json.dump({key: table[key][i] for key in table}, outfile)
+            outfile.write("\n")
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -57,7 +73,7 @@ def get_args():
     )
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
     parser.add_argument("--batch_size", type=int, default=64, help="batch size for inference")
-    parser.add_argument("--best_of", type=int, default=16, help="number of best of n to select from")
+    parser.add_argument("--best_of", type=int, default=4, help="number of best of n to select from")
     parser.add_argument(
         "--debug", action="store_true", help="run on common preference sets instead of our custom eval set"
     )
@@ -159,7 +175,7 @@ def main():
             "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
         }
     else:
-        model_kwargs = {"device_map": {"": current_device}}
+        model_kwargs = {"device_map": "auto"}
 
     model = model_builder(args.model, **model_kwargs, trust_remote_code=trust_remote_code)
     reward_pipe = pipeline_builder(
@@ -223,12 +239,14 @@ def main():
             shuffle=False,
             drop_last=False,
         )
-
+        # model = torch.nn.DataParallel(reward_pipe.model)
         model = accelerator.prepare(reward_pipe.model)
         reward_pipe.model = model
 
         scores = []
         for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
+            if batch == None:
+                print(batch)
             logger.info(f"RM inference step {step}/{len(dataloader)}")
 
             if "PairRM" in args.model or "SteamSHP" in args.model:
@@ -259,23 +277,25 @@ def main():
     # remove columns prompt, text, and config to save space
     # will get these from the source dataset when loading
     out_dataset = out_dataset.remove_columns("text")
+    out_dataset = out_dataset.remove_columns("input")
+    out_dataset = out_dataset.remove_columns("prompt")
 
-    alpaca_eval = out_dataset.filter(lambda x: x["subset"] == "alpaca_eval")
-    mt_bench = out_dataset.filter(lambda x: x["subset"] == "mt_bench")
+    # alpaca_eval = out_dataset.filter(lambda x: x["subset"] == "alpaca_eval")
+    # mt_bench = out_dataset.filter(lambda x: x["subset"] == "mt_bench")
 
-    # remove subset column from both
-    alpaca_eval = alpaca_eval.remove_columns("subset")
-    mt_bench = mt_bench.remove_columns("subset")
+    # # remove subset column from both
+    # alpaca_eval = alpaca_eval.remove_columns("subset")
+    # mt_bench = mt_bench.remove_columns("subset")
 
-    # remove model_input
-    alpaca_eval = alpaca_eval.remove_columns("model_input")
-    mt_bench = mt_bench.remove_columns("model_input")
+    # # remove model_input
+    # # alpaca_eval = alpaca_eval.remove_columns("model_input")
+    # # mt_bench = mt_bench.remove_columns("model_input")
 
-    # split into per-model
-    alpaca_eval_zephyr = alpaca_eval.filter(lambda x: x["model"] == "HuggingFaceH4/zephyr-7b-beta")
-    alpaca_eval_tulu = alpaca_eval.filter(lambda x: x["model"] == "allenai/tulu-2-dpo-13b")
-    mt_bench_zephyr = mt_bench.filter(lambda x: x["model"] == "HuggingFaceH4/zephyr-7b-beta")
-    mt_bench_tulu = mt_bench.filter(lambda x: x["model"] == "allenai/tulu-2-dpo-13b")
+    # # split into per-model
+    # alpaca_eval_zephyr = alpaca_eval.filter(lambda x: x["model"] == "HuggingFaceH4/zephyr-7b-beta")
+    # alpaca_eval_tulu = alpaca_eval.filter(lambda x: x["model"] == "allenai/tulu-2-dpo-13b")
+    # mt_bench_zephyr = mt_bench.filter(lambda x: x["model"] == "HuggingFaceH4/zephyr-7b-beta")
+    # mt_bench_tulu = mt_bench.filter(lambda x: x["model"] == "allenai/tulu-2-dpo-13b")
 
     # def flatten and to dict
     def flatten_data(dataset):
@@ -286,37 +306,49 @@ def main():
     # Upload results to hub
     ############################
     sub_path = "best-of-n/"
-    results_url = save_to_hub(
-        flatten_data(alpaca_eval_zephyr),
-        args.model,
-        sub_path + "alpaca_eval/zephyr-7b/",
-        args.debug,
-        local_only=args.do_not_save,
-    )
-    results_url_2 = save_to_hub(
-        flatten_data(alpaca_eval_tulu),
-        args.model,
-        sub_path + "alpaca_eval/tulu-13b/",
-        args.debug,
-        local_only=args.do_not_save,
-    )
-    results_url_3 = save_to_hub(
-        flatten_data(mt_bench_zephyr),
-        args.model,
-        sub_path + "mt_bench/zephyr-7b/",
-        args.debug,
-        local_only=args.do_not_save,
-    )
-    results_url_4 = save_to_hub(
-        flatten_data(mt_bench_tulu),
-        args.model,
-        sub_path + "mt_bench/tulu-13/",
-        args.debug,
-        local_only=args.do_not_save,
-    )
+    # results_url = save_to_hub(
+    #     flatten_data(out_dataset),
+    #     args.model,
+    #     sub_path + "coconot/",
+    #     args.debug,
+    #     local_only=args.do_not_save,
+    # )
+    target_path = sub_path + "coconot/"    
+    scores_path = f"./results_new/{target_path}{args.model}"
+    out_dataset.save_to_disk(scores_path)
+
+    # save_jsonl(scores_path, out_dataset)
+    # results_url = save_to_hub(
+    #     flatten_data(alpaca_eval_zephyr),
+    #     args.model,
+    #     sub_path + "alpaca_eval/zephyr-7b/",
+    #     args.debug,
+    #     local_only=args.do_not_save,
+    # )
+    # results_url_2 = save_to_hub(
+    #     flatten_data(alpaca_eval_tulu),
+    #     args.model,
+    #     sub_path + "alpaca_eval/tulu-13b/",
+    #     args.debug,
+    #     local_only=args.do_not_save,
+    # )
+    # results_url_3 = save_to_hub(
+    #     flatten_data(mt_bench_zephyr),
+    #     args.model,
+    #     sub_path + "mt_bench/zephyr-7b/",
+    #     args.debug,
+    #     local_only=args.do_not_save,
+    # )
+    # results_url_4 = save_to_hub(
+    #     flatten_data(mt_bench_tulu),
+    #     args.model,
+    #     sub_path + "mt_bench/tulu-13/",
+    #     args.debug,
+    #     local_only=args.do_not_save,
+    # )
     if not args.do_not_save:
         logger.info(
-            f"Uploaded reward model results to {results_url}, {results_url_2}, {results_url_3}, {results_url_4}"
+            f"Uploaded reward model results to {results_url}"
         )
 
 

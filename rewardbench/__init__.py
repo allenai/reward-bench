@@ -16,7 +16,18 @@ __version__ = "0.1.4"
 from .chattemplates import *  # noqa
 from .dpo import DPOInference
 from .models import DPO_MODEL_CONFIG, REWARD_MODEL_CONFIG
-from .utils import (
+# from .utils import (
+#     check_tokenizer_chat_template,
+#     load_and_process_dataset,
+#     load_bon_dataset,
+#     load_eval_dataset,
+#     prepare_dialogue,
+#     prepare_dialogue_from_tokenizer,
+#     save_to_hub,
+#     torch_dtype_mapping,
+# )
+
+from .utils_v2 import (
     check_tokenizer_chat_template,
     load_and_process_dataset,
     load_bon_dataset,
@@ -25,6 +36,7 @@ from .utils import (
     prepare_dialogue_from_tokenizer,
     save_to_hub,
     torch_dtype_mapping,
+    reroll_and_score_dataset
 )
 
 __all__ = [
@@ -39,4 +51,5 @@ __all__ = [
     REWARD_MODEL_CONFIG,
     save_to_hub,
     torch_dtype_mapping,
+    reroll_and_score_dataset,
 ]

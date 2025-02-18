@@ -37,7 +37,43 @@ def load_scores(
         for filepath in filepaths:
             if "nfs.cirrascale" not in str(filepath).split("scores/")[-1]:  # ignore internal ai2 data
                 _results.append(pd.read_json(filepath, orient="records"))
+            print(filepath)
     results_df = pd.concat(_results)
+    return results_df
+
+def load_scores_merge(
+    repo_dir_path: Union[str, Path],
+    subdir: str,
+    # ignore_columns: Optional[List[str]] = None,
+) -> pd.DataFrame:
+    """Load results into a pandas DataFrame"""
+    base_dir = Path(repo_dir_path)
+    data_dir = base_dir / subdir
+    orgs_dir = {d.name: d for d in data_dir.iterdir() if d.is_dir()}
+    # Get all files within the subfolder orgs
+    model_result_files = {d: list(path.glob("*.json")) for d, path in orgs_dir.items()}
+
+    shared_cols = ['prompt', 'subset', 'text_chosen', 'text_rejected']
+    # _results: List[pd.DataFrame] = []  # will merge later
+    _results = {}
+    i = 0
+    model_names = []
+    for org, filepaths in model_result_files.items():
+        for filepath in filepaths:
+            if "nfs.cirrascale" not in str(filepath).split("scores/")[-1]:  # ignore internal ai2 data
+                model_results = pd.read_json(filepath, orient="records")
+                model_name = str(filepath).split("scores/")[-1].split(".json")[0]
+                model_names.append(model_name)
+                if i == 0:
+                    prompt_trios = model_results[shared_cols] # initialize dataframe with the set of prompt, chosen, rejected trios
+                _results[model_name] = model_results["results"].values
+                print(model_name)
+                i += 1
+    all_results = pd.DataFrame.from_dict(_results)
+    avgs = all_results.mean(axis=1) # take average result across columns
+    results_df = pd.concat([all_results, prompt_trios], axis=1)
+    results_df['average'] = avgs
+    print(results_df)
     return results_df
 
 

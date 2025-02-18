@@ -70,6 +70,7 @@ def main():
     hf_prefs_df = load_results(hf_evals_repo, subdir="pref-sets/", ignore_columns=["summarize_prompted"])
     generate_whisker_plot(hf_evals_df, args.output_dir, height=10, width=20, name="dist-core")
     generate_whisker_plot(hf_prefs_df, args.output_dir, ncol=3, height=7, width=10, name="dist-pref")
+    print(hf_evals_df)
 
 
 def generate_whisker_plot(df, output_path, ncol=None, name=None, height=10, width=18):
