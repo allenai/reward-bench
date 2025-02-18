@@ -272,7 +272,7 @@ def draw_model_source_histogram(
     # plt.margins(0, 0.05)
     plt.margins(0.05, 0)
 
-    title = f"Source of completions ({', '.join([k.replace('_',' ') for k in keys])})"
+    title = f"Source of completions ({', '.join([k.replace('_', ' ') for k in keys])})"
 
     if normalize:
         ax.set_ylim(top=1.00)
