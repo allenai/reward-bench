@@ -32,7 +32,7 @@ from transformers import AutoTokenizer, pipeline
 from rewardbench import (
     REWARD_MODEL_CONFIG,
     check_tokenizer_chat_template,
-    load_bon_dataset,
+    load_bon_dataset_v2,
     reroll_and_score_dataset,
     save_to_hub,
 )
@@ -153,7 +153,7 @@ def main():
     logger.info("*** Load dataset ***")
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=args.trust_remote_code)
-    dataset, subsets = load_bon_dataset(
+    dataset, subsets = load_bon_dataset_v2(
         dataset=args.dataset,
         conv=conv,
         custom_dialogue_formatting=custom_dialogue,
