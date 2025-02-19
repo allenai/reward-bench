@@ -18,9 +18,17 @@ import logging
 import os
 from typing import Any, Dict, List, Union
 
+import numpy as np
 import pandas as pd
 import torch
-from datasets import Dataset, DatasetDict, Value, concatenate_datasets, load_dataset
+from datasets import (
+    Dataset,
+    DatasetDict,
+    Value,
+    concatenate_datasets,
+    load_dataset,
+    load_from_disk,
+)
 from fastchat.conversation import Conversation
 from huggingface_hub import HfApi
 from transformers import PreTrainedTokenizer
