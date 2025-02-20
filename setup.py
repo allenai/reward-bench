@@ -44,25 +44,24 @@ setup(
         "bitsandbytes",
         "black",
         "datasets",
-        "deepspeed",
-        "einops",
         "flake8>=6.0",
         "fschat",
         "huggingface_hub",
         "hf_transfer",
         "isort>=5.12.0",
         "pandas",
-        "peft",
         "pytest",
-        "scipy",
         "sentencepiece",
         "tabulate",  # dependency for markdown rendering in pandas
         "tokenizers",
-        "torch",
+        "torch", # install before pip install -e . for best experience
         "tiktoken==0.6.0",  # added for llama 3
         "transformers==4.47.1",  # pinned at most recent version
         "trl>=0.8.2",  # fixed transformers import error, for DPO
-        "wandb",  # for loading model path / reivisions from wandb
+        "wandb",  # for loading model path / reivisions from wandb on cli
+        # peft, einops, and deepspeed removed from experimental version with training code
+        # for RM training, we recommend using https://github.com/allenai/open-instruct
+        # scipy previously included for analysis
     ],
     extras_require={
         "generative": [
