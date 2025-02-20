@@ -20,9 +20,11 @@ from .utils import (
     check_tokenizer_chat_template,
     load_and_process_dataset,
     load_bon_dataset,
+    load_bon_dataset_v2,
     load_eval_dataset,
     prepare_dialogue,
     prepare_dialogue_from_tokenizer,
+    reroll_and_score_dataset,
     save_to_hub,
     torch_dtype_mapping,
 )
@@ -39,4 +41,6 @@ __all__ = [
     REWARD_MODEL_CONFIG,
     save_to_hub,
     torch_dtype_mapping,
+    load_bon_dataset_v2,
+    reroll_and_score_dataset,
 ]

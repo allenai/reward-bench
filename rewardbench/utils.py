@@ -18,9 +18,17 @@ import logging
 import os
 from typing import Any, Dict, List, Union
 
+import numpy as np
 import pandas as pd
 import torch
-from datasets import Dataset, DatasetDict, Value, concatenate_datasets, load_dataset
+from datasets import (
+    Dataset,
+    DatasetDict,
+    Value,
+    concatenate_datasets,
+    load_dataset,
+    load_from_disk,
+)
 from fastchat.conversation import Conversation
 from huggingface_hub import HfApi
 from transformers import PreTrainedTokenizer
@@ -32,6 +40,9 @@ CORE_EVAL_SET = "allenai/reward-bench"
 EXTRA_PREF_SETS = "allenai/pref-test-sets"
 BON_CANDIDATES = "ai2-adapt-dev/HERM_BoN_candidates"  # private until officially supported
 EVAL_REPO = "allenai/reward-bench-results"  # data repo to upload results
+
+CORE_EVAL_SET_V2 = "allenai/reward-bench-v2-v0"
+EVAL_REPO_V2 = "allenai/reward-bench-v2-results"  # data repo to upload results
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -88,6 +99,7 @@ def save_to_hub(
     target_path: str,
     debug: bool = False,
     local_only: bool = False,
+    best_of_n: bool = False,
     save_metrics_for_beaker: bool = False,
 ):
     """
@@ -99,6 +111,7 @@ def save_to_hub(
         target_path: path to save the results in the hub. Usually set in script (e.g. eval-set/, eval-set-scores/).
         debug: if True, save to debug repo on HF.
         local_only: if True, do not save to HF (for most non-AI2 users).
+        best_of_n: if True, save to best-of-n dataset results repo on HF.
         save_metrics_for_beaker: if True, save metrics for AI2 beaker visualization.
 
     Returns:
@@ -134,7 +147,7 @@ def save_to_hub(
         scores_url = api.upload_file(
             path_or_fileobj=scores_path,
             path_in_repo=target_path + f"{model_name}.json",
-            repo_id=EVAL_REPO if not debug else "ai2-adapt-dev/herm-debug",  # push to correct results repo
+            repo_id=EVAL_REPO if not best_of_n else EVAL_REPO_V2,  # push to correct results repo
             repo_type="dataset",
             commit_message=f"Add chosen-rejected text with scores for  model {model_name}",
         )
@@ -404,6 +417,161 @@ def load_eval_dataset(
     all_cols = dataset.column_names
     dataset = dataset.remove_columns([c for c in all_cols if c not in keep_columns])
 
+    return dataset, subsets
+
+
+def reroll_and_score_dataset(dataset, best_of, cols_to_combine=["text", "scores"]):
+    # Convert to pandas DataFrame for easier manipulation
+    df = dataset.to_pandas()
+
+    # Get the number of groups
+    n_groups = len(df) // best_of
+    if len(df) % best_of != 0:
+        raise ValueError(f"Dataset length ({len(df)}) is not divisible by best_of ({best_of})")
+
+    rerolled_rows = []
+
+    # Process each group of best_of rows
+    for i in range(n_groups):
+        start_idx = i * best_of
+        group = df.iloc[start_idx : start_idx + best_of]
+
+        # Create new row
+        new_row = {}
+
+        # Handle text and score columns - combine into lists
+        for col in cols_to_combine:
+            new_row[col] = group[col].tolist()
+
+        # Result is 1 if the first entry (chosen) is scored the highest, 0 otherwise
+        new_row["results"] = 1 if np.argmax(new_row["scores"]) == 0 else 0
+
+        # Handle all other columns - verify they're identical and take first value
+        other_columns = [col for col in df.columns if col not in cols_to_combine]
+        for col in other_columns:
+            values = group[col].unique()
+            if len(values) != 1:
+                raise ValueError(f"Column {col} has different values within group {i}: {values}")
+            new_row[col] = values[0]
+
+        rerolled_rows.append(new_row)
+
+    # Create new dataset
+    rerolled_df = pd.DataFrame(rerolled_rows)
+    rerolled_dataset = Dataset.from_pandas(rerolled_df)
+
+    return rerolled_dataset
+
+
+def load_bon_dataset_v2(
+    dataset: str,
+    custom_dialogue_formatting: bool = False,
+    conv: Conversation = None,
+    tokenizer: PreTrainedTokenizer = None,
+    logger: logging.Logger = None,
+    keep_columns: List[str] = ["text_chosen", "text_rejected", "text", "id"],
+    local: bool = False,
+):
+    """
+    Loads the BON candidates dataset.
+    """
+
+    # load the data. Data can be a HuggingFace dataset or a local JSONL file
+    if not dataset:
+        raw_dataset = load_dataset(CORE_EVAL_SET_V2, split="test")
+
+    else:
+        if ".jsonl" in dataset:
+            raw_dataset = pd.read_json(dataset, lines=True)
+            raw_dataset = Dataset.from_pandas(raw_dataset)
+        elif local:
+            raw_dataset = load_from_disk(dataset)
+        else:
+            # change split if renamed
+            raw_dataset = load_dataset(dataset, split="test")
+
+    # unroll every row in ['output'] to a new row, all other columns are copied,
+    # index is changed to tuple (index, output_index)
+    def unroll_output(idx, row):
+        rows = []
+
+        # This is for me to be able to run existing splits locally
+        # a vestige of how I've been handling dataset format till now
+        # Delete after move fully to new schema/hf schema
+        if ".jsonl" in dataset:
+            options = row["output"]
+        else:
+            options = row["chosen"]
+            options.extend(row["rejected"])
+
+        # id = row["id"]
+
+        for i, output in enumerate(options):
+            new_row = row.copy()
+            new_row["input"] = output
+            # new_row["index"] = [id, i]
+            # del new_row["id"]
+            del new_row["chosen"]
+            del new_row["rejected"]
+            rows.append(new_row)
+        return rows
+
+    new_dataset = []
+    for idx, row in enumerate(raw_dataset):
+        new_dataset.extend([r for r in unroll_output(idx, row)])
+
+    # create huggingface dataset through pandas
+    unrolled_dataset = Dataset.from_pandas(pd.DataFrame(data=new_dataset))
+    # unrolled_dataset = unrolled_dataset.rename_column("index", "id")
+
+    # Apply chat template
+    if not custom_dialogue_formatting:
+        usable_tokenizer = check_tokenizer_chat_template(tokenizer)
+
+        # assert either conv is passed or tokenizer has chat_template
+        assert conv is not None or usable_tokenizer
+
+        if usable_tokenizer:
+            if logger is not None:
+                logger.info("*** Preparing dataset with HF Transformers ***")
+            # docs https://huggingface.co/docs/transformers/main/en/chat_templating
+            dataset = unrolled_dataset.map(
+                prepare_dialogue_from_tokenizer,
+                fn_kwargs={"tokenizer": tokenizer, "ift": True},
+            )
+
+        # else use FastChat to get chat template
+        else:
+            if logger is not None:
+                logger.info("*** Preparing dataset with FastChat ***")
+            dataset = unrolled_dataset.map(
+                prepare_dialogue,
+                fn_kwargs={"dialogue_template": conv, "ift": True},
+                num_proc=8,
+            )
+    else:
+        if logger is not None:
+            logger.info("*** Preparing dataset with custom formatting ***")
+
+        def map_conversations_ift(example):
+            example["text"] = [
+                {"role": "user", "content": example["prompt"]},
+                {"role": "assistant", "content": example["input"]},
+            ]
+            return example
+
+        dataset = unrolled_dataset.map(
+            map_conversations_ift,
+            # fn_kwargs={"core_set": core_set},
+            num_proc=8,
+        )
+
+    # take column subset from dataset
+    subsets = dataset["subset"]
+
+    # remove column input
+    all_cols = dataset.column_names
+    dataset = dataset.remove_columns([c for c in all_cols if c not in keep_columns])
     return dataset, subsets
 
 
