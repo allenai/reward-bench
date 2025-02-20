@@ -54,7 +54,7 @@ setup(
         "sentencepiece",
         "tabulate",  # dependency for markdown rendering in pandas
         "tokenizers",
-        "torch", # install before pip install -e . for best experience
+        "torch",  # install before pip install -e . for best experience
         "tiktoken==0.6.0",  # added for llama 3
         "transformers==4.47.1",  # pinned at most recent version
         "trl>=0.8.2",  # fixed transformers import error, for DPO
