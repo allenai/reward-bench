@@ -116,7 +116,7 @@ def main():
     if args.model in REWARD_MODEL_CONFIG:
         config = REWARD_MODEL_CONFIG[args.model]
     else:
-        config = REWARD_MODEL_CONFIG["default"]
+        config = REWARD_MODEL_CONFIG["default_v2"]
     logger.info(f"Using reward model config: {config}")
     if args.trust_remote_code:
         logger.info("Loading model with Trust Remote Code")
