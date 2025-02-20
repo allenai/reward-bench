@@ -1,4 +1,4 @@
-# Copyright 2023 AllenAI. All rights reserved.
+# Copyright 2025 AllenAI. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Runs best of n (BoN) ranking
-# TODO: implement this for DPO models
+# Runs reward model evaluation on a best-of-n dataset
 
 import argparse
 import logging
@@ -36,9 +35,6 @@ from rewardbench import (
     reroll_and_score_dataset,
     save_to_hub,
 )
-
-# from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
-# from rewardbench.utils import calculate_scores_per_section
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -68,16 +64,10 @@ def get_args():
     parser.add_argument("--max_length", type=int, default=2048, help="Max length of RM inputs (passed to pipeline)")
     parser.add_argument("--best_of", type=int, default=4, help="number of best of n to select from")
     parser.add_argument(
-        "--pref_sets", action="store_true", help="run on common preference sets instead of our custom eval set"
-    )
-    parser.add_argument(
         "--debug", action="store_true", help="run on common preference sets instead of our custom eval set"
     )
     parser.add_argument(
-        "--disable_beaker_save", action="store_true", help="disable saving the main results in a file for AI2 Beaker"
-    )
-    parser.add_argument(
-        "--not_quantized", action="store_true", help="disable quantization for models that are quantized by default"
+        "--quantized", action="store_true", help="enable quantization for models that are not quantized by default"
     )
     parser.add_argument(
         "--torch_dtype",
@@ -134,11 +124,11 @@ def main():
     # Default entries
     # "model_builder": AutoModelForSequenceClassification.from_pretrained,
     # "pipeline_builder": pipeline,
-    # "quantized": True,
+    # "quantized": False,
     # "custom_dialogue": False,
     # "model_type": "Seq. Classifier"
 
-    quantized = config["quantized"]  # only Starling isn't quantized for now
+    quantized = config["quantized"] or args.quantized
     custom_dialogue = config["custom_dialogue"]
     model_type = config["model_type"]  # todo will be needed to add PairRM and SteamSHP
     model_builder = config["model_builder"]
@@ -179,7 +169,7 @@ def main():
         "batch_size": BATCH_SIZE,  # eval_args.inference_batch_size,
         "truncation": True,
         "padding": True,
-        "max_length": 2048,
+        "max_length": args.max_length,
         "function_to_apply": "none",  # Compute raw logits
         "return_token_type_ids": False,
     }
@@ -255,7 +245,7 @@ def main():
         dataloader = torch.utils.data.DataLoader(
             dataset,
             batch_size=BATCH_SIZE,
-            collate_fn=custom_collate_fn,  # if not args.pref_sets else None,
+            collate_fn=custom_collate_fn,
             shuffle=False,
             drop_last=False,
         )
@@ -315,16 +305,10 @@ def main():
         print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
         results_grouped[subset] = num_correct / num_total
 
-    # for now, don't need this because no subsubsets
-    # log leaderboard aggregated results
-    # if not args.pref_sets:
-    #     results_leaderboard = calculate_scores_per_section(EXAMPLE_COUNTS, SUBSET_MAPPING, results_grouped)
-    #     print(results_leaderboard)
-
     ############################
     # Upload results to hub
     ############################
-    sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
+    sub_path = "eval-set/"
     if not args.do_not_save:
         results_url = save_to_hub(
             results_grouped,
@@ -332,7 +316,7 @@ def main():
             sub_path,
             args.debug,
             local_only=args.do_not_save,
-            save_metrics_for_beaker=not args.disable_beaker_save,
+            best_of_n=True,
         )
     if not args.do_not_save:
         logger.info(f"Uploaded reward model results to {results_url}")
@@ -345,7 +329,7 @@ def main():
         scores_dict["model_type"] = model_type
         scores_dict["chat_template"] = chat_template
 
-        sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
+        sub_path_scores = "eval-set-scores/"
 
         scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug, local_only=args.do_not_save)
         logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")

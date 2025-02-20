@@ -49,7 +49,7 @@ REWARD_MODEL_CONFIG = {
     "default": {
         "model_builder": AutoModelForSequenceClassification.from_pretrained,
         "pipeline_builder": RewardBenchPipeline,
-        "quantized": True,
+        "quantized": False,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
     },

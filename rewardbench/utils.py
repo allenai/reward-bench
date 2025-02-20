@@ -99,6 +99,7 @@ def save_to_hub(
     target_path: str,
     debug: bool = False,
     local_only: bool = False,
+    best_of_n: bool = False,
     save_metrics_for_beaker: bool = False,
 ):
     """
@@ -110,6 +111,7 @@ def save_to_hub(
         target_path: path to save the results in the hub. Usually set in script (e.g. eval-set/, eval-set-scores/).
         debug: if True, save to debug repo on HF.
         local_only: if True, do not save to HF (for most non-AI2 users).
+        best_of_n: if True, save to best-of-n dataset results repo on HF.
         save_metrics_for_beaker: if True, save metrics for AI2 beaker visualization.
 
     Returns:
@@ -145,7 +147,7 @@ def save_to_hub(
         scores_url = api.upload_file(
             path_or_fileobj=scores_path,
             path_in_repo=target_path + f"{model_name}.json",
-            repo_id=EVAL_REPO if not debug else "ai2-adapt-dev/herm-debug",  # push to correct results repo
+            repo_id=EVAL_REPO if not best_of_n else EVAL_REPO_V2,  # push to correct results repo
             repo_type="dataset",
             commit_message=f"Add chosen-rejected text with scores for  model {model_name}",
         )
@@ -476,7 +478,7 @@ def load_bon_dataset_v2(
 
     # load the data. Data can be a HuggingFace dataset or a local JSONL file
     if not dataset:
-        raw_dataset = load_dataset(CORE_EVAL_SET_V2, split="train")
+        raw_dataset = load_dataset(CORE_EVAL_SET_V2, split="test")
 
     else:
         if ".jsonl" in dataset:
@@ -486,7 +488,7 @@ def load_bon_dataset_v2(
             raw_dataset = load_from_disk(dataset)
         else:
             # change split if renamed
-            raw_dataset = load_dataset(dataset, split="train")
+            raw_dataset = load_dataset(dataset, split="test")
 
     # unroll every row in ['output'] to a new row, all other columns are copied,
     # index is changed to tuple (index, output_index)
