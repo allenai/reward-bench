@@ -69,6 +69,7 @@ setup(
             "vllm==0.5.5",  # TODO bump when needed for a model
             "openai",
             "anthropic",
+            "google-generativeai",
             "together",
         ],
     },

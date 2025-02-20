@@ -4,6 +4,9 @@
 *.sublime-project
 *.sublime-workspace
 
+# pyenv local
+.python-version
+
 # Ignore system files
 .DS_Store
 Thumbs.db
