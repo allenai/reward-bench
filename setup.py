@@ -55,7 +55,7 @@ setup(
         "tabulate",  # dependency for markdown rendering in pandas
         "tokenizers",
         "torch",  # install before pip install -e . for best experience
-        "tiktoken==0.6.0",  # added for llama 3
+        "tiktoken",  # unpinned for vllm dependency compatibility
         "transformers==4.47.1",  # pinned at most recent version
         "trl>=0.8.2",  # fixed transformers import error, for DPO
         "wandb",  # for loading model path / reivisions from wandb on cli
