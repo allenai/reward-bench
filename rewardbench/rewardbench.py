@@ -205,6 +205,7 @@ def main():
 
 # Secondary function structure needed to accomodate HuggingFace Args with CLI binding
 def rewardbench(args: Args):
+    torch_dtype = None
     if args.wandb_run is not None:
         wandb_run = wandb.Api().run(args.wandb_run)
         args.model = wandb_run.config["hf_name"]
