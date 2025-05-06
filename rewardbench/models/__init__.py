@@ -21,6 +21,7 @@ from transformers import (
     LlamaTokenizer,
     MixtralForCausalLM,
     T5ForConditionalGeneration,
+    Qwen2_5_VLForConditionalGeneration,
 )
 
 from .armorm import ArmoRMPipeline
@@ -42,6 +43,7 @@ from .starling import (
     StarlingPipeline,
     build_starling_rm,
 )
+from .skyvl import SkyVLPipeline
 from .ziya import ZiyaPipeline
 
 # Please open a PR if you need to add more custom modeling code / utilize existing code for you model
@@ -242,6 +244,14 @@ REWARD_MODEL_CONFIG = {
     "infly/INF-ORM-Llama3.1-70B": {
         "model_builder": INFORMForSequenceClassification.from_pretrained,
         "pipeline_builder": RewardBenchPipeline,
+        "quantized": False,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+        "torch_dtype": torch.bfloat16,
+    },
+    "Skywork/Skywork-VL-Reward-7B": {
+        "model_builder": Qwen2_5_VLForConditionalGeneration.from_pretrained,
+        "pipeline_builder": SkyVLPipeline,
         "quantized": False,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
