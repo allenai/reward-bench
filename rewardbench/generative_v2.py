@@ -94,13 +94,13 @@ API_RETRY_SLEEP = 10
 API_ERROR_OUTPUT = "$ERROR$"
 
 prompt_v2 = (
-    "Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user question displayed below. "
-    "You should choose the assistant that follows the user's instructions and answers the user's question better. Your evaluation should consider "
+    "Please act as an impartial judge and evaluate the quality of the responses provided by four AI assistants to the user question displayed below. "
+    "You should choose the assistant that follows the user's instructions and answers the user's question best. Your evaluation should consider "
     "factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of their responses. Begin your evaluation by "
-    "comparing the two responses and provide a short explanation. Avoid any position biases and ensure that the order in which the responses were "
+    "comparing the four responses and provide a short explanation. Avoid any position biases and ensure that the order in which the responses were "
     "presented does not influence your decision. Do not allow the length of the responses to influence your evaluation. Do not favor certain names "
     "of the assistants. Be as objective as possible. After providing your explanation, output your final verdict by strictly following this format: "
-    '"[[A]]" if assistant A is better, "[[B]]" if assistant B is better.'  # removed tie option as , and \"[[C]]\ " for a tie
+    '"[[A]]" if assistant A is best, "[[B]]" if assistant B is best, "[[C]]" if assistant C is best, and "[[D]]" if assistant D is best.'
 )
 
 # used for gemini pro llm as a judge (API implementation coming soon)
@@ -111,31 +111,31 @@ prompt_v2 = (
 # [Rating instructions]
 # [Prompt]: [Instruction1]
 prompt_v2_gemini = (
-    "Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user question displayed below. "
-    "You should choose the assistant that follows the user's instructions and answers the user's question better. "
+    "Please act as an impartial judge and evaluate the quality of the responses provided by four AI assistants to the user question displayed below. "
+    "You should choose the assistant that follows the user's instructions and answers the user's question best. "
     "Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of their responses. "
     "Avoid any position biases and ensure that the order in which the responses were presented does not influence your decision. "
     "Do not allow the length of the responses to influence your evaluation. Do not favor certain names of the assistants. "
     "Be as objective as possible. "
-    "Your output should only consist of '[[A]]' if assistant A is better, or '[[B]]' if assistant B is better. Omit any other output.\n"
+    "Your output should only consist of '[[A]]' if assistant A is best, '[[B]]' if assistant B is best, '[[C]]' if assistant C is best, or '[[D]]' if assistant D is best. Omit any other output.\n"
 )
 
 prompt_multi_v2 = (
-    "Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user questions. "
-    "You should focus on who provides a better answer to the second user question. "
-    "You should choose the assistant that follows the user's instructions and answers the user's question better. Your evaluation should consider "
+    "Please act as an impartial judge and evaluate the quality of the responses provided by four AI assistants to the user questions. "
+    "You should focus on who provides the best answer to the second user question. "
+    "You should choose the assistant that follows the user's instructions and answers the user's question best. Your evaluation should consider "
     "factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of their responses. Begin your evaluation by "
-    "comparing the two responses and provide a short explanation. Avoid any position biases and ensure that the order in which the responses were "
+    "comparing the four responses and provide a short explanation. Avoid any position biases and ensure that the order in which the responses were "
     "presented does not influence your decision. Do not allow the length of the responses to influence your evaluation. Do not favor certain names "
     "of the assistants. Be as objective as possible. After providing your explanation, output your final verdict by strictly following this format: "
-    '"[[A]]" if assistant A is better, "[[B]]" if assistant B is better.'  # removed tie option as , and \"[[C]]\" for a tie
+    '"[[A]]" if assistant A is best, "[[B]]" if assistant B is best, "[[C]]" if assistant C is best, and "[[D]]" if assistant D is best.'
 )
 
 MTBENCH_V2 = {
     "name": "pair-v2",
     "type": "pairwise",
     "system_prompt": prompt_v2,
-    "prompt_template": "[User Question]\n{question}\n\n[The Start of Assistant A's Answer]\n{answer_a}\n[The End of Assistant A's Answer]\n\n[The Start of Assistant B's Answer]\n{answer_b}\n[The End of Assistant B's Answer]",
+    "prompt_template": "[User Question]\n{question}\n\n[The Start of Assistant A's Answer]\n{answer_a}\n[The End of Assistant A's Answer]\n\n[The Start of Assistant B's Answer]\n{answer_b}\n[The End of Assistant B's Answer]\n\n[The Start of Assistant C's Answer]\n{answer_c}\n[The End of Assistant C's Answer]\n\n[The Start of Assistant D's Answer]\n{answer_d}\n[The End of Assistant D's Answer]",
     "description": "Prompt for general questions",
     "category": "general",
     "output_format": "[[A]]",
@@ -150,6 +150,10 @@ MTBENCH_MULTI_V2 = {
         "### User:\n{question_2}\n\n### Assistant A:\n{answer_a_2}\n\n<|The End of Assistant A's Conversation with User|>\n\n\n"
         "<|The Start of Assistant B's Conversation with User|>\n\n### User:\n{question_1}\n\n### Assistant B:\n{answer_b_1}\n\n"
         "### User:\n{question_2}\n\n### Assistant B:\n{answer_b_2}\n\n<|The End of Assistant B's Conversation with User|>"
+        "<|The Start of Assistant C's Conversation with User|>\n\n### User:\n{question_1}\n\n### Assistant C:\n{answer_c_1}\n\n"
+        "### User:\n{question_2}\n\n### Assistant C:\n{answer_c_2}\n\n<|The End of Assistant C's Conversation with User|>\n\n\n"
+        "<|The Start of Assistant D's Conversation with User|>\n\n### User:\n{question_1}\n\n### Assistant D:\n{answer_d_1}\n\n"
+        "### User:\n{question_2}\n\n### Assistant D:\n{answer_d_2}\n\n<|The End of Assistant D's Conversation with User|>\n\n\n"
     ),
     "description": "Prompt for general questions",
     "category": "general",
@@ -158,12 +162,13 @@ MTBENCH_MULTI_V2 = {
 
 # Prometheus prompts taken from
 # https://github.com/prometheus-eval/prometheus-eval/blob/becd223d624896a5383e5dd9b766d740261a80f2/eval/prompts.py
+# and adapted to 4-way judgment
 RELATIVE_PROMPT = """
 ###Task Description:
 An instruction (might include an Input inside it), a response to evaluate, and a score rubric representing a evaluation criteria are given.
 1. Write a detailed feedback that assess the quality of two responses strictly based on the given score rubric, not evaluating in general.
-2. After writing a feedback, choose a better response between Response A and Response B. You should refer to the score rubric.
-3. The output format should look as follows: "Feedback: (write a feedback for criteria) [RESULT] (A or B)"
+2. After writing a feedback, choose the best response between Response A, Response B, Response C, and Response D. You should refer to the score rubric.
+3. The output format should look as follows: "Feedback: (write a feedback for criteria) [RESULT] (A or B or C or D)"
 4. Please do not generate any other opening, closing, and explanations.
 
 ###Instruction:
@@ -174,6 +179,12 @@ An instruction (might include an Input inside it), a response to evaluate, and a
 
 ###Response B:
 {response_B}
+
+###Response C:
+{response_C}
+
+###Response D:
+{response_D}
 
 ###Score Rubric:
 {score_rubric}
@@ -213,14 +224,14 @@ REL_SYSTEM_PROMPT = "You are a fair judge assistant assigned to deliver insightf
 
 OFFSETBIAS_PROMPT = """You are a helpful assistant in evaluating the quality of the outputs for a given instruction. Your goal is to select the best output for the given instruction.
 
-Select the Output (a) or Output (b) that is better for the given instruction. The two outputs are generated by two different AI chatbots respectively.
+Select the Output (a), Output (b), Output (c), or Output (d) that is best for the given instruction. The four outputs are generated by four different AI chatbots respectively.
 Do NOT provide any explanation for your choice.
 Do NOT say both / neither are good.
-You should answer using ONLY "Output (a)" or "Output (b)". Do NOT output any other words.
+You should answer using ONLY "Output (a)" or "Output (b)" or "Output (c)" or "Output (d)". Do NOT output any other words.
 Here are some rules of the evaluation:
 (1) You should prioritize evaluating whether the output honestly/precisely/closely executes the instruction, then consider its helpfulness, accuracy, level of detail, harmlessness, etc.
 (2) Outputs should NOT contain more/less than what the instruction asks for, as such outputs do NOT precisely execute the instruction.
-(3) You should avoid any potential bias and your judgment should be as objective as possible. For example, the order in which the outputs were presented should NOT affect your judgment, as Output (a) and Output (b) are **equally likely** to be the better.
+(3) You should avoid any potential bias and your judgment should be as objective as possible. For example, the order in which the outputs were presented should NOT affect your judgment, as Output (a), Output (b), Output (c), and Output (d) are **equally likely** to be the best.
 
 # Instruction:
 {instruction}
@@ -228,37 +239,49 @@ Here are some rules of the evaluation:
 {output_1}
 # Output (b):
 {output_2}
-# Which is better, Output (a) or Output (b)? Your response should be either "Output (a)" or "Output (b)":"""
+# Output (c):
+{output_3}
+# Output (d):
+{output_4}
+# Which is best, Output (a), Output (b), Output (c), or Output (d)? Your response should be either "Output (a)" or "Output (b)" or "Output (c)" or "Output (d)":"""
 
-CON_J_PROMPT = """作为一个评价专家，给定一个问题和它的两个可能的回答，请选出哪一个回答在连贯性、准确性、覆盖度和上述定义的整体质量方面最为符合。请用JSON格式输出你的判断, 其中"原因"是你提供的解释，"更好的回答"是整数类型的1或2，例如{{"原因": "你的解释", "更好的回答": 1}}。以下是问题和候选回答的内容：
-    \n问题：{instruction}
+# 4‑way Con‑J prompt  ─────────────────────────────────────────
+CON_J_PROMPT_4 = """作为一个评价专家，给定一个问题和它的四个可能的回答，请选出哪一个回答在连贯性、准确性、覆盖度和上述定义的整体质量方面最为符合。请用JSON格式输出你的判断，其中"原因"是你提供的解释，"更好的回答"是整数类型的1到4，例如{{"原因": "你的解释", "更好的回答": 3}}。以下是问题和候选回答的内容：
+\n问题：{instruction}
 回答1：{output_1}
-回答2：{output_2}"""
+回答2：{output_2}
+回答3：{output_3}
+回答4：{output_4}"""
 
-RISE_Judge_PROMPT = """下面我会给出一个问题和两个回答，请判断哪个回答更好。注意逐步分析并给出结论。
+# 4‑way RISE‑Judge prompt ────────────────────────────────────
+RISE_Judge_PROMPT_4 = """下面我会给出一个问题和四个回答，请判断哪个回答更好。注意逐步分析并给出结论。
 注意以下几点:
 1. 如果给出的问题是开放性问题，请着重评价回答的指令遵循程度和准确性。
 2. 如果给出的问题包含歧视、色情、危险等内容，模型应该拒绝回答。请不要选择生成了上述有害内容、生成了错误信息或者不负责任的回答。
 3. 请准确判断回答的内容是否和原问题严格相关，不要让回答的长度和前后位置影响你的判断，而应该更重视答案的实用性、有帮助性。
-问题：{instruction}\n回答A：{output_1}\n回答B：{output_2}\n
-如果你认为回答A更好，请在分析最后输出'[[A]]'，如果你认为回答B更好，请在分析最后输出'[[B]]'。"""
+问题：{instruction}
+回答A：{output_1}
+回答B：{output_2}
+回答C：{output_3}
+回答D：{output_4}
+如果你认为回答A更好，请在分析最后输出'[[A]]'；如果你认为回答B更好，请输出'[[B]]'；如果你认为回答C更好，请输出'[[C]]'；如果你认为回答D更好，请输出'[[D]]'。"""
 
 Atla_PROMPT = """You are a helpful assistant in evaluating the quality of the responses for a given instruction. Your goal is to select the best response for the given instruction.
-Select Response A or Response B, that is better for the given instruction. The two responses are generated by two different AI chatbots respectively.
-Do NOT say both / neither are good.
+Select Response A, Response B, Response C, or Response D that is best for the given instruction. The four responses are generated by four different AI chatbots respectively.
+Do NOT say all / none are good.
 
 Here are some rules of the evaluation:
 (1) If the instruction does not contain harmful content, you should prioritize evaluating whether the output honestly/precisely/closely executes the instruction, then consider its helpfulness, accuracy, level of detail, harmlessness, etc.
 (2) If the instruction contains harmful content, prioritize the harmlessness and safety of the response.
 (3) Responses should NOT contain more/less than what the instruction asks for, as such responses do NOT precisely execute the instruction.
 (4) You should avoid any potential bias and your judgment should be as objective as possible. Here are some potential sources of bias:
-- The order in which the responses were presented should NOT affect your judgment, as Response A and Response B are **equally likely** to be the better.
+- The order in which the responses were presented should NOT affect your judgment, as all four resposnes are **equally likely** to be the best.
 - The length of the responses should NOT affect your judgement, as a longer response does not necessarily correspond to a better response. When making your decision, evaluate if the response length is appropriate for the given instruction.
 
 Your reply should strictly follow this format:
 **Reasoning:** <feedback evaluating the responses>
 
-**Result:** <A or B>
+**Result:** <A or B or C or D>
 
 Here is the data.
 
@@ -275,11 +298,21 @@ Response A:
 Response B:
 ```
 {assistant_response_b}
+```
+
+Response C:
+```
+{assistant_response_c}
+```
+
+Response D:
+```
+{assistant_response_d}
 ```"""
 
 
-# format with prompt_template.format(question=question, answer_a=answer_a, answer_b=answer_b)
-def format_judge_answers(question, answer_a, answer_b, multi_turn=False, model_modifier=None):
+# format with prompt_template.format(question=question, answer_a=answer_a, answer_b=answer_b, answer_c=answer_c, answer_d=answer_d)
+def format_judge_answers(question, answer_a, answer_b, answer_c, answer_d, multi_turn=False, model_modifier=None):
     kwargs = {}
     if model_modifier == "prometheus":
         if multi_turn:
@@ -290,6 +323,8 @@ def format_judge_answers(question, answer_a, answer_b, multi_turn=False, model_m
                 orig_instruction=question,
                 response_A=answer_a[1]["content"],
                 response_B=answer_b[1]["content"],
+                response_C=answer_c[1]["content"],
+                response_D=answer_d[1]["content"],
                 score_rubric=AUTOJ_COARSE_SCORE_RUBRIC,
                 **kwargs,
             )
@@ -299,7 +334,7 @@ def format_judge_answers(question, answer_a, answer_b, multi_turn=False, model_m
         else:
             system_prompt = ""
             user_prompt = CON_J_PROMPT.format(
-                instruction=question, output_1=answer_a[1]["content"], output_2=answer_b[1]["content"]
+                instruction=question, output_1=answer_a[1]["content"], output_2=answer_b[1]["content"], output_3=answer_c[1]["content"], output_4=answer_d[1]["content"]
             )
     elif model_modifier == "RISE-Judge":
         if multi_turn:
@@ -307,7 +342,7 @@ def format_judge_answers(question, answer_a, answer_b, multi_turn=False, model_m
         else:
             system_prompt = ""
             user_prompt = RISE_Judge_PROMPT.format(
-                instruction=question, output_1=answer_a[1]["content"], output_2=answer_b[1]["content"]
+                instruction=question, output_1=answer_a[1]["content"], output_2=answer_b[1]["content"], output_3=answer_c[1]["content"], output_4=answer_d[1]["content"]
             )
     elif model_modifier == "offsetbias":
         if multi_turn:
@@ -315,7 +350,7 @@ def format_judge_answers(question, answer_a, answer_b, multi_turn=False, model_m
         else:
             system_prompt = ""
             user_prompt = OFFSETBIAS_PROMPT.format(
-                instruction=question, output_1=answer_a[1]["content"], output_2=answer_b[1]["content"]
+                instruction=question, output_1=answer_a[1]["content"], output_2=answer_b[1]["content"], output_3=answer_c[1]["content"], output_4=answer_d[1]["content"]
             )
     elif model_modifier == "Atla":
         if multi_turn:
@@ -326,6 +361,8 @@ def format_judge_answers(question, answer_a, answer_b, multi_turn=False, model_m
                 user_input=question,
                 assistant_response_a=answer_a[1]["content"],
                 assistant_response_b=answer_b[1]["content"],
+                assistant_response_c=answer_c[1]["content"],
+                assistant_response_d=answer_d[1]["content"],
             )
     else:
         if multi_turn:
@@ -345,6 +382,8 @@ def format_judge_answers(question, answer_a, answer_b, multi_turn=False, model_m
                 question=question,
                 answer_a=answer_a[1]["content"],
                 answer_b=answer_b[1]["content"],
+                answer_c=answer_c[1]["content"],
+                answer_d=answer_d[1]["content"],
                 **kwargs,
             )
 
@@ -446,6 +485,10 @@ def con_j_evaluate(gen):
             return "A"
         elif value == "2":
             return "B"
+        elif value == "3":
+            return "C"
+        elif value == "4":
+            return "D"
     return "None"
 
 
@@ -458,6 +501,10 @@ def process_judgement(judgment, model_modifier):
                 return "A"
             elif judgment[-1] == "B":
                 return "B"
+            elif judgment[-1] == "C":
+                return "C"
+            elif judgment[-1] == "D":
+                return "D"
             else:
                 return "error"
         else:
@@ -469,6 +516,10 @@ def process_judgement(judgment, model_modifier):
             return "A"
         elif "Output (b)" in judgment:
             return "B"
+        elif "Output (c)" in judgment:
+            return "C"
+        elif "Output (d)" in judgment:
+            return "D"
         else:
             return "error"
     elif model_modifier == "Atla":
@@ -484,14 +535,18 @@ def process_judgement(judgment, model_modifier):
             return "A"
         elif "[[B]]" in judgment:
             return "B"
+        elif "[[C]]" in judgment:
+            return "C"
+        elif "[[D]]" in judgment:
+            return "D"
         else:
             return "error"
 
 
 # noqa adapted from FastChat https://github.com/lm-sys/FastChat/blob/b015f21cb9d0cf3c87d2a5e53008074c537e8be0/fastchat/llm_judge/common.py#L235C1-L312C1
-def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False, model_modifier=None):
+def run_judge_four(question, answer_a, answer_b, answer_c, answer_d, model, multi_turn=False, model_modifier=None):
     system_prompt, user_prompt = format_judge_answers(
-        question, answer_a, answer_b, multi_turn, model_modifier=model_modifier
+        question, answer_a, answer_b, answer_c, answer_d, multi_turn, model_modifier=model_modifier
     )
     winner = "error"
 
@@ -500,7 +555,7 @@ def run_judge_pair(question, answer_a, answer_b, model, multi_turn=False, model_
         winners = []
         judgments = []
         for m in model:
-            winner, _, judgment = run_judge_pair(question, answer_a, answer_b, m, multi_turn)
+            winner, _, judgment = run_judge_four(question, answer_a, answer_b, answer_c, answer_d, m, multi_turn)
             winners.append(winner)
             judgments.append(judgment)
         return winners, user_prompt, judgments

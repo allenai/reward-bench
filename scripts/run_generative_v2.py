@@ -31,7 +31,7 @@ from fastchat.conversation import get_conv_template
 from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams
 
-from rewardbench import load_eval_dataset, save_to_hub
+from rewardbench import load_eval_dataset_multi, save_to_hub
 from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
 from rewardbench.generative import (
     ANTHROPIC_MODEL_LIST,
@@ -40,9 +40,9 @@ from rewardbench.generative import (
     OPENAI_MODEL_LIST,
     format_judge_answers,
     process_judgement,
-    run_judge_pair,
+    run_judge_four,
 )
-from rewardbench.utils import calculate_scores_per_section
+# from rewardbench.utils import calculate_scores_per_section
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -64,6 +64,9 @@ def get_args():
         nargs="+",  # allow list of models (ensemble)
         required=True,
         help="name of OpenAI model to use (TODO add more providers/models)",
+    )
+    parser.add_argument(
+        "--dataset", type=str, required=True, help="path to huggingface dataset"
     )
     parser.add_argument("--chat_template", type=str, default=None, help="fastchat chat template (optional)")
     parser.add_argument(
@@ -175,13 +178,14 @@ def main():
     # Load dataset
     ############################
     logger.info("*** Load dataset ***")
-    dataset, subsets = load_eval_dataset(
+    dataset, subsets = load_eval_dataset_multi(
         core_set=not args.pref_sets,
+        dataset=args.dataset,
         conv=get_conv_template("raw"),  # not used in this script (handled later)
         custom_dialogue_formatting=True,  # handle formatting later
         tokenizer=None,
         logger=logger,
-        keep_columns=["text_chosen", "text_rejected", "id"],
+        keep_columns=["text_chosen", "texts_rejected", "id"],
         max_turns=4,
     )
 
@@ -209,21 +213,45 @@ def main():
             mult_turn = True if len(batch["text_chosen"]) > 2 else False
             prompt = batch["text_chosen"][0]["content"]
             answer_a = batch["text_chosen"]
-            answer_b = batch["text_rejected"]
+            answer_b = batch["texts_rejected"][0]
+            answer_c = batch["texts_rejected"][1]
+            answer_d = batch["texts_rejected"][2]
 
-            # shuffle a and b randomly for position bias
-            is_shuffled = np.random.rand() > 0.5
-            if is_shuffled:
+            # put correct answer into a, b, c, d randomly for position bias
+            # is_shuffled = np.random.rand() > 0.5
+            # if is_shuffled:
+            #     answer_a, answer_b = answer_b, answer_a
+            #     winner_text = "B"
+            #     loser_text = "A"
+            # else:
+            #     winner_text = "A"
+            #     loser_text = "B"
+            shuffle_option = np.random.randint(0, 4)
+
+            if shuffle_option == 0:
+                # Original order
+                winner_text = "A"
+                loser_texts = ["B", "C", "D"]  # or any other
+            elif shuffle_option == 1:
+                # swap A and B
                 answer_a, answer_b = answer_b, answer_a
                 winner_text = "B"
-                loser_text = "A"
-            else:
-                winner_text = "A"
-                loser_text = "B"
+                loser_texts = ["A", "C", "D"]
+            elif shuffle_option == 2:
+                # swap A and C
+                answer_a, answer_c = answer_c, answer_a
+                winner_text = "C"
+                loser_texts = ["A", "B", "D"]
+            elif shuffle_option == 3:
+                # swap A and D
+                answer_a, answer_d = answer_d, answer_a
+                winner_text = "D"
+                loser_texts = ["A", "B", "C"]
+
 
             if len(batch["text_chosen"]) <= 4:  # set up only for 1 or 2 turns
-                winner, request, judgement = run_judge_pair(
-                    prompt, answer_a, answer_b, args.model, multi_turn=mult_turn, model_modifier=model_modifier
+                winner, request, judgement = run_judge_four(
+                    prompt, answer_a, answer_b, answer_c, answer_d, args.model, multi_turn=mult_turn, model_modifier=model_modifier
                 )
                 if debug:
                     print(f"Prompt: {request}")
@@ -238,12 +266,12 @@ def main():
 
                 if winner == winner_text:
                     return 1
-                elif winner == loser_text:
+                elif winner in loser_texts:
                     return 0
                 else:  # if "error"
-                    return 0.5  # effectively a tie
+                    return 0.25  # effectively a tie
             else:
-                return 0.5
+                return 0.25
 
         with ThreadPoolExecutor(max_workers=args.num_threads) as executor:
             # Map 'my_function' across the vector, executing in parallel using threads
@@ -272,20 +300,37 @@ def main():
         ############################
 
         def format_judgements(batch, optional_chat_template=None):
-            prompt_ids = []  # Prevent crash if it's unused
             # TODO expand this to include fastchat chat templates if needed
             mult_turn = True if len(batch["text_chosen"]) > 2 else False
             prompt = batch["text_chosen"][0]["content"]
             answer_a = batch["text_chosen"]
-            answer_b = batch["text_rejected"]
+            answer_b = batch["texts_rejected"][0]
+            answer_c = batch["text_rejected"][1]
+            answer_d = batch["text_rejected"][2]
 
-            # shuffle a and b randomly for position bias
-            is_shuffled = np.random.rand() > 0.5
-            if is_shuffled:
+            # shuffle correct answer into random position
+            if shuffle_option == 0:
+                # Original order
+                winner_text = "A"
+                loser_texts = ["B", "C", "D"]  # or any other
+            elif shuffle_option == 1:
+                # swap A and B
                 answer_a, answer_b = answer_b, answer_a
+                winner_text = "B"
+                loser_texts = ["A", "C", "D"]
+            elif shuffle_option == 2:
+                # swap A and C
+                answer_a, answer_c = answer_c, answer_a
+                winner_text = "C"
+                loser_texts = ["A", "B", "D"]
+            elif shuffle_option == 3:
+                # swap A and D
+                answer_a, answer_d = answer_d, answer_a
+                winner_text = "D"
+                loser_texts = ["A", "B", "C"]
 
             system_prompt, user_prompt = format_judge_answers(
-                prompt, answer_a, answer_b, multi_turn=mult_turn, model_modifier=model_modifier
+                prompt, answer_a, answer_b, answer_c, answer_d, multi_turn=mult_turn, model_modifier=model_modifier
             )
 
             if optional_chat_template is not None:
@@ -310,7 +355,7 @@ def main():
                 tokenized_prompt = tokenizer(prompt, add_special_tokens=False, return_length=True)
                 prompt_ids = tokenized_prompt["input_ids"]
             batch["text"] = prompt
-            batch["is_shuffled"] = is_shuffled
+            batch["shuffle_position"] = shuffle_option
             batch["prompt_ids"] = prompt_ids
             return batch
 
@@ -323,7 +368,7 @@ def main():
         # collect texts of dataset in list
         prompts = dataset_prompts["text"]
         prompt_ids = dataset_prompts["prompt_ids"]
-        is_shuffled = dataset_prompts["is_shuffled"]
+        shuffle_position = dataset_prompts["shuffle_position"]
 
         # generate
         logger.info("*** Run inference ***")
@@ -337,22 +382,19 @@ def main():
         answers = [o.outputs[0].text for o in outputs]
         winners = [process_judgement(a, model_modifier) for a in answers]
 
-        def process_shuffled(win, shuffle):
-            if shuffle:
-                winner_text = "B"
-                loser_text = "A"
-            else:
-                winner_text = "A"
-                loser_text = "B"
+        def process_shuffled(win, shuffle_position):
+            options = ["A", "B", "C", "D"]
+            winner_text = options.pop(shuffle_position)
+            loser_texts = options
 
             if win == winner_text:
                 return 1
-            elif win == loser_text:
+            elif win in loser_texts:
                 return 0
             else:  # if "error"
-                return 0.5  # effectively a tie
+                return 0.25  # effectively a tie
 
-        results = [process_shuffled(w, s) for w, s in zip(winners, is_shuffled)]
+        results = [process_shuffled(w, s) for w, s in zip(winners, shuffle_position)]
 
     ############################
     # Print & process results
@@ -394,14 +436,14 @@ def main():
         results_grouped[subset] = num_correct / num_total
 
     # log leaderboard aggregated results
-    if not args.pref_sets:
-        results_leaderboard = calculate_scores_per_section(EXAMPLE_COUNTS, SUBSET_MAPPING, results_grouped)
-        print(results_leaderboard)
+    # if not args.pref_sets:
+    #     results_leaderboard = calculate_scores_per_section(EXAMPLE_COUNTS, SUBSET_MAPPING, results_grouped)
+    #     print(results_leaderboard)
 
     ############################
     # Upload results to hub
     #############################
-    sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
+    sub_path = "eval-set/"
     results_url = save_to_hub(
         results_grouped,
         model_name,
@@ -423,9 +465,9 @@ def main():
     scores_dict["model"] = model_name
     scores_dict["model_type"] = model_type
 
-    sub_path_scores = "eval-set-scores/" if not args.pref_sets else "pref-sets-scores/"
+    sub_path_scores = "eval-set-scores/"
+    scores_url = save_to_hub(scores_dict, model_name, sub_path_scores, args.debug, local_only=args.do_not_save, best_of_n=True)
 
-    scores_url = save_to_hub(scores_dict, model_name, sub_path_scores, args.debug, local_only=args.do_not_save)
     logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
 
 

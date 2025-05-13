@@ -419,6 +419,112 @@ def load_eval_dataset(
 
     return dataset, subsets
 
+def load_eval_dataset_multi(
+    core_set: bool = True,
+    dataset: str = None, # alternate dataset
+    custom_dialogue_formatting: bool = False,
+    conv: Conversation = None,
+    tokenizer: PreTrainedTokenizer = None,
+    logger: logging.Logger = None,
+    keep_columns: List[str] = ["text_chosen", "texts_rejected", "id"],
+    return_extra_data: bool = False,
+    max_turns: int = None,
+) -> tuple[Dataset, list[str]]:
+    """
+    Loads either the core eval set for RewardBench 2 or a user-passed dataset
+
+    Args:
+        core_set: if True, load the core eval set for RewardBench 2.
+        custom_dialogue_formatting: if True, format the dialogue as needed for custom models (e.g. SHP and PairRM).
+        conv: fastchat conversation template.
+                If None (default) the passed tokenizer needs to have a usable chat template.
+        tokenizer: HuggingFace tokenizer to use. The tokenizer's chat template, if available, has precedence over conv.
+        logger: logger to use for logging. If None (default), no logging is done.
+        keep_columns: list of columns to keep in the dataset.
+        return_extra_data: return extra metadata for expanded logging (mostly in CLI)
+        max_turns: maximum number of turns in the dialogue (usually even). If None (default), no filtering is done.
+
+    Returns:
+        dataset: loaded dataset with required properties.
+        subsets: list of subsets for the corresponding samples in the dataset.
+    """
+    # consider making this force the -no-ties version of core eval set
+    raw_dataset = load_dataset(CORE_EVAL_SET_V2, split="test") if not dataset else load_dataset(dataset, split="test")
+    
+    # Apply chat template
+    if not custom_dialogue_formatting:
+        usable_tokenizer = check_tokenizer_chat_template(tokenizer)
+
+        # assert either conv is passed or tokenizer has chat_template
+        assert conv is not None or usable_tokenizer
+
+        if usable_tokenizer:
+            if logger is not None:
+                logger.info("*** Preparing dataset with HF Transformers ***")
+            # docs https://huggingface.co/docs/transformers/main/en/chat_templating
+            dataset = raw_dataset.map(
+                prepare_dialogue_from_tokenizer,
+                fn_kwargs={"tokenizer": tokenizer},
+                num_proc=8,
+                load_from_cache_file=False,
+            )
+
+        # else use FastChat to get chat template
+        else:
+            if logger is not None:
+                logger.info("*** Preparing dataset with FastChat ***")
+            dataset = raw_dataset.map(
+                prepare_dialogue,
+                fn_kwargs={"dialogue_template": conv},
+                num_proc=8,  # using >1 process causes issues with re-assigning prompt in example
+                load_from_cache_file=False,
+            )
+    else:
+        if logger is not None:
+            logger.info("*** Preparing dataset with custom formatting ***")
+
+        def map_conversations(example, core_set=True):
+            example["text_chosen"] = [
+                {"role": "user", "content": example["prompt"]},
+                {"role": "assistant", "content": example["chosen"][0]},
+            ]
+            rejected_texts = []
+            # multiple rejected responses
+            for rejected_response in example["rejected"]:
+                rejected_texts.append([
+                {"role": "user", "content": example["prompt"]},
+                {"role": "assistant", "content": rejected_response},
+            ])
+            example["texts_rejected"] = rejected_texts
+            return example
+
+        dataset = raw_dataset.map(
+            map_conversations,
+            fn_kwargs={"core_set": core_set},
+            num_proc=8,
+        )
+        logger.info(f"Dataset columns: {dataset.column_names}")
+
+    if max_turns is not None:
+        assert max_turns > 0, "max_turns must be greater than 0"
+
+        # filter long answers (MT Bench prompt as 1 or 2 turn examples)
+        def filter_long_turns(batch):
+            return len(batch["text_chosen"]) <= max_turns
+
+        dataset = dataset.filter(filter_long_turns)
+
+    # take column subset from dataset
+    subsets = dataset["subset"]
+    if return_extra_data:
+        return dataset, subsets
+
+    # remove columns if set and not custom_dialogue_formatting
+    all_cols = dataset.column_names
+    dataset = dataset.remove_columns([c for c in all_cols if c not in keep_columns])
+
+    return dataset, subsets
+
 
 def reroll_and_score_dataset(dataset, best_of, cols_to_combine=["text", "scores"]):
     # Convert to pandas DataFrame for easier manipulation

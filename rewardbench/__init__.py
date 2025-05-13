@@ -22,6 +22,7 @@ from .utils import (
     load_bon_dataset,
     load_bon_dataset_v2,
     load_eval_dataset,
+    load_eval_dataset_multi,
     prepare_dialogue,
     prepare_dialogue_from_tokenizer,
     reroll_and_score_dataset,
