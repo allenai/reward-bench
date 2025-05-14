@@ -68,6 +68,7 @@ OPENAI_MODEL_LIST = (
     "o1-preview-2024-09-12",
     "o1-mini-2024-09-12",
     "gpt-4.1-mini-2025-04-14",
+    "gpt-4.1-nano-2025-04-14",
 )
 
 # feel free to add more models to this list via PR
