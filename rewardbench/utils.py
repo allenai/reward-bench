@@ -419,9 +419,10 @@ def load_eval_dataset(
 
     return dataset, subsets
 
+
 def load_eval_dataset_multi(
     core_set: bool = True,
-    dataset: str = None, # alternate dataset
+    dataset: str = None,  # alternate dataset
     custom_dialogue_formatting: bool = False,
     conv: Conversation = None,
     tokenizer: PreTrainedTokenizer = None,
@@ -450,7 +451,6 @@ def load_eval_dataset_multi(
     """
     # consider making this force the -no-ties version of core eval set
     raw_dataset = load_dataset(CORE_EVAL_SET_V2, split="test") if not dataset else load_dataset(dataset, split="test")
-    
     # Apply chat template
     if not custom_dialogue_formatting:
         usable_tokenizer = check_tokenizer_chat_template(tokenizer)
@@ -492,9 +492,9 @@ def load_eval_dataset_multi(
             # multiple rejected responses
             for rejected_response in example["rejected"]:
                 rejected_texts.append([
-                {"role": "user", "content": example["prompt"]},
-                {"role": "assistant", "content": rejected_response},
-            ])
+                    {"role": "user", "content": example["prompt"]},
+                    {"role": "assistant", "content": rejected_response},
+                ])
             example["texts_rejected"] = rejected_texts
             return example
 

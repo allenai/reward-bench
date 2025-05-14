@@ -32,7 +32,6 @@ from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams
 
 from rewardbench import load_eval_dataset_multi, save_to_hub
-from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
 from rewardbench.generative import (
     ANTHROPIC_MODEL_LIST,
     API_MODEL_LIST,
@@ -248,7 +247,6 @@ def main():
                 winner_text = "D"
                 loser_texts = ["A", "B", "C"]
 
-
             if len(batch["text_chosen"]) <= 4:  # set up only for 1 or 2 turns
                 winner, request, judgement = run_judge_four(
                     prompt, answer_a, answer_b, answer_c, answer_d, args.model, multi_turn=mult_turn, model_modifier=model_modifier
@@ -308,26 +306,18 @@ def main():
             answer_c = batch["text_rejected"][1]
             answer_d = batch["text_rejected"][2]
 
-            # shuffle correct answer into random position
-            if shuffle_option == 0:
-                # Original order
-                winner_text = "A"
-                loser_texts = ["B", "C", "D"]  # or any other
-            elif shuffle_option == 1:
+            shuffle_option = np.random.randint(0, 4)
+
+            # shuffle correct answer into random position, option 0 is original order
+            if shuffle_option == 1:
                 # swap A and B
                 answer_a, answer_b = answer_b, answer_a
-                winner_text = "B"
-                loser_texts = ["A", "C", "D"]
             elif shuffle_option == 2:
                 # swap A and C
                 answer_a, answer_c = answer_c, answer_a
-                winner_text = "C"
-                loser_texts = ["A", "B", "D"]
             elif shuffle_option == 3:
                 # swap A and D
                 answer_a, answer_d = answer_d, answer_a
-                winner_text = "D"
-                loser_texts = ["A", "B", "C"]
 
             system_prompt, user_prompt = format_judge_answers(
                 prompt, answer_a, answer_b, answer_c, answer_d, multi_turn=mult_turn, model_modifier=model_modifier

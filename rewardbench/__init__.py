@@ -36,6 +36,7 @@ __all__ = [
     DPO_MODEL_CONFIG,
     load_bon_dataset,
     load_eval_dataset,
+    load_eval_dataset_multi,
     load_and_process_dataset,
     prepare_dialogue,
     prepare_dialogue_from_tokenizer,
