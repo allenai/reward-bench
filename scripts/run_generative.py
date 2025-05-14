@@ -29,7 +29,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
 from fastchat.conversation import get_conv_template
 from transformers import AutoTokenizer
-from vllm import LLM, SamplingParams
 
 from rewardbench import load_eval_dataset, save_to_hub
 from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
@@ -41,6 +40,7 @@ from rewardbench.generative import (
     format_judge_answers,
     process_judgement,
     run_judge_pair,
+    run_judge_ratings,
 )
 from rewardbench.utils import calculate_scores_per_section
 
@@ -63,11 +63,14 @@ def get_args():
         type=str,
         nargs="+",  # allow list of models (ensemble)
         required=True,
-        help="name of OpenAI model to use (TODO add more providers/models)",
+        help="name of model to use",
     )
     parser.add_argument("--chat_template", type=str, default=None, help="fastchat chat template (optional)")
     parser.add_argument(
         "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
+    )
+    parser.add_argument(
+        "--score_w_ratings", action="store_true", default=False, help="score with ratings instead of pairwise ranking"
     )
     parser.add_argument("--num_gpus", type=int, default=1, help="number of gpus to use, for multi-node vllm")
     parser.add_argument("--vllm_gpu_util", type=float, default=0.9, help="gpu utilization for vllm")
@@ -126,6 +129,8 @@ def main():
 
     # if model isn't API, load via vllm
     if not is_api_models:
+        from vllm import LLM, SamplingParams
+
         # if multi gpu, set multiproc method to spawn
         if args.num_gpus > 1:
             # Set the environment variable
@@ -222,12 +227,20 @@ def main():
                 loser_text = "B"
 
             if len(batch["text_chosen"]) <= 4:  # set up only for 1 or 2 turns
-                winner, request, judgement = run_judge_pair(
-                    prompt, answer_a, answer_b, args.model, multi_turn=mult_turn, model_modifier=model_modifier
-                )
-                if debug:
-                    print(f"Prompt: {request}")
-                    print(f"Judgement: {judgement}")
+                if not args.score_w_ratings:
+                    winner, request, judgement = run_judge_pair(
+                        prompt, answer_a, answer_b, args.model, multi_turn=mult_turn, model_modifier=model_modifier
+                    )
+                    if debug:
+                        print(f"Prompt: {request}")
+                        print(f"Judgement: {judgement}")
+                else:
+                    winner, request, judgement = run_judge_ratings(
+                        prompt, answer_a, answer_b, args.model, multi_turn=mult_turn, model_modifier=model_modifier
+                    )
+                    if debug:
+                        print(f"Prompt: {request}")
+                        print(f"Judgement: {judgement}")
 
                 # handle voting
                 if isinstance(winner, list):
@@ -245,7 +258,12 @@ def main():
             else:
                 return 0.5
 
-        with ThreadPoolExecutor(max_workers=args.num_threads) as executor:
+        # if debug, do not multi-thread
+        if args.debug:
+            num_threads = 1
+        else:
+            num_threads = args.num_threads
+        with ThreadPoolExecutor(max_workers=num_threads) as executor:
             # Map 'my_function' across the vector, executing in parallel using threads
             # results = list(executor.map(get_judgement, dataset))
 
@@ -253,7 +271,7 @@ def main():
             results = [None] * len(dataset)  # Preallocate results list
             done_tasks = 0  # Counter for completed tasks
 
-            with ThreadPoolExecutor(max_workers=args.num_threads) as executor:
+            with ThreadPoolExecutor(max_workers=num_threads) as executor:
                 # Submit all tasks and hold their futures in a list
                 future_to_index = {executor.submit(get_judgement, x): i for i, x in enumerate(dataset)}
 
@@ -401,16 +419,19 @@ def main():
     ############################
     # Upload results to hub
     #############################
+    # args.score_w_ratings because results not comprable to those already existing, can change later
+    do_not_save = args.do_not_save or args.score_w_ratings
+
     sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
     results_url = save_to_hub(
         results_grouped,
         model_name,
         sub_path,
         args.debug,
-        local_only=args.do_not_save,
+        local_only=do_not_save,
         save_metrics_for_beaker=not args.disable_beaker_save,
     )
-    if not args.do_not_save:
+    if not do_not_save:
         logger.info(f"Uploaded reward model results to {results_url}")
 
     logger.info("Not uploading chosen-rejected text with scores due to model compatibility")

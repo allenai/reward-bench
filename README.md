@@ -104,6 +104,10 @@ To install from source, please install `torch` on your system, and then install 
 ```
 pip install -e .
 ```
+Optinally, for generative scripts, run:
+```
+pip install -e ".[generative]"
+```
 Add the following to your `.bashrc`:
 ```
 export HF_TOKEN="{your_token}"
