@@ -32,6 +32,7 @@ from datasets import (
 from fastchat.conversation import Conversation
 from huggingface_hub import HfApi
 from transformers import PreTrainedTokenizer
+import math
 
 from rewardbench.models import REWARD_MODEL_CONFIG
 
@@ -490,6 +491,11 @@ def load_bon_dataset_v2(
             # change split if renamed
             raw_dataset = load_dataset(dataset, split="test")
 
+    # take column total_completions from dataset before unrolling
+    total_completions = raw_dataset["total_completions"]
+    num_correct = raw_dataset["num_correct"]
+    logger.info(f"Total completions: {sum(total_completions)}")
+
     # unroll every row in ['output'] to a new row, all other columns are copied,
     # index is changed to tuple (index, output_index)
     def unroll_output(idx, row):
@@ -566,13 +572,13 @@ def load_bon_dataset_v2(
             num_proc=8,
         )
 
-    # take column subset from dataset
-    subsets = dataset["subset"]
+    # take column subset and total_completions from dataset
+    subsets = dataset["subset"] if "subset" in dataset.column_names else None
 
     # remove column input
     all_cols = dataset.column_names
     dataset = dataset.remove_columns([c for c in all_cols if c not in keep_columns])
-    return dataset, subsets
+    return dataset, subsets, total_completions, num_correct
 
 
 def load_bon_dataset(
@@ -883,3 +889,165 @@ def load_model_config(model_name):
         return REWARD_MODEL_CONFIG[model_name]
     else:
         return REWARD_MODEL_CONFIG["default"]
+
+
+# for ties support
+def sample_stats(scored_samples: dict) -> dict:
+    correct_samples = [s for s in scored_samples.values() if s['correct']]
+    incorrect_samples = [s for s in scored_samples.values() if not s['correct']]    
+    # Handle potential empty lists
+    if not correct_samples or not incorrect_samples:
+        return {
+            "best_correct": {"scores": [0]} if not correct_samples else correct_samples[0],
+            "worst_correct": {"scores": [0]} if not correct_samples else correct_samples[0],
+            "best_incorrect": {"scores": [0]} if not incorrect_samples else incorrect_samples[0],
+            "accurate": False,
+            "different_correct_margin": None,
+            "correct_incorrect_margin": 0,
+            "correct_incorrect_margin_greater": None,
+            "successful_detractors": []
+        }
+    
+    best_correct = max(correct_samples, key=lambda x: x['scores'][0])
+    worst_correct = min(correct_samples, key=lambda x: x['scores'][0])
+    best_incorrect = max(incorrect_samples, key=lambda x: x['scores'][0])
+
+    different_correct_margin = best_correct["scores"][0] - worst_correct["scores"][0] if len(correct_samples) > 1 else None
+    correct_incorrect_margin = worst_correct["scores"][0] - best_incorrect["scores"][0]
+    successful_detractors = [s for s in incorrect_samples if s["scores"][0] > worst_correct["scores"][0]]
+
+    return {
+        "best_correct": best_correct,
+        "worst_correct": worst_correct,
+        "best_incorrect": best_incorrect,
+        "accurate": worst_correct["scores"][0] > best_incorrect["scores"][0],
+        "different_correct_margin": different_correct_margin,
+        "correct_incorrect_margin": correct_incorrect_margin,
+        "correct_incorrect_margin_greater": correct_incorrect_margin > different_correct_margin if different_correct_margin is not None else None,
+        "successful_detractors": successful_detractors
+    }
+
+
+def process_single_model(dataset, model, revision):
+    from collections import defaultdict
+    
+    results = {k: defaultdict(dict) for k in ["ref", "tied"]}
+    
+    for sample in dataset:
+        # Extract sample type and prompt_id
+        sample_type, prompt_id = sample["id"].split(":")
+        prompt_id = int(prompt_id)
+        
+        # Process each text entry and its score
+        for i, (text, score) in enumerate(zip(sample["text"], sample["scores"])):                    
+            is_correct = i < sample["num_correct"]
+            
+            sample_entry = {
+                "correct": is_correct,
+                "scores": [score[0]] if isinstance(score, list) else [score],
+                "text": text
+            }
+            
+            results[sample_type][prompt_id][i] = sample_entry
+
+    # Calculate statistics for each prompt
+    stats = {k: {prompt_id: sample_stats(samples) 
+                for prompt_id, samples in type_results.items()} 
+                for k, type_results in results.items()}
+
+    # Calculate per-prompt overall scores
+    prompt_overall_scores = {}
+    ref_stats = stats.get('ref', {})
+    tied_stats = stats.get('tied', {})
+    
+    for sample_type in ['ref', 'tied']:
+        for pid in stats.get(sample_type, {}):
+            if sample_type == 'ref':
+                ref_accurate = ref_stats.get(pid, {}).get("accurate", False)
+                prompt_overall_scores[(sample_type, pid)] = 0.6 * int(ref_accurate)
+            elif sample_type == 'tied' and pid in ref_stats:
+                ref_accurate = ref_stats[pid]["accurate"]
+                tied_accurate = tied_stats[pid]["accurate"]
+                
+                if tied_stats[pid]['different_correct_margin'] is not None:
+                    correctness_preferred = tied_stats[pid]['correct_incorrect_margin'] > tied_stats[pid]['different_correct_margin']
+                    correctness_preferred_hard = min(ref_stats[pid]['correct_incorrect_margin'], 
+                                                     tied_stats[pid]['correct_incorrect_margin']) > tied_stats[pid]['different_correct_margin']
+                    if tied_stats[pid]['different_correct_margin'] > 0:
+                        correctness_margin_ratio = min(ref_stats[pid]['correct_incorrect_margin'], 
+                                                       tied_stats[pid]['correct_incorrect_margin']) / tied_stats[pid]['different_correct_margin']
+                        correctness_margin_score = math.tanh(correctness_margin_ratio - 1)
+                    else:
+                        correctness_margin_score = 0
+                else:
+                    correctness_preferred = False
+                    correctness_preferred_hard = False
+                    correctness_margin_score = 0
+
+                prompt_overall_scores[(sample_type, pid)] = (
+                    0.3 * int(tied_accurate) +
+                    0.3 * int(ref_accurate) +
+                    0.2 * int(correctness_preferred) +
+                    0.2 * int(correctness_preferred_hard) +
+                    0.01 * correctness_margin_score
+                )
+            else:  # 'tied' with no corresponding 'ref'
+                tied_accurate = tied_stats[pid]["accurate"]
+                prompt_overall_scores[(sample_type, pid)] = 0.3 * int(tied_accurate)
+    
+    # Calculate global metrics
+    accuracy = {
+        'ref': np.mean([r["accurate"] for r in ref_stats.values()]) if ref_stats else 0,
+        'tied': np.mean([r["accurate"] for r in tied_stats.values()]) if tied_stats else 0
+    }
+    
+    common_prompt_ids = set(ref_stats.keys()) & set(tied_stats.keys())
+    
+    if common_prompt_ids:
+        correctness_preferred = np.mean([
+            tied_stats[r]['correct_incorrect_margin'] > tied_stats[r]['different_correct_margin'] 
+            for r in common_prompt_ids 
+            if tied_stats[r]['different_correct_margin'] is not None
+        ])
+        
+        correctness_preferred_hard = np.mean([
+            min(ref_stats[r]['correct_incorrect_margin'], tied_stats[r]['correct_incorrect_margin']) > tied_stats[r]['different_correct_margin'] 
+            for r in common_prompt_ids 
+            if tied_stats[r]['different_correct_margin'] is not None
+        ])
+        
+        correctness_margin_ratios = [
+            min(ref_stats[r]['correct_incorrect_margin'], tied_stats[r]['correct_incorrect_margin']) / tied_stats[r]['different_correct_margin'] 
+            for r in common_prompt_ids 
+            if tied_stats[r]['different_correct_margin'] is not None and tied_stats[r]['different_correct_margin'] > 0
+        ]
+        
+        correctness_margin_score = np.mean([math.tanh(r-1) for r in correctness_margin_ratios]) if correctness_margin_ratios else 0
+    else:
+        correctness_preferred = 0
+        correctness_preferred_hard = 0
+        correctness_margin_score = 0
+
+    overall_score = 0.3*accuracy['tied'] + 0.3*accuracy['ref'] + 0.2*correctness_preferred + 0.2*correctness_preferred_hard + 0.01 * correctness_margin_score
+    
+    # Create HuggingFace dataset with results
+    dataset_dict = []
+    for sample in dataset:
+        sample_type, prompt_id = sample["id"].split(":")
+        prompt_id = int(prompt_id)
+        
+        # Create a copy of the original sample
+        new_row = {k: v for k, v in sample.items()}
+        
+        # Add the overall_score for this prompt
+        if (sample_type, prompt_id) in prompt_overall_scores:
+            new_row["results"] = prompt_overall_scores[(sample_type, prompt_id)]
+        else:
+            new_row["results"] = None
+            
+        dataset_dict.append(new_row)
+    
+    # Convert to HuggingFace Dataset
+    results_dataset = Dataset.from_dict({k: [d[k] for d in dataset_dict] for k in dataset_dict[0].keys()})
+    
+    return results_dataset, overall_score

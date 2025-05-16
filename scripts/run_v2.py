@@ -28,12 +28,14 @@ from fastchat.conversation import get_conv_template
 from tqdm import tqdm
 from transformers import AutoTokenizer, pipeline
 
-from rewardbench import (
+from utils import (
     REWARD_MODEL_CONFIG,
     check_tokenizer_chat_template,
     load_bon_dataset_v2,
+    process_single_model,
     reroll_and_score_dataset,
     save_to_hub,
+    sample_stats
 )
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
@@ -51,6 +53,7 @@ def get_args():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, required=True, help="path to model")
+    parser.add_argument("--revision", type=str, default=None, help="revision of model to load")
     parser.add_argument(
         "--dataset", type=str, required=True, help="dataset, both .jsonl (local) and huggingface format supported"
     )
@@ -65,6 +68,9 @@ def get_args():
     parser.add_argument("--best_of", type=int, default=4, help="number of best of n to select from")
     parser.add_argument(
         "--debug", action="store_true", help="run on common preference sets instead of our custom eval set"
+    )
+    parser.add_argument(
+        "--disable_beaker_save", action="store_true", help="disable saving the main results in a file for AI2 Beaker"
     )
     parser.add_argument(
         "--quantized", action="store_true", help="enable quantization for models that are not quantized by default"
@@ -133,6 +139,15 @@ def main():
     model_type = config["model_type"]  # todo will be needed to add PairRM and SteamSHP
     model_builder = config["model_builder"]
     pipeline_builder = config["pipeline_builder"]
+    torch_dtype = config.get("torch_dtype", None)
+
+    # if not datatype in config (default), check args
+    if torch_dtype is None:
+        # if datatype is bfloat16, then manually turn off quantizaiton (done with bitsandbytes)
+        if args.torch_dtype == torch.bfloat16:
+            quantized = False
+            logger.info("Disabling quantization for bfloat16 datatype")
+        torch_dtype = args.torch_dtype
 
     # not included in config to make user explicitly understand they are passing this
     trust_remote_code = args.trust_remote_code
@@ -142,8 +157,11 @@ def main():
     ############################
     logger.info("*** Load dataset ***")
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=args.trust_remote_code)
-    dataset, subsets = load_bon_dataset_v2(
+    if args.revision:
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, revision=args.revision, trust_remote_code=args.trust_remote_code)
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=args.trust_remote_code)
+    dataset, subsets, total_completions, num_correct = load_bon_dataset_v2(
         dataset=args.dataset,
         conv=conv,
         custom_dialogue_formatting=custom_dialogue,
@@ -173,21 +191,29 @@ def main():
         "function_to_apply": "none",  # Compute raw logits
         "return_token_type_ids": False,
     }
+
     if quantized:
         model_kwargs = {
             "load_in_8bit": True,
             "device_map": {"": current_device},
-            "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
+            "torch_dtype": torch_dtype if torch.cuda.is_available() else None,
         }
     else:
-        model_kwargs = {"device_map": {"": current_device}}
+        model_kwargs = {
+            "device_map": "auto" if torch.cuda.is_available() else "cpu",
+            "torch_dtype": torch_dtype,
+        }
 
     # if attn_implementation is not specified, this falls back to Hugging Face's default
     # strategy (which chooses between sdpa and eager depending on pytorch version)
     if args.attn_implementation:
         model_kwargs["attn_implementation"] = args.attn_implementation
-
-    model = model_builder(args.model, **model_kwargs, trust_remote_code=trust_remote_code)
+    
+    if args.revision:
+        model = model_builder(args.model, revision=args.revision, **model_kwargs, trust_remote_code=trust_remote_code)
+    else:
+        model = model_builder(args.model, **model_kwargs, trust_remote_code=trust_remote_code)
+    
     reward_pipe = pipeline_builder(
         "text-classification",
         model=model,
@@ -262,6 +288,7 @@ def main():
                 raise NotImplementedError("PairRM and SteamSHP are not yet supported for batched inference")
             else:
                 rewards = reward_pipe(batch["text"], **reward_pipeline_kwargs)
+                # logger.info(f"***Sample RM results***: {rewards}")
 
                 # for each item in batch, record 1 if chosen > rejected
                 # extra score from dict within batched results (e.g. logits)
@@ -270,14 +297,15 @@ def main():
                     scores_batch = [result["score"] for result in rewards]
                 # for classes that directly output scores (custom code)
                 else:
-                    scores_batch = rewards.cpu().numpy().tolist()
+                    scores_batch = rewards.float().cpu().numpy().tolist()
 
                 scores.extend(scores_batch)
+                # logger.info(f"***Sample scores***: {scores}")
+
 
     ############################
     # Print & process results
     ############################
-
     # add subsets and ids back (removed so it's not handled by cuda)
     out_dataset = dataset.add_column("subset", subsets)
     out_dataset = out_dataset.add_column("id", ids)
@@ -287,11 +315,13 @@ def main():
 
     # reroll dataset back to one row per instance, compressing 'text' and 'score' fields into list
     # compute results
-    out_dataset = reroll_and_score_dataset(out_dataset, args.best_of, cols_to_combine=["text", "scores"])
+    out_dataset = reroll_and_score_dataset(out_dataset, total_completions, cols_to_combine=["text", "scores"])
+    out_dataset = out_dataset.add_column("num_correct", num_correct)
 
     # get core dataset
     results_grouped = {}
-    results_grouped["model"] = args.model
+    model_name = f"{args.model}-{args.revision}" if args.revision else args.model
+    results_grouped["model"] = model_name
     results_grouped["model_type"] = model_type
     chat_template = args.chat_template if not check_tokenizer_chat_template(tokenizer) else "tokenizer"
     results_grouped["chat_template"] = chat_template
@@ -300,10 +330,25 @@ def main():
     present_subsets = np.unique(subsets)
     for subset in present_subsets:
         subset_dataset = out_dataset.filter(lambda example: example["subset"] == subset)
-        num_correct = sum(subset_dataset["results"])
-        num_total = len(subset_dataset["results"])
-        print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
-        results_grouped[subset] = num_correct / num_total
+        # recompute "results" column for ties subset with different scoring method
+        if subset.lower() == 'ties':
+            ties_subset_with_results, overall_score = process_single_model(subset_dataset, args.model, args.revision)
+            subset_dataset = ties_subset_with_results
+
+            # Update the results for the ties subset in the original dataset
+            ties_indices = [i for i, s in enumerate(out_dataset["subset"]) if s == "ties"]
+            out_dataset_df = out_dataset.to_pandas()
+            for i, ties_idx in enumerate(ties_indices):
+                out_dataset_df.at[ties_idx, "results"] = ties_subset_with_results["results"][i]
+            out_dataset = Dataset.from_pandas(out_dataset_df)
+
+            print(f"{subset}: Overall score {overall_score}")
+            results_grouped[subset]=overall_score
+        else:
+            num_correct = sum(subset_dataset["results"])
+            num_total = len(subset_dataset["results"])
+            print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
+            results_grouped[subset] = num_correct / num_total
 
     ############################
     # Upload results to hub
@@ -312,10 +357,11 @@ def main():
     if not args.do_not_save:
         results_url = save_to_hub(
             results_grouped,
-            args.model,
+            model_name,
             sub_path,
             args.debug,
             local_only=args.do_not_save,
+            save_metrics_for_beaker=not args.disable_beaker_save,
             best_of_n=True,
         )
     if not args.do_not_save:
@@ -325,13 +371,13 @@ def main():
     if not model_type == "Custom Classifier":  # custom classifiers do not return scores
         # create new json with scores and upload
         scores_dict = out_dataset.to_dict()
-        scores_dict["model"] = args.model
+        scores_dict["model"] = model_name
         scores_dict["model_type"] = model_type
         scores_dict["chat_template"] = chat_template
 
         sub_path_scores = "eval-set-scores/"
 
-        scores_url = save_to_hub(scores_dict, args.model, sub_path_scores, args.debug, local_only=args.do_not_save)
+        scores_url = save_to_hub(scores_dict, model_name, sub_path_scores, args.debug, local_only=args.do_not_save, best_of_n=True)
         logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
     else:
         logger.info("Not uploading chosen-rejected text with scores due to model compatibility")
