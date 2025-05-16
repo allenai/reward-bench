@@ -30,6 +30,7 @@ The repository includes the following:
 The two primary scripts to generate results (more in `scripts/`):
 1. `scripts/run_rm.py`: Run evaluations for reward models.
 2. `scripts/run_dpo.py`: Run evaluations for direct preference optimization (DPO) models (and other models using implicit rewards, such as KTO).
+3. `scripts/run_v2.py`: Run evaluations for RewardBench 2, with special data handling for best-of-4 and Ties data.
 
 ## Quick Usage
 RewardBench let's you quickly evaluate any reward model on any preference set. 
