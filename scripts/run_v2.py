@@ -27,6 +27,7 @@ from accelerate.logging import get_logger
 from fastchat.conversation import get_conv_template
 from tqdm import tqdm
 from transformers import AutoTokenizer, pipeline
+from datasets import Dataset
 
 from utils import (
     REWARD_MODEL_CONFIG,
