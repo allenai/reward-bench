@@ -90,14 +90,6 @@ def main():
     
     # Configure cluster and resources
     config["tasks"][0]["image"]["beaker"] = args.image
-    # Add both mounts - one for data and one for code
-    # config["tasks"][0]["datasets"] = [
-    #     {
-    #         "mountPath": "/stage/reward-bench",
-    #         "source": {"weka": "oe-adapt-default"},
-    #         "subPath": "saumyam/cloned/reward-bench"  # This points to your directory
-    #     }
-    # ]
     config["tasks"][0]["constraints"]["cluster"] = args.cluster
     config["tasks"][0]["context"]["priority"] = args.priority
     config["tasks"][0]["resources"]["gpuCount"] = args.num_gpus
