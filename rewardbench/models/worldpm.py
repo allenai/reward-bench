@@ -34,4 +34,4 @@ class WorldPMPipeline:
             scores = next(iter(outputs.values()))
         else:
             scores = outputs
-        return scores.squeeze(-1)
+        return scores.squeeze(-1) .cpu().item()
