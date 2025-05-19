@@ -99,6 +99,14 @@ Nexusflow/Starling-RM-34B:
   batch_size: 2
   trust_remote_code: False
   dpo: False
+Nexusflow/Athene-RM-70B:
+  model: 'Nexusflow/Athene-RM-70B'
+  tokenizer: 'Nexusflow/Athene-RM-70B'
+  chat_template: 'llama-3'
+  num_gpus: 4
+  batch_size: 2
+  trust_remote_code: False
+  dpo: False
 stabilityai/stablelm-zephyr-3b:
   ref_model: stabilityai/stablelm-3b-4e1t
   tokenizer: stabilityai/stablelm-zephyr-3b

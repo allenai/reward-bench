@@ -24,6 +24,7 @@ from transformers import (
 )
 
 from .armorm import ArmoRMPipeline
+from .athene import AtheneForSequenceClassification, AtheneRewardPipeline
 from .beaver import BeaverCostPipeline, BeaverPipeline, LlamaForScore
 from .betterpairrm import BetterPairRMPipeline
 from .grm import GRewardModel, GRMPipeline
@@ -244,6 +245,14 @@ REWARD_MODEL_CONFIG = {
         "pipeline_builder": RewardBenchPipeline,
         "quantized": False,
         "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+        "torch_dtype": torch.bfloat16,
+    },
+    "Nexusflow/Athene-RM-70B": {
+        "model_builder": AtheneForSequenceClassification.from_pretrained,
+        "pipeline_builder": AtheneRewardPipeline,
+        "quantized": False,
+        "custom_dialogue": True,
         "model_type": "Seq. Classifier",
         "torch_dtype": torch.bfloat16,
     },
