@@ -171,7 +171,7 @@ REWARD_MODEL_CONFIG = {
         "pipeline_builder": ArmoRMPipeline,
         "quantized": False,
         "custom_dialogue": False,
-        "model_type": "Sequence Classifier",
+        "model_type": "Custom Classifier",
         "torch_dtype": torch.bfloat16,
     },
     "Ray2333/GRM-Gemma-2B-sftreg": {
