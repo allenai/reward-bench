@@ -41,7 +41,7 @@ BASE_CONFIG = {
 def parse_args():
     parser = argparse.ArgumentParser()
     # Beaker-specific arguments
-    parser.add_argument("--image", type=str, default="saumyam/rewardbench-2", help="Beaker image to use")
+    parser.add_argument("--image", type=str, default="saumyam/rewardbench-2-latest-transformers", help="Beaker image to use")
     parser.add_argument("--cluster", nargs='+', default=["ai2/jupiter-cirrascale-2","ai2/saturn-cirrascale","ai2/neptune-cirrascale"], help="Beaker cluster to use")
     parser.add_argument("--priority", type=str, default="normal", help="Priority of the job")
     parser.add_argument("--num_gpus", type=int, default=1, help="Number of GPUs to use")
@@ -137,7 +137,6 @@ def main():
 
     # for run_rm only, for now, and gemma-2-27b RMs
     if "attention_implementation" in model_config:
-        print(f"{model_config["attention_implementation"]}")
         config["tasks"][0]["arguments"][0] += f" --attn_implementation {model_config['attention_implementation']}"
 
     # Optional parameters mapping
