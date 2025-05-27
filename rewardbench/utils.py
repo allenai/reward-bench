@@ -421,46 +421,45 @@ def load_eval_dataset(
     return dataset, subsets
 
 
-def reroll_and_score_dataset(dataset, best_of, cols_to_combine=["text", "scores"]):
+def reroll_and_score_dataset(dataset, total_completions, cols_to_combine=["text", "scores"]):
     # Convert to pandas DataFrame for easier manipulation
     df = dataset.to_pandas()
-
-    # Get the number of groups
-    n_groups = len(df) // best_of
-    if len(df) % best_of != 0:
-        raise ValueError(f"Dataset length ({len(df)}) is not divisible by best_of ({best_of})")
-
+    
+    # Validate that sum of total_completions matches dataset length
+    if sum(total_completions) != len(df):
+        raise ValueError(f"Sum of total_completions ({sum(total_completions)}) does not equal dataset length ({len(df)})")
+    
     rerolled_rows = []
-
-    # Process each group of best_of rows
-    for i in range(n_groups):
-        start_idx = i * best_of
-        group = df.iloc[start_idx : start_idx + best_of]
-
+    current_idx = 0
+    
+    # Process each group with its specified number of completions
+    for group_size in total_completions:
+        group = df.iloc[current_idx:current_idx + group_size]
+        
         # Create new row
         new_row = {}
-
+        #print(group['scores'])
         # Handle text and score columns - combine into lists
         for col in cols_to_combine:
             new_row[col] = group[col].tolist()
 
-        # Result is 1 if the first entry (chosen) is scored the highest, 0 otherwise
         new_row["results"] = 1 if np.argmax(new_row["scores"]) == 0 else 0
-
+        
         # Handle all other columns - verify they're identical and take first value
         other_columns = [col for col in df.columns if col not in cols_to_combine]
         for col in other_columns:
             values = group[col].unique()
             if len(values) != 1:
-                raise ValueError(f"Column {col} has different values within group {i}: {values}")
+                raise ValueError(f"Column {col} has different values within group at index {current_idx}: {values}")
             new_row[col] = values[0]
-
+        
         rerolled_rows.append(new_row)
-
+        current_idx += group_size
+    
     # Create new dataset
     rerolled_df = pd.DataFrame(rerolled_rows)
     rerolled_dataset = Dataset.from_pandas(rerolled_df)
-
+    
     return rerolled_dataset
 
 
