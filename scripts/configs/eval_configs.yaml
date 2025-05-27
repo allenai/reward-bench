@@ -9,7 +9,7 @@ openbmb/UltraRM-13b:
 allenai/open_instruct_dev:
   model: 'allenai/open_instruct_dev'
   tokenizer: 'allenai/open_instruct_dev'
-  chat_template: 'tulu'
+  chat_template:
   batch_size: 16
   trust_remote_code: False
   quantized: False
@@ -900,3 +900,12 @@ nicolinho/QRM-Llama3.1-8B-v2:
   quantized: False
   dpo: False
   trust_remote_code: True
+Qwen/WorldPM-72B:
+  model: Qwen/WorldPM-72B
+  tokenizer: Qwen/WorldPM-72B
+  chat_template: # none for tokenizer
+  dpo: False
+  batch_size: 1
+  quantized: False
+  trust_remote_code: False
+  torch_dtype": bfloat16
