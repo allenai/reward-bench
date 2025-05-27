@@ -66,9 +66,8 @@ def get_args():
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
     parser.add_argument("--batch_size", type=int, default=64, help="batch size for inference")
     parser.add_argument("--max_length", type=int, default=2048, help="Max length of RM inputs (passed to pipeline)")
-    parser.add_argument("--best_of", type=int, default=4, help="number of best of n to select from")
     parser.add_argument(
-        "--debug", action="store_true", help="run on common preference sets instead of our custom eval set"
+        "--debug", action="store_true", help="Debug on small set of examples"
     )
     parser.add_argument(
         "--disable_beaker_save", action="store_true", help="disable saving the main results in a file for AI2 Beaker"
@@ -378,7 +377,13 @@ def main():
 
         sub_path_scores = "eval-set-scores/"
 
-        scores_url = save_to_hub(scores_dict, model_name, sub_path_scores, args.debug, local_only=args.do_not_save, best_of_n=True)
+        scores_url = save_to_hub(
+            scores_dict, 
+            model_name, 
+            sub_path_scores, 
+            args.debug, 
+            local_only=args.do_not_save, 
+            best_of_n=True)
         logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
     else:
         logger.info("Not uploading chosen-rejected text with scores due to model compatibility")

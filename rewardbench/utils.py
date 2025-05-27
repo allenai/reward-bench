@@ -112,7 +112,7 @@ def save_to_hub(
         target_path: path to save the results in the hub. Usually set in script (e.g. eval-set/, eval-set-scores/).
         debug: if True, save to debug repo on HF.
         local_only: if True, do not save to HF (for most non-AI2 users).
-        best_of_n: if True, save to best-of-n dataset results repo on HF.
+        best_of_n: if True, save to version 2 dataset results repo on HF.
         save_metrics_for_beaker: if True, save metrics for AI2 beaker visualization.
 
     Returns:
@@ -144,7 +144,7 @@ def save_to_hub(
                 dumped = json.dumps(record, indent=4, sort_keys=True) + "\n"
                 f.write(dumped)
 
-    if not local_only:
+    if not local_only and not debug:
         scores_url = api.upload_file(
             path_or_fileobj=scores_path,
             path_in_repo=target_path + f"{model_name}.json",
@@ -496,27 +496,15 @@ def load_bon_dataset_v2(
     num_correct = raw_dataset["num_correct"]
     logger.info(f"Total completions: {sum(total_completions)}")
 
-    # unroll every row in ['output'] to a new row, all other columns are copied,
-    # index is changed to tuple (index, output_index)
+    # unroll every response in chosen and rejected to a new row, all other columns are copied
     def unroll_output(idx, row):
         rows = []
-
-        # This is for me to be able to run existing splits locally
-        # a vestige of how I've been handling dataset format till now
-        # Delete after move fully to new schema/hf schema
-        if ".jsonl" in dataset:
-            options = row["output"]
-        else:
-            options = row["chosen"]
-            options.extend(row["rejected"])
-
-        # id = row["id"]
+        options = row["chosen"]
+        options.extend(row["rejected"])
 
         for i, output in enumerate(options):
             new_row = row.copy()
             new_row["input"] = output
-            # new_row["index"] = [id, i]
-            # del new_row["id"]
             del new_row["chosen"]
             del new_row["rejected"]
             rows.append(new_row)
@@ -572,7 +560,7 @@ def load_bon_dataset_v2(
             num_proc=8,
         )
 
-    # take column subset and total_completions from dataset
+    # take column subset from dataset
     subsets = dataset["subset"] if "subset" in dataset.column_names else None
 
     # remove column input
