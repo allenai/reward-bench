@@ -42,8 +42,8 @@ EXTRA_PREF_SETS = "allenai/pref-test-sets"
 BON_CANDIDATES = "ai2-adapt-dev/HERM_BoN_candidates"  # private until officially supported
 EVAL_REPO = "allenai/reward-bench-results"  # data repo to upload results
 
-CORE_EVAL_SET_V2 = "allenai/reward-bench-v2-v0"
-EVAL_REPO_V2 = "allenai/reward-bench-v2-results"  # data repo to upload results
+CORE_EVAL_SET_V2 = "allenai/reward-bench-2"
+EVAL_REPO_V2 = "allenai/reward-bench-2-results"  # data repo to upload results
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -421,6 +421,112 @@ def load_eval_dataset(
     return dataset, subsets
 
 
+def load_eval_dataset_multi(
+    core_set: bool = True,
+    dataset: str = None,  # alternate dataset
+    custom_dialogue_formatting: bool = False,
+    conv: Conversation = None,
+    tokenizer: PreTrainedTokenizer = None,
+    logger: logging.Logger = None,
+    keep_columns: List[str] = ["texts_chosen", "texts_rejected", "id"],
+    return_extra_data: bool = False,
+    max_turns: int = None,
+) -> tuple[Dataset, list[str]]:
+    """
+    Loads either the core eval set for RewardBench 2 or a user-passed dataset, specifically for running generative models
+
+    Args:
+        core_set: if True, load the core eval set for RewardBench 2.
+        custom_dialogue_formatting: if True, format the dialogue as needed for custom models (e.g. SHP and PairRM).
+        conv: fastchat conversation template.
+                If None (default) the passed tokenizer needs to have a usable chat template.
+        tokenizer: HuggingFace tokenizer to use. The tokenizer's chat template, if available, has precedence over conv.
+        logger: logger to use for logging. If None (default), no logging is done.
+        keep_columns: list of columns to keep in the dataset. Because of the intricacies of handling the Ties subset, we keep the "subset" and "num_correct" columns for RB2.
+        return_extra_data: return extra metadata for expanded logging (mostly in CLI)
+        max_turns: maximum number of turns in the dialogue (usually even). If None (default), no filtering is done.
+
+    Returns:
+        dataset: loaded dataset with required properties.
+        subsets: list of subsets for the corresponding samples in the dataset.
+    """
+    # consider making this force the -no-ties version of core eval set
+    raw_dataset = load_dataset(CORE_EVAL_SET_V2, split="test") if not dataset else load_dataset(dataset, split="test")
+    # Apply chat template
+    if not custom_dialogue_formatting:
+        usable_tokenizer = check_tokenizer_chat_template(tokenizer)
+
+        # assert either conv is passed or tokenizer has chat_template
+        assert conv is not None or usable_tokenizer
+
+        if usable_tokenizer:
+            if logger is not None:
+                logger.info("*** Preparing dataset with HF Transformers ***")
+            # docs https://huggingface.co/docs/transformers/main/en/chat_templating
+            dataset = raw_dataset.map(
+                prepare_dialogue_from_tokenizer,
+                fn_kwargs={"tokenizer": tokenizer},
+                num_proc=8,
+                load_from_cache_file=False,
+            )
+
+        # else use FastChat to get chat template
+        else:
+            if logger is not None:
+                logger.info("*** Preparing dataset with FastChat ***")
+            dataset = raw_dataset.map(
+                prepare_dialogue,
+                fn_kwargs={"dialogue_template": conv},
+                num_proc=8,  # using >1 process causes issues with re-assigning prompt in example
+                load_from_cache_file=False,
+            )
+    else:
+        if logger is not None:
+            logger.info("*** Preparing dataset with custom formatting ***")
+
+        def map_conversations(example, core_set=True):
+            chosen_texts = []
+            for chosen_response in example["chosen"]:    
+                chosen_texts.append([
+                    {"role": "user", "content": example["prompt"]},
+                    {"role": "assistant", "content": chosen_response},
+                ])
+            example["texts_chosen"] = chosen_texts
+            rejected_texts = []
+            # multiple rejected responses
+            for rejected_response in example["rejected"]:
+                rejected_texts.append([
+                    {"role": "user", "content": example["prompt"]},
+                    {"role": "assistant", "content": rejected_response},
+                ])
+            example["texts_rejected"] = rejected_texts
+            return example
+
+        dataset = raw_dataset.map(
+            map_conversations,
+            fn_kwargs={"core_set": core_set},
+            num_proc=8,
+        )
+        logger.info(f"Dataset columns: {dataset.column_names}")
+
+    if max_turns is not None:
+        assert max_turns > 0, "max_turns must be greater than 0"
+
+        # filter long answers (MT Bench prompt as 1 or 2 turn examples)
+        def filter_long_turns(batch):
+            return len(batch["texts_chosen"][0]) <= max_turns
+
+        dataset = dataset.filter(filter_long_turns)
+
+    # take column subset from dataset
+
+    # remove columns if set and not custom_dialogue_formatting
+    all_cols = dataset.column_names
+    dataset = dataset.remove_columns([c for c in all_cols if c not in keep_columns])
+
+    return dataset
+
+
 def reroll_and_score_dataset(dataset, total_completions, cols_to_combine=["text", "scores"]):
     # Convert to pandas DataFrame for easier manipulation
     df = dataset.to_pandas()
@@ -438,7 +544,7 @@ def reroll_and_score_dataset(dataset, total_completions, cols_to_combine=["text"
         
         # Create new row
         new_row = {}
-
+        #print(group['scores'])
         # Handle text and score columns - combine into lists
         for col in cols_to_combine:
             new_row[col] = group[col].tolist()
@@ -915,7 +1021,7 @@ def sample_stats(scored_samples: dict) -> dict:
     }
 
 
-def process_single_model(dataset, model, revision):
+def process_single_model(dataset):
     from collections import defaultdict
     
     results = {k: defaultdict(dict) for k in ["ref", "tied"]}
@@ -926,13 +1032,13 @@ def process_single_model(dataset, model, revision):
         prompt_id = int(prompt_id)
         
         # Process each text entry and its score
-        for i, (text, score) in enumerate(zip(sample["text"], sample["scores"])):                    
+        # print("Sample: ", sample)
+        for i, score in enumerate(sample["scores"]):                    
             is_correct = i < sample["num_correct"]
             
             sample_entry = {
                 "correct": is_correct,
                 "scores": [score[0]] if isinstance(score, list) else [score],
-                "text": text
             }
             
             results[sample_type][prompt_id][i] = sample_entry
@@ -1025,12 +1131,7 @@ def process_single_model(dataset, model, revision):
         
         # Create a copy of the original sample
         new_row = {k: v for k, v in sample.items()}
-        
-        # Add the overall_score for this prompt
-        if (sample_type, prompt_id) in prompt_overall_scores:
-            new_row["results"] = prompt_overall_scores[(sample_type, prompt_id)]
-        else:
-            new_row["results"] = None
+        new_row["results"] = None
             
         dataset_dict.append(new_row)
     
