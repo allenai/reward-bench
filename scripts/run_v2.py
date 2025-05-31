@@ -313,7 +313,7 @@ def main():
         subset_dataset = out_dataset.filter(lambda example: example["subset"] == subset)
         # recompute "results" column for ties subset with different scoring method
         if subset.lower() == 'ties':
-            ties_subset_with_results, overall_score = process_single_model(subset_dataset, args.model, args.revision)
+            ties_subset_with_results, overall_score = process_single_model(subset_dataset)
             subset_dataset = ties_subset_with_results
 
             # Update the results for the ties subset in the original dataset
