@@ -34,14 +34,14 @@ from fastchat.conversation import get_conv_template
 from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams
 
-from rewardbench import (
+from utils import (
     load_eval_dataset_multi, 
     save_to_hub, 
     process_single_model,
     sample_stats,
 )
 
-from rewardbench.generative_v2 import (
+from generative_v2_local import (
     ANTHROPIC_MODEL_LIST,
     API_MODEL_LIST,
     GEMINI_MODEL_LIST,
@@ -207,6 +207,7 @@ def main():
 
     # separate dataset into dataset for non-ties and ties_dataset for ties based on "subset" == "Ties"
     ties_dataset = dataset.filter(lambda example: example["subset"] == "Ties")
+    logger.info("Length of ties dataset BEFORE anything: %d", len(ties_dataset))
     dataset = dataset.filter(lambda example: example["subset"] != "Ties")
     nonties_ids = dataset["id"]
     dataset = dataset.remove_columns("id")
@@ -219,10 +220,10 @@ def main():
         ties_ids = ties_ids[:10]  # add ties ids to ties_ids
         nonties_ids = nonties_ids[:10]  # add ties ids to ids
 
-    # output_path = f"final_results_{args.model}.jsonl"
-    # if os.path.exists(output_path):
-    #     os.remove(output_path)
-    # logger.info(f"**Outputting scores to {output_path}**")
+    output_path = f"final_results_{args.model}.jsonl"
+    if os.path.exists(output_path):
+        os.remove(output_path)
+    logger.info(f"**Outputting scores to {output_path}**")
 
     if is_api_models:
         ############################
@@ -352,7 +353,7 @@ def main():
 
             # Run on Ties subset
             logger.info("*** Run inference on ties subset ***")
-            results_ties = [None] * len(dataset)  # Preallocate results list
+            results_ties = [None] * len(ties_dataset)  # Preallocate results list
             done_tasks = 0  # Counter for completed tasks
             judge_fn_ties = partial(get_judgement, is_ties=True)
             with ThreadPoolExecutor(max_workers=args.num_threads) as executor:
@@ -365,7 +366,7 @@ def main():
                     print(future.result())
                     results_ties[index] = future.result()
                     done_tasks += 1
-                    update_progress_bar(done_tasks, len(dataset))
+                    update_progress_bar(done_tasks, len(ties_dataset))
 
             # Print newline after progress bar
             print()
@@ -471,6 +472,9 @@ def main():
     out_dataset = out_dataset.add_column("id", nonties_ids)
 
     # process results for ties, then merge datasets
+    logger.info("*** Process Ties subset ***")
+    logger.info("Length of ties dataset: %d", len(ties_dataset))
+    logger.info("Length of ties results: %d", len(results_ties))
     out_dataset_ties = ties_dataset.add_column("scores", results_ties)
     out_dataset_ties, ties_score = process_single_model(out_dataset_ties)
 

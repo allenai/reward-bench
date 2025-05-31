@@ -29,6 +29,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
 from fastchat.conversation import get_conv_template
 from transformers import AutoTokenizer
+from vllm import LLM, SamplingParams
 
 from rewardbench import load_eval_dataset, save_to_hub
 from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
