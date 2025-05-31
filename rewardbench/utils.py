@@ -438,7 +438,7 @@ def reroll_and_score_dataset(dataset, total_completions, cols_to_combine=["text"
         
         # Create new row
         new_row = {}
-        #print(group['scores'])
+
         # Handle text and score columns - combine into lists
         for col in cols_to_combine:
             new_row[col] = group[col].tolist()

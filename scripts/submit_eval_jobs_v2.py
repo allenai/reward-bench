@@ -55,13 +55,12 @@ def parse_args():
     
     # Optional experiment parameters
     parser.add_argument("--revision", type=str, default=None, help="model revision")
-    parser.add_argument("--best_of", type=int, default=4, help="Number of best of n to select from")
     parser.add_argument("--tokenizer", type=str, help="Path to non-matching tokenizer to model")
     parser.add_argument("--chat_template", type=str, help="Path to chat template")
     parser.add_argument("--batch_size", type=int, default=16, help="Batch size for inference")
     parser.add_argument("--do_not_save", action="store_true", help="Do not save results to hub (for debugging)")
     #parser.add_argument("--trust_remote_code", action="store_true", help="Directly load model instead of pipeline")
-    parser.add_argument("--debug", action="store_true", help="Run on common preference sets instead of custom eval set")
+    parser.add_argument("--debug", action="store_true", help="Debug on small subset of data")
 
 
     return parser.parse_args()
@@ -142,7 +141,6 @@ def main():
     # Optional parameters mapping
     optional_params = {
         "revision": " --revision",
-        "best_of": " --best_of",
         # "batch_size": " --batch_size"
     }
 

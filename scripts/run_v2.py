@@ -29,7 +29,8 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, pipeline
 from datasets import Dataset
 
-from utils import (
+# TODO: adjust the import
+from rewardbench import (
     REWARD_MODEL_CONFIG,
     check_tokenizer_chat_template,
     load_bon_dataset_v2,
@@ -236,71 +237,51 @@ def main():
         reward_pipe.tokenizer.add_eos_token = True
 
     ############################
-    # Run inference [1/2]" built in transformers
+    # Run inference on custom pipelines
     ############################
-    # if using HF pipeline, can pass entire dataset and get results
-    # first, handle custom pipelines that we must batch normally
-    if pipeline_builder == pipeline:
-        logger.info("*** Running forward pass via built in pipeline abstraction ***")
-        # this setup can be optimized slightly with one pipeline call
-        # prepare for inference
-        reward_pipe = accelerator.prepare(reward_pipe)
+    logger.info("*** Running dataloader to collect results ***")
+    # TODO make more custom pipelines work with pre-tokenized data
+    from torch.utils.data.dataloader import default_collate
 
-        results = reward_pipe(dataset["text"], **reward_pipeline_kwargs)
+    # for PairRM, hmm, will move all of this later
+    def custom_collate_fn(batch):
+        # check if ['text_chosen'] is in first batch element
+        # Check if the first element of the batch is a dictionary
+        if isinstance(batch[0]["text"][0], dict):
+            return batch  # Return the batch as-is if it's a list of dicts
+        else:
+            return default_collate(batch)  # Use the default collate behavior otherwise
 
-        # extract scores from results which is list of dicts, e.g. [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
-        scores = [r["score"] for r in results]
+    dataloader = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=BATCH_SIZE,
+        collate_fn=custom_collate_fn,
+        shuffle=False,
+        drop_last=False,
+    )
 
-    ############################
-    # Run inference [2/2] custom pipelines
-    ############################
-    else:
-        logger.info("*** Running dataloader to collect results ***")
-        # TODO make more custom pipelines work with pre-tokenized data
-        from torch.utils.data.dataloader import default_collate
+    model = accelerator.prepare(reward_pipe.model)
+    reward_pipe.model = model
 
-        # for PairRM, hmm, will move all of this later
-        def custom_collate_fn(batch):
-            # check if ['text_chosen'] is in first batch element
-            # Check if the first element of the batch is a dictionary
-            if isinstance(batch[0]["text"][0], dict):
-                return batch  # Return the batch as-is if it's a list of dicts
+    results = []
+    scores = []
+    for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
+        logger.info(f"RM inference step {step}/{len(dataloader)}")
+
+        if "PairRM" in args.model or "SteamSHP" in args.model:
+            raise NotImplementedError("PairRM and SteamSHP are not yet supported for batched inference")
+        else:
+            rewards = reward_pipe(batch["text"], **reward_pipeline_kwargs)
+
+            # extract score from dict within batched results (e.g. logits)
+            # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
+            if isinstance(rewards[0], dict):
+                scores_batch = [result["score"] for result in rewards]
+            # for classes that directly output scores (custom code)
             else:
-                return default_collate(batch)  # Use the default collate behavior otherwise
+                scores_batch = rewards.float().cpu().numpy().tolist()
 
-        dataloader = torch.utils.data.DataLoader(
-            dataset,
-            batch_size=BATCH_SIZE,
-            collate_fn=custom_collate_fn,
-            shuffle=False,
-            drop_last=False,
-        )
-
-        model = accelerator.prepare(reward_pipe.model)
-        reward_pipe.model = model
-
-        results = []
-        scores = []
-        for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
-            logger.info(f"RM inference step {step}/{len(dataloader)}")
-
-            if "PairRM" in args.model or "SteamSHP" in args.model:
-                raise NotImplementedError("PairRM and SteamSHP are not yet supported for batched inference")
-            else:
-                rewards = reward_pipe(batch["text"], **reward_pipeline_kwargs)
-                # logger.info(f"***Sample RM results***: {rewards}")
-
-                # for each item in batch, record 1 if chosen > rejected
-                # extra score from dict within batched results (e.g. logits)
-                # [{'label': 'LABEL_1', 'score': 0.6826171875},... ]
-                if isinstance(rewards[0], dict):
-                    scores_batch = [result["score"] for result in rewards]
-                # for classes that directly output scores (custom code)
-                else:
-                    scores_batch = rewards.float().cpu().numpy().tolist()
-
-                scores.extend(scores_batch)
-                # logger.info(f"***Sample scores***: {scores}")
+            scores.extend(scores_batch)
 
 
     ############################
@@ -314,7 +295,7 @@ def main():
     out_dataset = out_dataset.add_column("scores", scores)
 
     # reroll dataset back to one row per instance, compressing 'text' and 'score' fields into list
-    # compute results
+    # and compute results
     out_dataset = reroll_and_score_dataset(out_dataset, total_completions, cols_to_combine=["text", "scores"])
     out_dataset = out_dataset.add_column("num_correct", num_correct)
 
@@ -383,7 +364,8 @@ def main():
             sub_path_scores, 
             args.debug, 
             local_only=args.do_not_save, 
-            best_of_n=True)
+            best_of_n=True,
+        )
         logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
     else:
         logger.info("Not uploading chosen-rejected text with scores due to model compatibility")
