@@ -42,7 +42,7 @@ pip install rewardbench
 ```
 **To run RewardBench 2, you can run the following command, substituting the model you would like to run and adding any additional model-specific parameters**
 ```
-python scripts/run_v2.py --model={yourmodel} --dataset=saumyamalik/rb2 --batch_size=8
+python scripts/run_v2.py --model={yourmodel} --dataset=allenai/reward-bench-2
 ```
 Or, to run RewardBench instead, run the following:
 ```
