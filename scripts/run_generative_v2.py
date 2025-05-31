@@ -25,14 +25,23 @@ import logging
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import json
+from functools import partial
+from datasets import concatenate_datasets
 
 import numpy as np
 from fastchat.conversation import get_conv_template
 from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams
 
-from rewardbench import load_eval_dataset_multi, save_to_hub
-from rewardbench.generative import (
+from rewardbench import (
+    load_eval_dataset_multi, 
+    save_to_hub, 
+    process_single_model,
+    sample_stats,
+)
+
+from rewardbench.generative_v2 import (
     ANTHROPIC_MODEL_LIST,
     API_MODEL_LIST,
     GEMINI_MODEL_LIST,
@@ -40,8 +49,8 @@ from rewardbench.generative import (
     format_judge_answers,
     process_judgement,
     run_judge_four,
+    run_judge_ratings_multi,
 )
-# from rewardbench.utils import calculate_scores_per_section
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -70,6 +79,9 @@ def get_args():
     parser.add_argument("--chat_template", type=str, default=None, help="fastchat chat template (optional)")
     parser.add_argument(
         "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
+    )
+    parser.add_argument(
+        "--score_w_ratings", action="store_true", default=False, help="score with ratings instead of pairwise ranking"
     )
     parser.add_argument("--num_gpus", type=int, default=1, help="number of gpus to use, for multi-node vllm")
     parser.add_argument("--vllm_gpu_util", type=float, default=0.9, help="gpu utilization for vllm")
@@ -177,26 +189,40 @@ def main():
     # Load dataset
     ############################
     logger.info("*** Load dataset ***")
-    dataset, subsets = load_eval_dataset_multi(
+    # to handle the Ties subset, we keep the "subset" and "num_correct" columns for RB2.
+    dataset = load_eval_dataset_multi(
         core_set=not args.pref_sets,
         dataset=args.dataset,
         conv=get_conv_template("raw"),  # not used in this script (handled later)
         custom_dialogue_formatting=True,  # handle formatting later
         tokenizer=None,
         logger=logger,
-        keep_columns=["text_chosen", "texts_rejected", "id"],
+        keep_columns=["texts_chosen", "texts_rejected", "id", "subset", "num_correct"],
         max_turns=4,
     )
 
     # copy id for saving, then remove
-    ids = dataset["id"]
+    # save ties_ids separately because they are needed for processing ties results
+    ties_ids = dataset.filter(lambda example: example["subset"] == "Ties")["id"]
+
+    # separate dataset into dataset for non-ties and ties_dataset for ties based on "subset" == "Ties"
+    ties_dataset = dataset.filter(lambda example: example["subset"] == "Ties")
+    dataset = dataset.filter(lambda example: example["subset"] != "Ties")
+    nonties_ids = dataset["id"]
     dataset = dataset.remove_columns("id")
 
-    # debug: use only 10 examples
+
+    # debug: use only 20 examples, 10 from dataset and 10 from ties_dataset
     if args.debug:
         dataset = dataset.select(range(10))
-        subsets = subsets[:10]
-        ids = ids[:10]
+        ties_dataset = ties_dataset.select(range(10))
+        ties_ids = ties_ids[:10]  # add ties ids to ties_ids
+        nonties_ids = nonties_ids[:10]  # add ties ids to ids
+
+    # output_path = f"final_results_{args.model}.jsonl"
+    # if os.path.exists(output_path):
+    #     os.remove(output_path)
+    # logger.info(f"**Outputting scores to {output_path}**")
 
     if is_api_models:
         ############################
@@ -208,85 +234,136 @@ def main():
             sys.stdout.write("\r[{}{}] {}/{}".format("#" * progress, "." * (50 - progress), done, total))
             sys.stdout.flush()
 
-        def get_judgement(batch, debug=args.debug):
-            mult_turn = True if len(batch["text_chosen"]) > 2 else False
-            prompt = batch["text_chosen"][0]["content"]
-            answer_a = batch["text_chosen"]
-            answer_b = batch["texts_rejected"][0]
-            answer_c = batch["texts_rejected"][1]
-            answer_d = batch["texts_rejected"][2]
+        def get_judgement(batch, is_ties=False, debug=args.debug):
+            mult_turn = True if len(batch["texts_chosen"][0]) > 2 else False
+            prompt = batch["texts_chosen"][0][0]["content"]
 
-            # put correct answer into a, b, c, d randomly for position bias
-            # is_shuffled = np.random.rand() > 0.5
-            # if is_shuffled:
-            #     answer_a, answer_b = answer_b, answer_a
-            #     winner_text = "B"
-            #     loser_text = "A"
-            # else:
-            #     winner_text = "A"
-            #     loser_text = "B"
-            shuffle_option = np.random.randint(0, 4)
+            # ties dataset must be scored with absolute ratings
+            if not args.score_w_ratings and not is_ties:
+                # only look at 4 options in direct judgment case
+                answer_a = batch["texts_chosen"][0]
+                answer_b = batch["texts_rejected"][0]
+                answer_c = batch["texts_rejected"][1]
+                answer_d = batch["texts_rejected"][2]
 
-            if shuffle_option == 0:
-                # Original order
-                winner_text = "A"
-                loser_texts = ["B", "C", "D"]  # or any other
-            elif shuffle_option == 1:
-                # swap A and B
-                answer_a, answer_b = answer_b, answer_a
-                winner_text = "B"
-                loser_texts = ["A", "C", "D"]
-            elif shuffle_option == 2:
-                # swap A and C
-                answer_a, answer_c = answer_c, answer_a
-                winner_text = "C"
-                loser_texts = ["A", "B", "D"]
-            elif shuffle_option == 3:
-                # swap A and D
-                answer_a, answer_d = answer_d, answer_a
-                winner_text = "D"
-                loser_texts = ["A", "B", "C"]
+                shuffle_option = np.random.randint(0, 4)
 
-            if len(batch["text_chosen"]) <= 4:  # set up only for 1 or 2 turns
-                winner, request, judgement = run_judge_four(
-                    prompt, answer_a, answer_b, answer_c, answer_d, args.model, multi_turn=mult_turn, model_modifier=model_modifier
-                )
-                if debug:
-                    print(f"Prompt: {request}")
-                    print(f"Judgement: {judgement}")
+                if shuffle_option == 0:
+                    # Original order
+                    winner_text = "A"
+                    loser_texts = ["B", "C", "D"]  # or any other
+                elif shuffle_option == 1:
+                    # swap A and B
+                    answer_a, answer_b = answer_b, answer_a
+                    winner_text = "B"
+                    loser_texts = ["A", "C", "D"]
+                elif shuffle_option == 2:
+                    # swap A and C
+                    answer_a, answer_c = answer_c, answer_a
+                    winner_text = "C"
+                    loser_texts = ["A", "B", "D"]
+                elif shuffle_option == 3:
+                    # swap A and D
+                    answer_a, answer_d = answer_d, answer_a
+                    winner_text = "D"
+                    loser_texts = ["A", "B", "C"]
 
-                # handle voting
-                if isinstance(winner, list):
-                    # print votes if debug
-                    if debug:
-                        print(winner)
-                    winner = max(set(winner), key=winner.count)
+                if len(batch["texts_chosen"][0]) <= 4:  # set up only for 1 or 2 turns
+                        winner, request, judgement = run_judge_four(
+                            prompt, answer_a, answer_b, answer_c, answer_d, args.model, multi_turn=mult_turn, model_modifier=model_modifier
+                        )
+                        if debug:
+                            print(f"Prompt: {request}")
+                            print(f"Judgement: {judgement}")
 
-                if winner == winner_text:
-                    return 1
-                elif winner in loser_texts:
-                    return 0
-                else:  # if "error"
-                    return 0.25  # effectively a tie
+                        # handle voting
+                        if isinstance(winner, list):
+                            # print votes if debug
+                            if debug:
+                                print(winner)
+                            winner = max(set(winner), key=winner.count)
+
+                        if winner == winner_text:
+                            return 1
+                        elif winner in loser_texts:
+                            return 0
+                        else:  # if "error"
+                            return 0.25  # effectively a tie
+                else:
+                    print("Error: more than 4 turns")
+                    return 0.25
+            
+            # scoring with ratings
             else:
-                return 0.25
+                # no shuffling needed for absolute rating
+                batch["texts_chosen"].extend(batch["texts_rejected"])
+                answers = batch["texts_chosen"]
+                winners, requests, judgements = run_judge_ratings_multi(
+                    prompt, answers, args.model, multi_turn=mult_turn, model_modifier=model_modifier, is_ties=is_ties
+                )
 
+                # dump to jsonl file
+                record = {
+                    "prompt": prompt,
+                    "scores": judgements["ratings"],
+                    "judgments": judgements["judgments"],
+                }
+                with open(output_path, 'a') as out_f:
+                    out_f.write(json.dumps(record) + "\n")
+
+                # if debug:
+                #     print(f"Prompt: {requests}")
+                #     print(f"Judgement: {judgements}")
+                #     if winners != "error":
+                #         print(f"Score: {(0 in winners)/len(winners)}")
+
+                # for ties subset, return the set of scores for aggregate results to be computed later
+                if is_ties: 
+                    return judgements["ratings"]
+
+                # for non ties data, return 
+                if winners == "error":
+                    # effectively a tie
+                    return 0.25
+
+                # TODO: handle scoring for ties subset separately
+                # handle ties, first response (index 0) is the correct one
+                return (0 in winners)/len(winners)
+                
         with ThreadPoolExecutor(max_workers=args.num_threads) as executor:
             # Map 'my_function' across the vector, executing in parallel using threads
-            # results = list(executor.map(get_judgement, dataset))
 
+            # First run on non-Ties subsets
+            logger.info("*** Run inference on non-ties subsets ***")
             # Progress bar version
             results = [None] * len(dataset)  # Preallocate results list
             done_tasks = 0  # Counter for completed tasks
-
+            judge_fn = partial(get_judgement, is_ties=False)
             with ThreadPoolExecutor(max_workers=args.num_threads) as executor:
                 # Submit all tasks and hold their futures in a list
-                future_to_index = {executor.submit(get_judgement, x): i for i, x in enumerate(dataset)}
+                future_to_index = {executor.submit(judge_fn, x): i for i, x in enumerate(dataset)}
 
                 # As tasks complete, update progress and store results in the original order
                 for future in as_completed(future_to_index):
                     index = future_to_index[future]
                     results[index] = future.result()
+                    done_tasks += 1
+                    update_progress_bar(done_tasks, len(dataset))
+
+            # Run on Ties subset
+            logger.info("*** Run inference on ties subset ***")
+            results_ties = [None] * len(dataset)  # Preallocate results list
+            done_tasks = 0  # Counter for completed tasks
+            judge_fn_ties = partial(get_judgement, is_ties=True)
+            with ThreadPoolExecutor(max_workers=args.num_threads) as executor:
+                # Submit all tasks and hold their futures in a list
+                future_to_index = {executor.submit(judge_fn_ties, x): i for i, x in enumerate(ties_dataset)}
+
+                # As tasks complete, update progress and store results in the original order
+                for future in as_completed(future_to_index):
+                    index = future_to_index[future]
+                    print(future.result())
+                    results_ties[index] = future.result()
                     done_tasks += 1
                     update_progress_bar(done_tasks, len(dataset))
 
@@ -391,10 +468,13 @@ def main():
     ############################
     # add column for results for easy printing
     out_dataset = dataset.add_column("results", results)
+    out_dataset = out_dataset.add_column("id", nonties_ids)
 
-    # add subsets back (removed so it's not handled by cuda)
-    out_dataset = out_dataset.add_column("subset", subsets)
-    out_dataset = out_dataset.add_column("id", ids)
+    # process results for ties, then merge datasets
+    out_dataset_ties = ties_dataset.add_column("scores", results_ties)
+    out_dataset_ties, ties_score = process_single_model(out_dataset_ties)
+
+    out_dataset = concatenate_datasets([out_dataset, out_dataset_ties], axis=0)
 
     # model name concat if list
     if isinstance(args.model, list):
@@ -417,18 +497,19 @@ def main():
     results_grouped["chat_template"] = args.chat_template
 
     # print per subset and log into results_grouped file
-    present_subsets = np.unique(subsets)
+    present_subsets = np.unique(out_dataset["subset"])
+    logger.info(f"Present subsets: {present_subsets}")
     for subset in present_subsets:
-        subset_dataset = out_dataset.filter(lambda example: example["subset"] == subset)
-        num_correct = sum(subset_dataset["results"])
-        num_total = len(subset_dataset["results"])
-        print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
-        results_grouped[subset] = num_correct / num_total
+        if subset.lower() == "ties":
+            print(f"{subset}: Ties score: {ties_score}")
+            results_grouped[subset] = ties_score
+        else:
+            subset_dataset = out_dataset.filter(lambda example: example["subset"] == subset)
+            num_correct = sum(subset_dataset["results"])
+            num_total = len(subset_dataset["results"])
+            print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
+            results_grouped[subset] = num_correct / num_total
 
-    # log leaderboard aggregated results
-    # if not args.pref_sets:
-    #     results_leaderboard = calculate_scores_per_section(EXAMPLE_COUNTS, SUBSET_MAPPING, results_grouped)
-    #     print(results_leaderboard)
 
     ############################
     # Upload results to hub
@@ -441,6 +522,7 @@ def main():
         args.debug,
         local_only=args.do_not_save,
         save_metrics_for_beaker=not args.disable_beaker_save,
+        best_of_n=True,
     )
     if not args.do_not_save:
         logger.info(f"Uploaded reward model results to {results_url}")
