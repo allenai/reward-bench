@@ -27,7 +27,6 @@ from .utils import (
     prepare_dialogue_from_tokenizer,
     process_single_model,
     reroll_and_score_dataset,
-    sample_stats,
     save_to_hub,
     torch_dtype_mapping,
 )
@@ -44,7 +43,6 @@ __all__ = [
     prepare_dialogue_from_tokenizer,
     process_single_model,
     REWARD_MODEL_CONFIG,
-    sample_stats,
     save_to_hub,
     torch_dtype_mapping,
     load_bon_dataset_v2,

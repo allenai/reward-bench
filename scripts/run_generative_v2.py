@@ -25,22 +25,19 @@ import logging
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import json
 from functools import partial
-from datasets import concatenate_datasets
 
 import numpy as np
+from datasets import concatenate_datasets
 from fastchat.conversation import get_conv_template
 from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams
 
 from rewardbench import (
-    load_eval_dataset_multi, 
-    save_to_hub, 
+    load_eval_dataset_multi,
     process_single_model,
-    sample_stats,
+    save_to_hub,
 )
-
 from rewardbench.generative_v2 import (
     ANTHROPIC_MODEL_LIST,
     API_MODEL_LIST,
@@ -73,9 +70,7 @@ def get_args():
         required=True,
         help="name of OpenAI model to use (TODO add more providers/models)",
     )
-    parser.add_argument(
-        "--dataset", type=str, required=True, help="path to huggingface dataset"
-    )
+    parser.add_argument("--dataset", type=str, required=True, help="path to huggingface dataset")
     parser.add_argument("--chat_template", type=str, default=None, help="fastchat chat template (optional)")
     parser.add_argument(
         "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
@@ -211,7 +206,6 @@ def main():
     nonties_ids = dataset["id"]
     dataset = dataset.remove_columns("id")
 
-
     # debug: use only 20 examples, 10 from dataset and 10 from ties_dataset
     if args.debug:
         dataset = dataset.select(range(10))
@@ -269,30 +263,37 @@ def main():
                     loser_texts = ["A", "B", "C"]
 
                 if len(batch["texts_chosen"][0]) <= 4:  # set up only for 1 or 2 turns
-                        winner, request, judgement = run_judge_four(
-                            prompt, answer_a, answer_b, answer_c, answer_d, args.model, multi_turn=mult_turn, model_modifier=model_modifier
-                        )
+                    winner, request, judgement = run_judge_four(
+                        prompt,
+                        answer_a,
+                        answer_b,
+                        answer_c,
+                        answer_d,
+                        args.model,
+                        multi_turn=mult_turn,
+                        model_modifier=model_modifier,
+                    )
+                    if debug:
+                        print(f"Prompt: {request}")
+                        print(f"Judgement: {judgement}")
+
+                    # handle voting
+                    if isinstance(winner, list):
+                        # print votes if debug
                         if debug:
-                            print(f"Prompt: {request}")
-                            print(f"Judgement: {judgement}")
+                            print(winner)
+                        winner = max(set(winner), key=winner.count)
 
-                        # handle voting
-                        if isinstance(winner, list):
-                            # print votes if debug
-                            if debug:
-                                print(winner)
-                            winner = max(set(winner), key=winner.count)
-
-                        if winner == winner_text:
-                            return 1
-                        elif winner in loser_texts:
-                            return 0
-                        else:  # if "error"
-                            return 0.25  # effectively a tie
+                    if winner == winner_text:
+                        return 1
+                    elif winner in loser_texts:
+                        return 0
+                    else:  # if "error"
+                        return 0.25  # effectively a tie
                 else:
                     print("Error: more than 4 turns")
                     return 0.25
-            
+
             # scoring with ratings
             else:
                 # no shuffling needed for absolute rating
@@ -303,33 +304,33 @@ def main():
                 )
 
                 # dump to jsonl file
-                record = {
-                    "prompt": prompt,
-                    "scores": judgements["ratings"],
-                    "judgments": judgements["judgments"],
-                }
+                # record = {
+                #     "prompt": prompt,
+                #     "scores": judgements["ratings"],
+                #     "judgments": judgements["judgments"],
+                # }
                 # with open(output_path, 'a') as out_f:
                 #     out_f.write(json.dumps(record) + "\n")
 
-                # if debug:
-                #     print(f"Prompt: {requests}")
-                #     print(f"Judgement: {judgements}")
-                #     if winners != "error":
-                #         print(f"Score: {(0 in winners)/len(winners)}")
+                if debug:
+                    print(f"Prompt: {requests}")
+                    print(f"Judgement: {judgements}")
+                    if winners != "error":
+                        print(f"Score: {(0 in winners)/len(winners)}")
 
                 # for ties subset, return the set of scores for aggregate results to be computed later
-                if is_ties: 
+                if is_ties:
                     return judgements["ratings"]
 
-                # for non ties data, return 
+                # for non ties data, return
                 if winners == "error":
                     # effectively a tie
                     return 0.25
 
-                # TODO: handle scoring for ties subset separately
                 # handle ties, first response (index 0) is the correct one
-                return (0 in winners)/len(winners)
-                
+                # 1 if the first response is the winner, 0.5 if joint (2-way) winner, 0.33 if 3-way, etc.
+                return (0 in winners) / len(winners)
+
         with ThreadPoolExecutor(max_workers=args.num_threads) as executor:
             # Map 'my_function' across the vector, executing in parallel using threads
 
@@ -510,7 +511,6 @@ def main():
             print(f"{subset}: {num_correct}/{num_total} ({num_correct/num_total})")
             results_grouped[subset] = num_correct / num_total
 
-
     ############################
     # Upload results to hub
     #############################
@@ -538,7 +538,9 @@ def main():
     scores_dict["model_type"] = model_type
 
     sub_path_scores = "eval-set-scores/"
-    scores_url = save_to_hub(scores_dict, model_name, sub_path_scores, args.debug, local_only=args.do_not_save, best_of_n=True)
+    scores_url = save_to_hub(
+        scores_dict, model_name, sub_path_scores, args.debug, local_only=args.do_not_save, best_of_n=True
+    )
 
     logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
 

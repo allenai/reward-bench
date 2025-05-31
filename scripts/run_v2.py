@@ -24,10 +24,10 @@ import torch
 import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
+from datasets import Dataset
 from fastchat.conversation import get_conv_template
 from tqdm import tqdm
-from transformers import AutoTokenizer, pipeline
-from datasets import Dataset
+from transformers import AutoTokenizer
 
 from rewardbench import (
     REWARD_MODEL_CONFIG,
@@ -36,7 +36,6 @@ from rewardbench import (
     process_single_model,
     reroll_and_score_dataset,
     save_to_hub,
-    sample_stats
 )
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
@@ -66,9 +65,7 @@ def get_args():
     parser.add_argument("--do_not_save", action="store_true", help="do not save results to hub (for debugging)")
     parser.add_argument("--batch_size", type=int, default=64, help="batch size for inference")
     parser.add_argument("--max_length", type=int, default=2048, help="Max length of RM inputs (passed to pipeline)")
-    parser.add_argument(
-        "--debug", action="store_true", help="Debug on small set of examples"
-    )
+    parser.add_argument("--debug", action="store_true", help="Debug on small set of examples")
     parser.add_argument(
         "--disable_beaker_save", action="store_true", help="disable saving the main results in a file for AI2 Beaker"
     )
@@ -170,7 +167,9 @@ def main():
     logger.info("*** Load dataset ***")
     tokenizer_path = args.tokenizer if args.tokenizer else args.model
     if args.revision:
-        tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, revision=args.revision, trust_remote_code=args.trust_remote_code)
+        tokenizer = AutoTokenizer.from_pretrained(
+            tokenizer_path, revision=args.revision, trust_remote_code=args.trust_remote_code
+        )
     else:
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=args.trust_remote_code)
     dataset, subsets, total_completions, num_correct = load_bon_dataset_v2(
@@ -221,12 +220,12 @@ def main():
     # strategy (which chooses between sdpa and eager depending on pytorch version)
     if args.attn_implementation:
         model_kwargs["attn_implementation"] = args.attn_implementation
-    
+
     if args.revision:
         model = model_builder(args.model, revision=args.revision, **model_kwargs, trust_remote_code=trust_remote_code)
     else:
         model = model_builder(args.model, **model_kwargs, trust_remote_code=trust_remote_code)
-    
+
     reward_pipe = pipeline_builder(
         "text-classification",
         model=model,
@@ -275,7 +274,6 @@ def main():
     model = accelerator.prepare(reward_pipe.model)
     reward_pipe.model = model
 
-    results = []
     scores = []
     for step, batch in enumerate(tqdm(dataloader, desc="RM batch steps")):
         logger.info(f"RM inference step {step}/{len(dataloader)}")
@@ -294,7 +292,6 @@ def main():
                 scores_batch = rewards.float().cpu().numpy().tolist()
 
             scores.extend(scores_batch)
-
 
     ############################
     # Print & process results
@@ -324,7 +321,7 @@ def main():
     for subset in present_subsets:
         subset_dataset = out_dataset.filter(lambda example: example["subset"] == subset)
         # recompute "results" column for ties subset with different scoring method
-        if subset.lower() == 'ties':
+        if subset.lower() == "ties":
             ties_subset_with_results, overall_score = process_single_model(subset_dataset)
             subset_dataset = ties_subset_with_results
 
@@ -336,7 +333,7 @@ def main():
             out_dataset = Dataset.from_pandas(out_dataset_df)
 
             print(f"{subset}: Overall score {overall_score}")
-            results_grouped[subset]=overall_score
+            results_grouped[subset] = overall_score
         else:
             num_correct = sum(subset_dataset["results"])
             num_total = len(subset_dataset["results"])
@@ -371,11 +368,11 @@ def main():
         sub_path_scores = "eval-set-scores/"
 
         scores_url = save_to_hub(
-            scores_dict, 
-            model_name, 
-            sub_path_scores, 
-            args.debug, 
-            local_only=args.do_not_save, 
+            scores_dict,
+            model_name,
+            sub_path_scores,
+            args.debug,
+            local_only=args.do_not_save,
             best_of_n=True,
         )
         logger.info(f"Uploading chosen-rejected text with scores to {scores_url}")
