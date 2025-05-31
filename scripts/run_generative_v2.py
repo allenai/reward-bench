@@ -308,8 +308,8 @@ def main():
                     "scores": judgements["ratings"],
                     "judgments": judgements["judgments"],
                 }
-                with open(output_path, 'a') as out_f:
-                    out_f.write(json.dumps(record) + "\n")
+                # with open(output_path, 'a') as out_f:
+                #     out_f.write(json.dumps(record) + "\n")
 
                 # if debug:
                 #     print(f"Prompt: {requests}")
@@ -352,7 +352,7 @@ def main():
 
             # Run on Ties subset
             logger.info("*** Run inference on Ties subset ***")
-            results_ties = [None] * len(dataset)  # Preallocate results list
+            results_ties = [None] * len(ties_dataset)  # Preallocate results list
             done_tasks = 0  # Counter for completed tasks
             judge_fn_ties = partial(get_judgement, is_ties=True)
             with ThreadPoolExecutor(max_workers=args.num_threads) as executor:

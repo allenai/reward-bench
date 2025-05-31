@@ -621,7 +621,6 @@ def chat_completion(
     elif model in GEMINI_MODEL_LIST:
         _client = OpenAI(api_key=os.environ["GEMINI_API_KEY"],
                         base_url="https://generativelanguage.googleapis.com/v1beta/openai")  # TODO move this to a global variable nicely
-        print("Using Gemini API")
     elif model in ANTHROPIC_MODEL_LIST:
         _client = anthropic.Anthropic()
 

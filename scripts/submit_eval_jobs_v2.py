@@ -41,7 +41,7 @@ BASE_CONFIG = {
 def parse_args():
     parser = argparse.ArgumentParser()
     # Beaker-specific arguments
-    parser.add_argument("--image", type=str, default="saumyam/rewardbench-2-latest-transformers", help="Beaker image to use")
+    parser.add_argument("--image", type=str, default="saumyam/rewardbench-2-pr-0530-tie-penalty", help="Beaker image to use")
     parser.add_argument("--cluster", nargs='+', default=["ai2/jupiter-cirrascale-2","ai2/saturn-cirrascale","ai2/neptune-cirrascale"], help="Beaker cluster to use")
     parser.add_argument("--priority", type=str, default="normal", help="Priority of the job")
     parser.add_argument("--num_gpus", type=int, default=1, help="Number of GPUs to use")
@@ -70,8 +70,9 @@ def create_experiment_name(args):
     dataset_name = args.dataset.split("/")[-1].split('.jsonl')[0]
     today = date.today().strftime("%m%d%Y")
     unique_id = str(uuid.uuid4())[:8]
-    
-    return f"bon_ranking_{dataset_name}_{model_name}_{unique_id}_{today}".replace("/", "-")[:128]
+    if args.revision:
+        model_name = args.revision
+    return f"rb2_{dataset_name}_{model_name}_{unique_id}_{today}".replace("/", "-")[:128]
 
 def main():
     args = parse_args()

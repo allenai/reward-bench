@@ -549,7 +549,12 @@ def reroll_and_score_dataset(dataset, total_completions, cols_to_combine=["text"
         for col in cols_to_combine:
             new_row[col] = group[col].tolist()
 
-        new_row["results"] = 1 if np.argmax(new_row["scores"]) == 0 else 0
+        # penalty for ties
+        scores = new_row["scores"]
+        max_val = np.max(scores)
+        new_row["results"] = (1/np.sum(scores == max_val)) if scores[0] == max_val else 0
+
+        # new_row["results"] = 1 if np.argmax(new_row["scores"]) == 0 else 0
         
         # Handle all other columns - verify they're identical and take first value
         other_columns = [col for col in df.columns if col not in cols_to_combine]

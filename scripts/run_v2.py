@@ -135,6 +135,18 @@ def main():
     # "model_type": "Seq. Classifier"
 
     quantized = config["quantized"] or args.quantized
+    # if llama-3 in name, switch quantized to False (severely degrades performance)
+    if (
+        ("llama-3" in args.model)
+        or ("Llama3" in args.model)
+        or ("Llama-3" in args.model)
+        or ("LLaMA3" in args.model)
+        or ("llama3" in args.model)
+        or not args.quantized
+    ):
+        quantized = False
+        logger.info(f"Disabling quantization for llama-3 or override flag (--not_quantized: {args.not_quantized})")
+
     custom_dialogue = config["custom_dialogue"]
     model_type = config["model_type"]  # todo will be needed to add PairRM and SteamSHP
     model_builder = config["model_builder"]
@@ -176,6 +188,7 @@ def main():
     # debug: use only 10 examples
     if args.debug:
         dataset = dataset.select(range(10))
+        subsets = subsets[:10]
         ids = ids[:10]
 
     ############################
