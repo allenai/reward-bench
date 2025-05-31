@@ -351,7 +351,7 @@ def main():
                     update_progress_bar(done_tasks, len(dataset))
 
             # Run on Ties subset
-            logger.info("*** Run inference on ties subset ***")
+            logger.info("*** Run inference on Ties subset ***")
             results_ties = [None] * len(dataset)  # Preallocate results list
             done_tasks = 0  # Counter for completed tasks
             judge_fn_ties = partial(get_judgement, is_ties=True)
@@ -365,7 +365,7 @@ def main():
                     print(future.result())
                     results_ties[index] = future.result()
                     done_tasks += 1
-                    update_progress_bar(done_tasks, len(dataset))
+                    update_progress_bar(done_tasks, len(ties_dataset))
 
             # Print newline after progress bar
             print()
