@@ -29,7 +29,6 @@ from tqdm import tqdm
 from transformers import AutoTokenizer, pipeline
 from datasets import Dataset
 
-# TODO: adjust the import
 from rewardbench import (
     REWARD_MODEL_CONFIG,
     check_tokenizer_chat_template,
