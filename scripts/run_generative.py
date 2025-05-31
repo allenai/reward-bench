@@ -419,6 +419,9 @@ def main():
     ############################
     # Upload results to hub
     #############################
+    # args.score_w_ratings because results not comprable to those already existing, can change later
+    do_not_save = args.do_not_save or args.score_w_ratings
+
     sub_path = "eval-set/" if not args.pref_sets else "pref-sets/"
     results_url = save_to_hub(
         results_grouped,
