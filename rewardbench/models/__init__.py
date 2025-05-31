@@ -42,6 +42,7 @@ from .starling import (
     StarlingPipeline,
     build_starling_rm,
 )
+from .worldpm import WorldPMPipeline
 from .ziya import ZiyaPipeline
 
 # Please open a PR if you need to add more custom modeling code / utilize existing code for you model
@@ -171,7 +172,7 @@ REWARD_MODEL_CONFIG = {
         "pipeline_builder": ArmoRMPipeline,
         "quantized": False,
         "custom_dialogue": False,
-        "model_type": "Sequence Classifier",
+        "model_type": "Custom Classifier",
         "torch_dtype": torch.bfloat16,
     },
     "Ray2333/GRM-Gemma-2B-sftreg": {
@@ -238,6 +239,14 @@ REWARD_MODEL_CONFIG = {
         "quantized": False,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
+    },
+    "Qwen/WorldPM-72B": {
+        "model_builder": AutoModel.from_pretrained,
+        "pipeline_builder": WorldPMPipeline,
+        "quantized": False,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+        "torch_dtype": torch.bfloat16,
     },
     "infly/INF-ORM-Llama3.1-70B": {
         "model_builder": INFORMForSequenceClassification.from_pretrained,

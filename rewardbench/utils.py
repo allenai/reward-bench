@@ -15,6 +15,7 @@
 import argparse
 import json
 import logging
+import math
 import os
 from typing import Any, Dict, List, Union
 
@@ -41,8 +42,8 @@ EXTRA_PREF_SETS = "allenai/pref-test-sets"
 BON_CANDIDATES = "ai2-adapt-dev/HERM_BoN_candidates"  # private until officially supported
 EVAL_REPO = "allenai/reward-bench-results"  # data repo to upload results
 
-CORE_EVAL_SET_V2 = "allenai/reward-bench-v2-v0"
-EVAL_REPO_V2 = "allenai/reward-bench-v2-results"  # data repo to upload results
+CORE_EVAL_SET_V2 = "allenai/reward-bench-2"
+EVAL_REPO_V2 = "allenai/reward-bench-2-results"  # data repo to upload results
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -111,7 +112,7 @@ def save_to_hub(
         target_path: path to save the results in the hub. Usually set in script (e.g. eval-set/, eval-set-scores/).
         debug: if True, save to debug repo on HF.
         local_only: if True, do not save to HF (for most non-AI2 users).
-        best_of_n: if True, save to best-of-n dataset results repo on HF.
+        best_of_n: if True, save to version 2 dataset results repo on HF.
         save_metrics_for_beaker: if True, save metrics for AI2 beaker visualization.
 
     Returns:
@@ -143,7 +144,7 @@ def save_to_hub(
                 dumped = json.dumps(record, indent=4, sort_keys=True) + "\n"
                 f.write(dumped)
 
-    if not local_only:
+    if not local_only and not debug:
         scores_url = api.upload_file(
             path_or_fileobj=scores_path,
             path_in_repo=target_path + f"{model_name}.json",
@@ -420,41 +421,158 @@ def load_eval_dataset(
     return dataset, subsets
 
 
-def reroll_and_score_dataset(dataset, best_of, cols_to_combine=["text", "scores"]):
+def load_eval_dataset_multi(
+    core_set: bool = True,
+    dataset: str = None,  # alternate dataset
+    custom_dialogue_formatting: bool = False,
+    conv: Conversation = None,
+    tokenizer: PreTrainedTokenizer = None,
+    logger: logging.Logger = None,
+    keep_columns: List[str] = ["texts_chosen", "texts_rejected", "id"],
+    return_extra_data: bool = False,
+    max_turns: int = None,
+) -> tuple[Dataset, list[str]]:
+    """
+    Loads either the core eval set for RewardBench 2 or a user-passed dataset, for running generative models
+
+    Args:
+        core_set: if True, load the core eval set for RewardBench 2.
+        custom_dialogue_formatting: if True, format the dialogue as needed for custom models (e.g. SHP and PairRM).
+        conv: fastchat conversation template.
+                If None (default) the passed tokenizer needs to have a usable chat template.
+        tokenizer: HuggingFace tokenizer to use. The tokenizer's chat template, if available, has precedence over conv.
+        logger: logger to use for logging. If None (default), no logging is done.
+        keep_columns: list of columns to keep in the dataset. Because of the intricacies of handling the Ties subset,
+                we keep the "subset" and "num_correct" columns for RB2.
+        return_extra_data: return extra metadata for expanded logging (mostly in CLI)
+        max_turns: maximum number of turns in the dialogue (usually even). If None (default), no filtering is done.
+
+    Returns:
+        dataset: loaded dataset with required properties.
+        subsets: list of subsets for the corresponding samples in the dataset.
+    """
+    # consider making this force the -no-ties version of core eval set
+    raw_dataset = load_dataset(CORE_EVAL_SET_V2, split="test") if not dataset else load_dataset(dataset, split="test")
+    # Apply chat template
+    if not custom_dialogue_formatting:
+        usable_tokenizer = check_tokenizer_chat_template(tokenizer)
+
+        # assert either conv is passed or tokenizer has chat_template
+        assert conv is not None or usable_tokenizer
+
+        if usable_tokenizer:
+            if logger is not None:
+                logger.info("*** Preparing dataset with HF Transformers ***")
+            # docs https://huggingface.co/docs/transformers/main/en/chat_templating
+            dataset = raw_dataset.map(
+                prepare_dialogue_from_tokenizer,
+                fn_kwargs={"tokenizer": tokenizer},
+                num_proc=8,
+                load_from_cache_file=False,
+            )
+
+        # else use FastChat to get chat template
+        else:
+            if logger is not None:
+                logger.info("*** Preparing dataset with FastChat ***")
+            dataset = raw_dataset.map(
+                prepare_dialogue,
+                fn_kwargs={"dialogue_template": conv},
+                num_proc=8,  # using >1 process causes issues with re-assigning prompt in example
+                load_from_cache_file=False,
+            )
+    else:
+        if logger is not None:
+            logger.info("*** Preparing dataset with custom formatting ***")
+
+        def map_conversations(example, core_set=True):
+            chosen_texts = []
+            for chosen_response in example["chosen"]:
+                chosen_texts.append(
+                    [
+                        {"role": "user", "content": example["prompt"]},
+                        {"role": "assistant", "content": chosen_response},
+                    ]
+                )
+            example["texts_chosen"] = chosen_texts
+            rejected_texts = []
+            # multiple rejected responses
+            for rejected_response in example["rejected"]:
+                rejected_texts.append(
+                    [
+                        {"role": "user", "content": example["prompt"]},
+                        {"role": "assistant", "content": rejected_response},
+                    ]
+                )
+            example["texts_rejected"] = rejected_texts
+            return example
+
+        dataset = raw_dataset.map(
+            map_conversations,
+            fn_kwargs={"core_set": core_set},
+            num_proc=8,
+        )
+        logger.info(f"Dataset columns: {dataset.column_names}")
+
+    if max_turns is not None:
+        assert max_turns > 0, "max_turns must be greater than 0"
+
+        # filter long answers (MT Bench prompt as 1 or 2 turn examples)
+        def filter_long_turns(batch):
+            return len(batch["texts_chosen"][0]) <= max_turns
+
+        dataset = dataset.filter(filter_long_turns)
+
+    # take column subset from dataset
+
+    # remove columns if set and not custom_dialogue_formatting
+    all_cols = dataset.column_names
+    dataset = dataset.remove_columns([c for c in all_cols if c not in keep_columns])
+
+    return dataset
+
+
+def reroll_and_score_dataset(dataset, total_completions, cols_to_combine=["text", "scores"]):
     # Convert to pandas DataFrame for easier manipulation
     df = dataset.to_pandas()
 
-    # Get the number of groups
-    n_groups = len(df) // best_of
-    if len(df) % best_of != 0:
-        raise ValueError(f"Dataset length ({len(df)}) is not divisible by best_of ({best_of})")
+    # Validate that sum of total_completions matches dataset length
+    if sum(total_completions) != len(df):
+        raise ValueError(
+            f"Sum of total_completions ({sum(total_completions)}) does not equal dataset length ({len(df)})"
+        )
 
     rerolled_rows = []
+    current_idx = 0
 
-    # Process each group of best_of rows
-    for i in range(n_groups):
-        start_idx = i * best_of
-        group = df.iloc[start_idx : start_idx + best_of]
+    # Process each group with its specified number of completions
+    for group_size in total_completions:
+        group = df.iloc[current_idx : current_idx + group_size]
 
         # Create new row
         new_row = {}
-
+        # print(group['scores'])
         # Handle text and score columns - combine into lists
         for col in cols_to_combine:
             new_row[col] = group[col].tolist()
 
-        # Result is 1 if the first entry (chosen) is scored the highest, 0 otherwise
-        new_row["results"] = 1 if np.argmax(new_row["scores"]) == 0 else 0
+        # penalty for ties
+        scores = new_row["scores"]
+        max_val = np.max(scores)
+        new_row["results"] = (1 / np.sum(scores == max_val)) if scores[0] == max_val else 0
+
+        # new_row["results"] = 1 if np.argmax(new_row["scores"]) == 0 else 0
 
         # Handle all other columns - verify they're identical and take first value
         other_columns = [col for col in df.columns if col not in cols_to_combine]
         for col in other_columns:
             values = group[col].unique()
             if len(values) != 1:
-                raise ValueError(f"Column {col} has different values within group {i}: {values}")
+                raise ValueError(f"Column {col} has different values within group at index {current_idx}: {values}")
             new_row[col] = values[0]
 
         rerolled_rows.append(new_row)
+        current_idx += group_size
 
     # Create new dataset
     rerolled_df = pd.DataFrame(rerolled_rows)
@@ -490,27 +608,20 @@ def load_bon_dataset_v2(
             # change split if renamed
             raw_dataset = load_dataset(dataset, split="test")
 
-    # unroll every row in ['output'] to a new row, all other columns are copied,
-    # index is changed to tuple (index, output_index)
+    # take column total_completions from dataset before unrolling
+    total_completions = raw_dataset["total_completions"]
+    num_correct = raw_dataset["num_correct"]
+    logger.info(f"Total completions: {sum(total_completions)}")
+
+    # unroll every response in chosen and rejected to a new row, all other columns are copied
     def unroll_output(idx, row):
         rows = []
-
-        # This is for me to be able to run existing splits locally
-        # a vestige of how I've been handling dataset format till now
-        # Delete after move fully to new schema/hf schema
-        if ".jsonl" in dataset:
-            options = row["output"]
-        else:
-            options = row["chosen"]
-            options.extend(row["rejected"])
-
-        # id = row["id"]
+        options = row["chosen"]
+        options.extend(row["rejected"])
 
         for i, output in enumerate(options):
             new_row = row.copy()
             new_row["input"] = output
-            # new_row["index"] = [id, i]
-            # del new_row["id"]
             del new_row["chosen"]
             del new_row["rejected"]
             rows.append(new_row)
@@ -567,12 +678,12 @@ def load_bon_dataset_v2(
         )
 
     # take column subset from dataset
-    subsets = dataset["subset"]
+    subsets = dataset["subset"] if "subset" in dataset.column_names else None
 
     # remove column input
     all_cols = dataset.column_names
     dataset = dataset.remove_columns([c for c in all_cols if c not in keep_columns])
-    return dataset, subsets
+    return dataset, subsets, total_completions, num_correct
 
 
 def load_bon_dataset(
@@ -883,3 +994,187 @@ def load_model_config(model_name):
         return REWARD_MODEL_CONFIG[model_name]
     else:
         return REWARD_MODEL_CONFIG["default"]
+
+
+# for ties support
+def sample_stats(scored_samples: dict) -> dict:
+    correct_samples = [s for s in scored_samples.values() if s["correct"]]
+    incorrect_samples = [s for s in scored_samples.values() if not s["correct"]]
+    # Handle potential empty lists
+    if not correct_samples or not incorrect_samples:
+        return {
+            "best_correct": {"scores": [0]} if not correct_samples else correct_samples[0],
+            "worst_correct": {"scores": [0]} if not correct_samples else correct_samples[0],
+            "best_incorrect": {"scores": [0]} if not incorrect_samples else incorrect_samples[0],
+            "accurate": False,
+            "different_correct_margin": None,
+            "correct_incorrect_margin": 0,
+            "correct_incorrect_margin_greater": None,
+            "successful_detractors": [],
+        }
+
+    best_correct = max(correct_samples, key=lambda x: x["scores"][0])
+    worst_correct = min(correct_samples, key=lambda x: x["scores"][0])
+    best_incorrect = max(incorrect_samples, key=lambda x: x["scores"][0])
+
+    different_correct_margin = (
+        best_correct["scores"][0] - worst_correct["scores"][0] if len(correct_samples) > 1 else None
+    )
+    correct_incorrect_margin = worst_correct["scores"][0] - best_incorrect["scores"][0]
+    successful_detractors = [s for s in incorrect_samples if s["scores"][0] > worst_correct["scores"][0]]
+
+    return {
+        "best_correct": best_correct,
+        "worst_correct": worst_correct,
+        "best_incorrect": best_incorrect,
+        "accurate": worst_correct["scores"][0] > best_incorrect["scores"][0],
+        "different_correct_margin": different_correct_margin,
+        "correct_incorrect_margin": correct_incorrect_margin,
+        "correct_incorrect_margin_greater": (
+            correct_incorrect_margin > different_correct_margin if different_correct_margin is not None else None
+        ),
+        "successful_detractors": successful_detractors,
+    }
+
+
+def process_single_model(dataset):
+    from collections import defaultdict
+
+    results = {k: defaultdict(dict) for k in ["ref", "tied"]}
+
+    for sample in dataset:
+        # Extract sample type and prompt_id
+        sample_type, prompt_id = sample["id"].split(":")
+        prompt_id = int(prompt_id)
+
+        # Process each text entry and its score
+        # print("Sample: ", sample)
+        for i, score in enumerate(sample["scores"]):
+            is_correct = i < sample["num_correct"]
+
+            sample_entry = {
+                "correct": is_correct,
+                "scores": [score[0]] if isinstance(score, list) else [score],
+            }
+
+            results[sample_type][prompt_id][i] = sample_entry
+
+    # Calculate statistics for each prompt
+    stats = {
+        k: {prompt_id: sample_stats(samples) for prompt_id, samples in type_results.items()}
+        for k, type_results in results.items()
+    }
+
+    # Calculate per-prompt overall scores
+    prompt_overall_scores = {}
+    ref_stats = stats.get("ref", {})
+    tied_stats = stats.get("tied", {})
+
+    for sample_type in ["ref", "tied"]:
+        for pid in stats.get(sample_type, {}):
+            if sample_type == "ref":
+                ref_accurate = ref_stats.get(pid, {}).get("accurate", False)
+                prompt_overall_scores[(sample_type, pid)] = 0.6 * int(ref_accurate)
+            elif sample_type == "tied" and pid in ref_stats:
+                ref_accurate = ref_stats[pid]["accurate"]
+                tied_accurate = tied_stats[pid]["accurate"]
+
+                if tied_stats[pid]["different_correct_margin"] is not None:
+                    correctness_preferred = (
+                        tied_stats[pid]["correct_incorrect_margin"] > tied_stats[pid]["different_correct_margin"]
+                    )
+                    correctness_preferred_hard = (
+                        min(ref_stats[pid]["correct_incorrect_margin"], tied_stats[pid]["correct_incorrect_margin"])
+                        > tied_stats[pid]["different_correct_margin"]
+                    )
+                    if tied_stats[pid]["different_correct_margin"] > 0:
+                        correctness_margin_ratio = (
+                            min(
+                                ref_stats[pid]["correct_incorrect_margin"], tied_stats[pid]["correct_incorrect_margin"]
+                            )
+                            / tied_stats[pid]["different_correct_margin"]
+                        )
+                        correctness_margin_score = math.tanh(correctness_margin_ratio - 1)
+                    else:
+                        correctness_margin_score = 0
+                else:
+                    correctness_preferred = False
+                    correctness_preferred_hard = False
+                    correctness_margin_score = 0
+
+                prompt_overall_scores[(sample_type, pid)] = (
+                    0.3 * int(tied_accurate)
+                    + 0.3 * int(ref_accurate)
+                    + 0.2 * int(correctness_preferred)
+                    + 0.2 * int(correctness_preferred_hard)
+                    + 0.01 * correctness_margin_score
+                )
+            else:  # 'tied' with no corresponding 'ref'
+                tied_accurate = tied_stats[pid]["accurate"]
+                prompt_overall_scores[(sample_type, pid)] = 0.3 * int(tied_accurate)
+
+    # Calculate global metrics
+    accuracy = {
+        "ref": np.mean([r["accurate"] for r in ref_stats.values()]) if ref_stats else 0,
+        "tied": np.mean([r["accurate"] for r in tied_stats.values()]) if tied_stats else 0,
+    }
+
+    common_prompt_ids = set(ref_stats.keys()) & set(tied_stats.keys())
+
+    if common_prompt_ids:
+        correctness_preferred = np.mean(
+            [
+                tied_stats[r]["correct_incorrect_margin"] > tied_stats[r]["different_correct_margin"]
+                for r in common_prompt_ids
+                if tied_stats[r]["different_correct_margin"] is not None
+            ]
+        )
+
+        correctness_preferred_hard = np.mean(
+            [
+                min(ref_stats[r]["correct_incorrect_margin"], tied_stats[r]["correct_incorrect_margin"])
+                > tied_stats[r]["different_correct_margin"]
+                for r in common_prompt_ids
+                if tied_stats[r]["different_correct_margin"] is not None
+            ]
+        )
+
+        correctness_margin_ratios = [
+            min(ref_stats[r]["correct_incorrect_margin"], tied_stats[r]["correct_incorrect_margin"])
+            / tied_stats[r]["different_correct_margin"]
+            for r in common_prompt_ids
+            if tied_stats[r]["different_correct_margin"] is not None and tied_stats[r]["different_correct_margin"] > 0
+        ]
+
+        correctness_margin_score = (
+            np.mean([math.tanh(r - 1) for r in correctness_margin_ratios]) if correctness_margin_ratios else 0
+        )
+    else:
+        correctness_preferred = 0
+        correctness_preferred_hard = 0
+        correctness_margin_score = 0
+
+    overall_score = (
+        0.3 * accuracy["tied"]
+        + 0.3 * accuracy["ref"]
+        + 0.2 * correctness_preferred
+        + 0.2 * correctness_preferred_hard
+        + 0.01 * correctness_margin_score
+    )
+
+    # Create HuggingFace dataset with results
+    dataset_dict = []
+    for sample in dataset:
+        sample_type, prompt_id = sample["id"].split(":")
+        prompt_id = int(prompt_id)
+
+        # Create a copy of the original sample
+        new_row = {k: v for k, v in sample.items()}
+        new_row["results"] = None
+
+        dataset_dict.append(new_row)
+
+    # Convert to HuggingFace Dataset
+    results_dataset = Dataset.from_dict({k: [d[k] for d in dataset_dict] for k in dataset_dict[0].keys()})
+
+    return results_dataset, overall_score
