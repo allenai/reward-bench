@@ -55,7 +55,7 @@ def get_args():
     parser.add_argument("--model", type=str, required=True, help="path to model")
     parser.add_argument("--revision", type=str, default=None, help="revision of model to load")
     parser.add_argument(
-        "--dataset", type=str, default="allenai/reward-bench-2", help="dataset, both .jsonl (local) and huggingface format supported"
+        "--dataset", type=str, default="allenai/reward-bench-2", help="dataset, local or from huggingface"
     )
     parser.add_argument("--tokenizer", type=str, default=None, help="path to non-matching tokenizer to model")
     parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
@@ -141,7 +141,7 @@ def main():
         or ("llama3" in args.model)
     ):
         quantized = False
-        logger.info(f"Disabling quantization for llama3")
+        logger.info("Disabling quantization for llama3")
 
     custom_dialogue = config["custom_dialogue"]
     model_type = config["model_type"]  # todo will be needed to add PairRM and SteamSHP

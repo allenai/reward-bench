@@ -33,11 +33,7 @@ from fastchat.conversation import get_conv_template
 from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams
 
-from rewardbench import (
-    load_eval_dataset_multi,
-    process_single_model,
-    save_to_hub,
-)
+from rewardbench import load_eval_dataset_multi, process_single_model, save_to_hub
 from rewardbench.generative_v2 import (
     ANTHROPIC_MODEL_LIST,
     API_MODEL_LIST,

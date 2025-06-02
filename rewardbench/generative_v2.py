@@ -18,7 +18,6 @@
 # pip install together>=1.1.3
 # pip install google-generativeai>=0.6.4
 
-import json
 import os
 import re
 import time as time
@@ -44,7 +43,7 @@ ANTHROPIC_MODEL_LIST = (
     "claude-3-5-sonnet-20240620",
     "claude-3-7-sonnet-20250219",
     "claude-opus-4-20250514",
-    "claude-sonnet-4-20250514"
+    "claude-sonnet-4-20250514",
 )
 
 OPENAI_MODEL_LIST = (
@@ -90,7 +89,7 @@ GEMINI_MODEL_LIST = (
     "gemini-1.5-flash-8b",
     "gemini-1.5-flash-8b-exp-0827",
     "gemini-2.5-pro-preview-05-06",
-    "gemini-2.5-flash-preview-04-17"
+    "gemini-2.5-flash-preview-04-17",
 )
 
 API_MODEL_LIST = OPENAI_MODEL_LIST + ANTHROPIC_MODEL_LIST + TOGETHER_MODEL_LIST + GEMINI_MODEL_LIST
@@ -139,25 +138,23 @@ MTBENCH_V2 = {
     "output_format": "[[A]]",
 }
 
+
 # format with prompt_template.format(question=question, answer_a=answer_a, answer_b=answer_b, answer_c=answer_c, answer_d=answer_d)
 def format_judge_answers(question, answer_a, answer_b, answer_c, answer_d, multi_turn=False, model_modifier=None):
     kwargs = {}
+    system_prompt = MTBENCH_V2["system_prompt"]
+    user_prompt = MTBENCH_V2["prompt_template"].format(
+        question=question,
+        answer_a=answer_a[1]["content"],
+        answer_b=answer_b[1]["content"],
+        answer_c=answer_c[1]["content"],
+        answer_d=answer_d[1]["content"],
+        **kwargs,
+    )
     # gemini adds what was the system prompt before the content, and has no system prompt
     if model_modifier == "gemini":
         user_prompt = prompt_v2_gemini + user_prompt
         system_prompt = None
-    
-    else:
-        system_prompt = MTBENCH_V2["system_prompt"]
-        user_prompt = MTBENCH_V2["prompt_template"].format(
-            question=question,
-            answer_a=answer_a[1]["content"],
-            answer_b=answer_b[1]["content"],
-            answer_c=answer_c[1]["content"],
-            answer_d=answer_d[1]["content"],
-            **kwargs,
-        )
-
 
     return system_prompt, user_prompt
 
@@ -247,8 +244,9 @@ def chat_completion(
     if model in OPENAI_MODEL_LIST:
         _client = OpenAI()
     elif model in GEMINI_MODEL_LIST:
-        _client = OpenAI(api_key=os.environ["GEMINI_API_KEY"],
-                         base_url="https://generativelanguage.googleapis.com/v1beta/openai")
+        _client = OpenAI(
+            api_key=os.environ["GEMINI_API_KEY"], base_url="https://generativelanguage.googleapis.com/v1beta/openai"
+        )
     elif model in ANTHROPIC_MODEL_LIST:
         _client = anthropic.Anthropic()
 
@@ -328,11 +326,7 @@ Notes:
 
 # Helper function to get a single rating from an LLM
 def _get_single_rating(
-    question_text: str,
-    answer_text: str,
-    model: str,
-    model_modifier: str = None,
-    is_ties: bool = False
+    question_text: str, answer_text: str, model: str, model_modifier: str = None, is_ties: bool = False
 ):
     """
     Example response from model:
@@ -402,7 +396,7 @@ def run_judge_ratings_multi(
     model,
     multi_turn: bool = False,
     model_modifier: str = None,
-    is_ties: bool = False
+    is_ties: bool = False,
 ):
     """
     Compare an arbitrary list of assistant responses (each itself a list of message dicts),
@@ -426,9 +420,9 @@ def run_judge_ratings_multi(
     for ans in all_answers:
         if len(ans) < min_messages:
             info = {
-                "ratings": [-1]*len(all_answers),
-                "judgments": [API_ERROR_OUTPUT]*len(all_answers),
-                "error": "Invalid message structure for rating."
+                "ratings": [-1] * len(all_answers),
+                "judgments": [API_ERROR_OUTPUT] * len(all_answers),
+                "error": "Invalid message structure for rating.",
             }
             return "error", [], info
 
@@ -451,7 +445,11 @@ def run_judge_ratings_multi(
         r, raw_j = _get_single_rating(q, c, model, model_modifier, is_ties)
         ratings.append(r)
         judgments.append(raw_j)
-        prompts.append(ratings_prompt_ties.format(prompt=q, completion=c) if is_ties else ratings_prompt.format(prompt=q, completion=c))
+        prompts.append(
+            ratings_prompt_ties.format(prompt=q, completion=c)
+            if is_ties
+            else ratings_prompt.format(prompt=q, completion=c)
+        )
 
     # find top score
     valid_scores = [r for r in ratings if r != -1]
@@ -463,10 +461,7 @@ def run_judge_ratings_multi(
     max_rating = max(valid_scores)
     winners = [i for i, r in enumerate(ratings) if r == max_rating]
 
-    info = {
-        "ratings": ratings,
-        "judgments": judgments
-    }
+    info = {"ratings": ratings, "judgments": judgments}
     return winners, prompts, info
 
 
