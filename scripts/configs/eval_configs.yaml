@@ -917,3 +917,61 @@ ShikaiChen/LDL-Reward-Gemma-2-27B-v0.1:
   trust_remote_code: False
   dpo: False
   quantized: False
+allenai/Llama-3.1-70B-Instruct-RM-RB2:
+ model: allenai/Llama-3.1-70B-Instruct-RM-RB2
+ tokenizer: allenai/Llama-3.1-70B-Instruct-RM-RB2
+ chat_template: # none for tokenizer
+ batch_size: 4
+ num_gpus: 8
+ trust_remote_code: False
+ dpo: False
+ quantized: False
+allenai/Llama-3.1-8B-Instruct-RM-RB2:
+ model: allenai/Llama-3.1-8B-Instruct-RM-RB2
+ tokenizer: allenai/Llama-3.1-8B-Instruct-RM-RB2
+ chat_template: # none for tokenizer
+ batch_size: 16
+ trust_remote_code: False
+ dpo: False
+ quantized: False
+allenai/Llama-3.1-8B-Base-RM-RB2:
+ model: allenai/Llama-3.1-8B-Base-RM-RB2
+ tokenizer: allenai/Llama-3.1-8B-Base-RM-RB2
+ chat_template: # none for tokenizer
+ batch_size: 16
+ trust_remote_code: False
+ dpo: False
+ quantized: False
+allenai/Llama-3.1-Tulu-3-8B-SFT-RM-RB2:
+ model: allenai/Llama-3.1-Tulu-3-8B-SFT-RM-RB2
+ tokenizer: allenai/Llama-3.1-Tulu-3-8B-SFT-RM-RB2
+ chat_template: # none for tokenizer
+ batch_size: 16
+ trust_remote_code: False
+ dpo: False
+ quantized: False
+allenai/Llama-3.1-Tulu-3-8B-DPO-RM-RB2:
+ model: allenai/Llama-3.1-Tulu-3-8B-DPO-RM-RB2
+ tokenizer: allenai/Llama-3.1-Tulu-3-8B-DPO-RM-RB2
+ chat_template: # none for tokenizer
+ batch_size: 16
+ trust_remote_code: False
+ dpo: False
+ quantized: False
+allenai/Llama-3.1-Tulu-3-8B-RL-RM-RB2:
+ model: allenai/Llama-3.1-Tulu-3-8B-RL-RM-RB2
+ tokenizer: allenai/Llama-3.1-Tulu-3-8B-RL-RM-RB2
+ chat_template: # none for tokenizer
+ batch_size: 16
+ trust_remote_code: False
+ dpo: False
+ quantized: False
+allenai/Llama-3.1-Tulu-3-70B-SFT-RM-RB2:
+ model: allenai/Llama-3.1-Tulu-3-70B-SFT-RM-RB2
+ tokenizer: allenai/Llama-3.1-Tulu-3-70B-SFT-RM-RB2
+ chat_template: # none for tokenizer
+ batch_size: 4
+ num_gpus: 8
+ trust_remote_code: False
+ dpo: False
+ quantized: False

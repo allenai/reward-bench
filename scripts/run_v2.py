@@ -142,7 +142,7 @@ def main():
         or not args.quantized
     ):
         quantized = False
-        logger.info(f"Disabling quantization for llama-3 or override flag (--not_quantized: {args.not_quantized})")
+        logger.info(f"Disabling quantization for llama-3")
 
     custom_dialogue = config["custom_dialogue"]
     model_type = config["model_type"]  # todo will be needed to add PairRM and SteamSHP
