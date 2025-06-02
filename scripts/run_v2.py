@@ -55,7 +55,7 @@ def get_args():
     parser.add_argument("--model", type=str, required=True, help="path to model")
     parser.add_argument("--revision", type=str, default=None, help="revision of model to load")
     parser.add_argument(
-        "--dataset", type=str, required=True, help="dataset, both .jsonl (local) and huggingface format supported"
+        "--dataset", type=str, default="allenai/reward-bench-2", help="dataset, both .jsonl (local) and huggingface format supported"
     )
     parser.add_argument("--tokenizer", type=str, default=None, help="path to non-matching tokenizer to model")
     parser.add_argument("--chat_template", type=str, default="tulu", help="path to chat template")
@@ -139,10 +139,9 @@ def main():
         or ("Llama-3" in args.model)
         or ("LLaMA3" in args.model)
         or ("llama3" in args.model)
-        or not args.quantized
     ):
         quantized = False
-        logger.info(f"Disabling quantization for llama-3")
+        logger.info(f"Disabling quantization for llama3")
 
     custom_dialogue = config["custom_dialogue"]
     model_type = config["model_type"]  # todo will be needed to add PairRM and SteamSHP
@@ -184,11 +183,15 @@ def main():
     ids = dataset["id"]
     dataset = dataset.remove_columns("id")
 
-    # debug: use only 10 examples
+    # debug: use only 10 examples, corresponding to 40 rows in unrolled dataset
     if args.debug:
-        dataset = dataset.select(range(10))
-        subsets = subsets[:10]
-        ids = ids[:10]
+        dataset = dataset.select(range(40))
+        subsets = subsets[:40]
+        ids = ids[:40]
+
+        # total_completions and num_correct are not unrolled, so take first 10
+        total_completions = total_completions[:10]
+        num_correct = num_correct[:10]
 
     ############################
     # Load reward model pipeline

@@ -97,7 +97,7 @@ def main():
     config["tasks"][0]["context"]["priority"] = args.priority
     config["tasks"][0]["resources"]["gpuCount"] = args.num_gpus
 
-    if (args.revision and "70b" in args.revision) or ("70B" in args.model):
+    if (args.revision and "70b" in args.revision) or ("70B" in args.model) or ("72B" in args.model):
         config["tasks"][0]["resources"]["gpuCount"] = 4
         config["tasks"][0]["constraints"]["cluster"] = ["ai2/jupiter-cirrascale-2"]
 
