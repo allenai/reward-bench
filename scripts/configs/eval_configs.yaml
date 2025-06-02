@@ -6,32 +6,40 @@ openbmb/UltraRM-13b:
   batch_size: 8
   trust_remote_code: False
   dpo: False
+allenai/open_instruct_dev:
+  model: 'allenai/open_instruct_dev'
+  tokenizer: 'allenai/open_instruct_dev'
+  chat_template:
+  batch_size: 16
+  trust_remote_code: False
+  quantized: False
+  dpo: False
 OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5:
   model: 'OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5'
   tokenizer: 'OpenAssistant/oasst-rm-2.1-pythia-1.4b-epoch-2.5'
   chat_template: 'oasst_pythia'
-  batch_size: 64
+  batch_size: 4
   trust_remote_code: False
   dpo: False
 OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1:
   model: 'OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1'
   tokenizer: 'OpenAssistant/oasst-rm-2-pythia-6.9b-epoch-1'
   chat_template: 'oasst_pythia'
-  batch_size: 16
+  batch_size: 4
   trust_remote_code: False
   dpo: False
 OpenAssistant/reward-model-deberta-v3-large-v2:
   model: 'OpenAssistant/reward-model-deberta-v3-large-v2'
   tokenizer: 'OpenAssistant/reward-model-deberta-v3-large-v2'
   chat_template: 'raw'
-  batch_size: 64
+  batch_size: 4
   trust_remote_code: False
   dpo: False
 weqweasdas/hh_rlhf_rm_open_llama_3b:
   model: 'weqweasdas/hh_rlhf_rm_open_llama_3b'
   tokenizer: 'weqweasdas/hh_rlhf_rm_open_llama_3b'
   chat_template: 'Robin'
-  batch_size: 64
+  batch_size: 16
   trust_remote_code: False
   dpo: False
 llm-blender/PairRM-hf:
@@ -892,3 +900,95 @@ nicolinho/QRM-Llama3.1-8B-v2:
   quantized: False
   dpo: False
   trust_remote_code: True
+Qwen/WorldPM-72B:
+  model: Qwen/WorldPM-72B
+  tokenizer: Qwen/WorldPM-72B
+  chat_template: # none for tokenizer
+  dpo: False
+  batch_size: 4
+  quantized: False
+  trust_remote_code: True
+  torch_dtype": bfloat16
+ShikaiChen/LDL-Reward-Gemma-2-27B-v0.1:
+  model: ShikaiChen/LDL-Reward-Gemma-2-27B-v0.1
+  tokenizer: ShikaiChen/LDL-Reward-Gemma-2-27B-v0.1
+  chat_template: # none for tokenizer
+  batch_size: 1
+  trust_remote_code: False
+  dpo: False
+  quantized: False
+allenai/Llama-3.1-70B-Instruct-RM-RB2:
+  model: allenai/Llama-3.1-70B-Instruct-RM-RB2
+  tokenizer: allenai/Llama-3.1-70B-Instruct-RM-RB2
+  chat_template: # none for tokenizer
+  batch_size: 4
+  num_gpus: 8
+  trust_remote_code: False
+  dpo: False
+  quantized: False
+allenai/Llama-3.1-8B-Instruct-RM-RB2:
+  model: allenai/Llama-3.1-8B-Instruct-RM-RB2
+  tokenizer: allenai/Llama-3.1-8B-Instruct-RM-RB2
+  chat_template: # none for tokenizer
+  batch_size: 16
+  trust_remote_code: False
+  dpo: False
+  quantized: False
+allenai/Llama-3.1-8B-Base-RM-RB2:
+  model: allenai/Llama-3.1-8B-Base-RM-RB2
+  tokenizer: allenai/Llama-3.1-8B-Base-RM-RB2
+  chat_template: # none for tokenizer
+  batch_size: 16
+  trust_remote_code: False
+  dpo: False
+  quantized: False
+allenai/Llama-3.1-Tulu-3-8B-SFT-RM-RB2:
+  model: allenai/Llama-3.1-Tulu-3-8B-SFT-RM-RB2
+  tokenizer: allenai/Llama-3.1-Tulu-3-8B-SFT-RM-RB2
+  chat_template: # none for tokenizer
+  batch_size: 16
+  trust_remote_code: False
+  dpo: False
+  quantized: False
+allenai/Llama-3.1-Tulu-3-8B-DPO-RM-RB2:
+  model: allenai/Llama-3.1-Tulu-3-8B-DPO-RM-RB2
+  tokenizer: allenai/Llama-3.1-Tulu-3-8B-DPO-RM-RB2
+  chat_template: # none for tokenizer
+  batch_size: 16
+  trust_remote_code: False
+  dpo: False
+  quantized: False
+allenai/Llama-3.1-Tulu-3-8B-RL-RM-RB2:
+  model: allenai/Llama-3.1-Tulu-3-8B-RL-RM-RB2
+  tokenizer: allenai/Llama-3.1-Tulu-3-8B-RL-RM-RB2
+  chat_template: # none for tokenizer
+  batch_size: 16
+  trust_remote_code: False
+  dpo: False
+  quantized: False
+allenai/Llama-3.1-Tulu-3-70B-SFT-RM-RB2:
+  model: allenai/Llama-3.1-Tulu-3-70B-SFT-RM-RB2
+  tokenizer: allenai/Llama-3.1-Tulu-3-70B-SFT-RM-RB2
+  chat_template: # none for tokenizer
+  batch_size: 4
+  num_gpus: 8
+  trust_remote_code: False
+  dpo: False
+  quantized: False
+Skywork/Skywork-VL-Reward-7B:
+  model: Skywork/Skywork-VL-Reward-7B
+  tokenizer: Skywork/Skywork-VL-Reward-7B
+  chat_template: # none for tokenizer
+  batch_size: 16
+  trust_remote_code: False
+  dpo: False
+  quantized: False
+  torch_dtype: bfloat16
+allenai/Llama-3.1-Tulu-3-8B-RM:
+  model: allenai/Llama-3.1-Tulu-3-8B-RM
+  tokenizer: allenai/Llama-3.1-Tulu-3-8B-RM
+  chat_template: # none for tokenizer
+  batch_size: 16
+  trust_remote_code: False
+  dpo: False
+  quantized: False
