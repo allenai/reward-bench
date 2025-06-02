@@ -1,8 +1,16 @@
 <div align="center">
   <h1>RewardBench: Evaluating Reward Models</h1>
-  <p>
+  <p> V2 (<strong>NEW!</strong>):
   <a href="https://huggingface.co/spaces/allenai/reward-bench">Leaderboard</a> 📐 |
-  <a href="https://huggingface.co/datasets/allenai/reward-bench">RewardBench Dataset</a> |
+  <a href="https://huggingface.co/datasets/allenai/reward-bench-2">Eval. Dataset</a> |
+  <a href="https://huggingface.co/datasets/allenai/reward-bench-2-results">Results</a> 📊 | 
+  <a href="https://huggingface.co/collections/allenai/reward-bench-2-683d2612a4b3e38a3e53bb51">Trained Models</a> 🏆 | 
+  <a href="https://github.com/allenai/reward-bench/blob/main/paper-v2.pdf"> Paper📝 (Arxiv Soon)</a>
+</p>
+
+  <p> V1:
+  <a href="https://huggingface.co/spaces/allenai/reward-bench">Leaderboard</a> 📐 |
+  <a href="https://huggingface.co/datasets/allenai/reward-bench">Eval. Dataset</a> |
   <a href="https://huggingface.co/datasets/allenai/preference-test-sets">Existing Test Sets</a> |
   <a href="https://huggingface.co/datasets/allenai/reward-bench-results">Results</a> 📊 |
   <a href="https://arxiv.org/abs/2403.13787"> Paper📝</a>
