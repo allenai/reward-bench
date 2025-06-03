@@ -5,7 +5,7 @@
   <a href="https://huggingface.co/datasets/allenai/reward-bench-2">Eval. Dataset</a> |
   <a href="https://huggingface.co/datasets/allenai/reward-bench-2-results">Results</a> 📊 | 
   <a href="https://huggingface.co/collections/allenai/reward-bench-2-683d2612a4b3e38a3e53bb51">Trained Models</a> 🏆 | 
-  <a href="https://github.com/allenai/reward-bench/blob/main/paper-v2.pdf"> Paper📝 (Arxiv Soon)</a>
+  <a href="https://arxiv.org/abs/2506.01937"> Paper📝 </a>
 </p>
 
   <p> V1:
