@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 from .chattemplates import *  # noqa
 from .dpo import DPOInference
 from .models import DPO_MODEL_CONFIG, REWARD_MODEL_CONFIG
