@@ -91,7 +91,7 @@ def get_args():
 
 
 def main():
-    from open_instruct.olmo_adapter import (
+    from scripts.olmo_adapter import (
         Olmo2Config,
         Olmo2ForSequenceClassification,
         OlmoeConfig,
