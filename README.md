@@ -300,3 +300,15 @@ Please cite our work with the following:
       primaryClass={cs.LG}
 }
 ```
+
+```
+@misc{malik2025rewardbench2advancingreward,
+      title={RewardBench 2: Advancing Reward Model Evaluation}, 
+      author={Saumya Malik and Valentina Pyatkin and Sander Land and Jacob Morrison and Noah A. Smith and Hannaneh Hajishirzi and Nathan Lambert},
+      year={2025},
+      eprint={2506.01937},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2506.01937}, 
+}
+```
