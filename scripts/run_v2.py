@@ -91,18 +91,22 @@ def get_args():
 
 
 def main():
-    from scripts.olmo_adapter import (
-        Olmo2Config,
-        Olmo2ForSequenceClassification,
-        OlmoeConfig,
-        OlmoeForSequenceClassification,
-    )
-
-    AutoModelForSequenceClassification.register(Olmo2Config, Olmo2ForSequenceClassification)
-    AutoModelForSequenceClassification.register(OlmoeConfig, OlmoeForSequenceClassification)
-
-    # ------------------------------------------------------------
     args = get_args()
+
+    # ------- Registering Olmo config for Olmo 2 reward models -------
+    if "olmo" in args.model.lower():
+        from scripts.olmo_adapter import (
+            Olmo2Config,
+            Olmo2ForSequenceClassification,
+            OlmoeConfig,
+            OlmoeForSequenceClassification,
+        )
+
+        AutoModelForSequenceClassification.register(Olmo2Config, Olmo2ForSequenceClassification)
+        AutoModelForSequenceClassification.register(OlmoeConfig, OlmoeForSequenceClassification)
+
+    # ----------------------------------------------------------------
+
     ###############
     # Setup logging
     ###############
