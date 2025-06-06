@@ -37,7 +37,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     # Beaker-specific arguments
     parser.add_argument(
-        "--image", type=str, default="saumyam/rewardbench-2-pr-0530-tie-penalty", help="Beaker image to use"
+        "--image", type=str, default="nathanl/rewardbench_auto", help="Beaker image to use"
     )
     parser.add_argument(
         "--cluster",
@@ -52,7 +52,7 @@ def parse_args():
     parser.add_argument("--source", type=str, default="oe-adapt-default", help="Source")
 
     # Required experiment parameters
-    parser.add_argument("--dataset", type=str, required=True, help="Dataset to use")
+    parser.add_argument("--dataset", type=str, default="allenai/reward-bench-2", help="Dataset to use")
     parser.add_argument("--model", type=str, required=True, help="Model to use")
 
     # Optional experiment parameters
