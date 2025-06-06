@@ -27,7 +27,7 @@ from accelerate.logging import get_logger
 from datasets import Dataset
 from fastchat.conversation import get_conv_template
 from tqdm import tqdm
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 from rewardbench import (
     REWARD_MODEL_CONFIG,
@@ -92,6 +92,21 @@ def get_args():
 
 def main():
     args = get_args()
+
+    # ------- Registering Olmo config for Olmo 2 reward models -------
+    if "olmo" in args.model.lower():
+        from scripts.olmo_adapter import (
+            Olmo2Config,
+            Olmo2ForSequenceClassification,
+            OlmoeConfig,
+            OlmoeForSequenceClassification,
+        )
+
+        AutoModelForSequenceClassification.register(Olmo2Config, Olmo2ForSequenceClassification)
+        AutoModelForSequenceClassification.register(OlmoeConfig, OlmoeForSequenceClassification)
+
+    # ----------------------------------------------------------------
+
     ###############
     # Setup logging
     ###############
