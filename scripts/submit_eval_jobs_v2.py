@@ -36,9 +36,7 @@ BASE_CONFIG = {
 def parse_args():
     parser = argparse.ArgumentParser()
     # Beaker-specific arguments
-    parser.add_argument(
-        "--image", type=str, default="nathanl/rewardbench_auto", help="Beaker image to use"
-    )
+    parser.add_argument("--image", type=str, default="nathanl/rewardbench_auto", help="Beaker image to use")
     parser.add_argument(
         "--cluster",
         nargs="+",
