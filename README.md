@@ -48,9 +48,9 @@ To install for quick usage, install with pip as:
 ```
 pip install rewardbench
 ```
-**To run RewardBench 2, you can run the following command, substituting the model you would like to run and adding any additional model-specific parameters**
+**To run RewardBench 2, you can run the following command, substituting the model you would like to run and adding any additional model-specific parameters, which can be found in the [eval configs](https://github.com/allenai/reward-bench/blob/main/scripts/configs/eval_configs.yaml) in `scripts/configs/eval_configs.yaml`**
 ```
-python scripts/run_v2.py --model={yourmodel} --dataset=allenai/reward-bench-2
+python scripts/run_v2.py --model={yourmodel}
 ```
 Or, to run RewardBench instead, run the following:
 ```
