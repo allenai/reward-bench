@@ -979,8 +979,8 @@ Skywork/Skywork-VL-Reward-7B:
   model: Skywork/Skywork-VL-Reward-7B
   tokenizer: Skywork/Skywork-VL-Reward-7B
   chat_template: # none for tokenizer
-  batch_size: 16
-  trust_remote_code: False
+  batch_size: 1
+  trust_remote_code: True
   dpo: False
   quantized: False
   torch_dtype: bfloat16
@@ -989,6 +989,14 @@ allenai/Llama-3.1-Tulu-3-8B-RM:
   tokenizer: allenai/Llama-3.1-Tulu-3-8B-RM
   chat_template: # none for tokenizer
   batch_size: 16
+  trust_remote_code: False
+  dpo: False
+  quantized: False
+HFXM/RAMO-Llama3.1-8B:
+  model: HFXM/RAMO-Llama3.1-8B
+  tokenizer: 
+  chat_template: 'Ziya'
+  batch_size: 8
   trust_remote_code: False
   dpo: False
   quantized: False

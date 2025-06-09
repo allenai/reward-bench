@@ -36,9 +36,7 @@ BASE_CONFIG = {
 def parse_args():
     parser = argparse.ArgumentParser()
     # Beaker-specific arguments
-    parser.add_argument(
-        "--image", type=str, default="saumyam/rewardbench-2-pr-0530-tie-penalty", help="Beaker image to use"
-    )
+    parser.add_argument("--image", type=str, default="nathanl/rewardbench_auto", help="Beaker image to use")
     parser.add_argument(
         "--cluster",
         nargs="+",
@@ -52,7 +50,7 @@ def parse_args():
     parser.add_argument("--source", type=str, default="oe-adapt-default", help="Source")
 
     # Required experiment parameters
-    parser.add_argument("--dataset", type=str, required=True, help="Dataset to use")
+    parser.add_argument("--dataset", type=str, default="allenai/reward-bench-2", help="Dataset to use")
     parser.add_argument("--model", type=str, required=True, help="Model to use")
 
     # Optional experiment parameters
@@ -126,9 +124,10 @@ def main():
         f"python scripts/run_v2.py"
         f" --model {args.model}"
         f" --dataset {args.dataset}"
-        f" --tokenizer {model_config['tokenizer']}"
         f" --batch_size {model_config['batch_size']}"
     )
+    if model_config['tokenizer'] is not None:
+        config["tasks"][0]["arguments"][0] += f" --tokenizer {model_config['tokenizer']}"
     if model_config["chat_template"] is not None:
         config["tasks"][0]["arguments"][0] += f" --chat_template {model_config['chat_template']}"
     if model_config["trust_remote_code"]:
