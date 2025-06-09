@@ -124,9 +124,10 @@ def main():
         f"python scripts/run_v2.py"
         f" --model {args.model}"
         f" --dataset {args.dataset}"
-        f" --tokenizer {model_config['tokenizer']}"
         f" --batch_size {model_config['batch_size']}"
     )
+    if model_config['tokenizer'] is not None:
+        config["tasks"][0]["arguments"][0] += f" --tokenizer {model_config['tokenizer']}"
     if model_config["chat_template"] is not None:
         config["tasks"][0]["arguments"][0] += f" --chat_template {model_config['chat_template']}"
     if model_config["trust_remote_code"]:
