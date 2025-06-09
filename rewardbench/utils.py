@@ -1078,7 +1078,8 @@ def process_single_model(dataset):
     margin_scores = np.tanh(np.minimum(corr_incorrect_ref, corr_incorrect_ties) / diff_corr_margin - 1)
     correctness_margin_score = float(np.mean(margin_scores))
 
-    # Compute the overall score
+    # Compute the overall score — weighted 60% on accuracy (ref and tied), 40% on margins (normal and hard),
+    # and an additional 1% for tie-breaking
     overall_score = (
         0.30 * tied_accuracy
         + 0.30 * ref_accuracy
