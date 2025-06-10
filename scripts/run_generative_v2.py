@@ -373,12 +373,12 @@ def main():
 
         def format_judgements(batch, optional_chat_template=None):
             # TODO expand this to include fastchat chat templates if needed
-            mult_turn = True if len(batch["text_chosen"]) > 2 else False
-            prompt = batch["text_chosen"][0]["content"]
-            answer_a = batch["text_chosen"]
+            mult_turn = True if len(batch["texts_chosen"][0]) > 2 else False
+            prompt = batch["texts_chosen"][0][0]["content"]
+            answer_a = batch["texts_chosen"][0]
             answer_b = batch["texts_rejected"][0]
-            answer_c = batch["text_rejected"][1]
-            answer_d = batch["text_rejected"][2]
+            answer_c = batch["texts_rejected"][1]
+            answer_d = batch["texts_rejected"][2]
 
             shuffle_option = np.random.randint(0, 4)
 
