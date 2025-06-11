@@ -40,6 +40,7 @@ from rewardbench.generative_v2 import (
     GEMINI_MODEL_LIST,
     OPENAI_MODEL_LIST,
     format_judge_answers,
+    get_single_rating,
     process_judgement,
     run_judge_four,
     run_judge_ratings_multi,
@@ -66,7 +67,7 @@ def get_args():
         required=True,
         help="name of OpenAI model to use (TODO add more providers/models)",
     )
-    parser.add_argument("--dataset", type=str, required=True, help="path to huggingface dataset")
+    parser.add_argument("--dataset", type=str, default="allenai/reward-bench-2", help="path to huggingface dataset")
     parser.add_argument("--chat_template", type=str, default=None, help="fastchat chat template (optional)")
     parser.add_argument(
         "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
@@ -299,15 +300,6 @@ def main():
                     prompt, answers, args.model, multi_turn=mult_turn, model_modifier=model_modifier, is_ties=is_ties
                 )
 
-                # dump to jsonl file
-                # record = {
-                #     "prompt": prompt,
-                #     "scores": judgements["ratings"],
-                #     "judgments": judgements["judgments"],
-                # }
-                # with open(output_path, 'a') as out_f:
-                #     out_f.write(json.dumps(record) + "\n")
-
                 if debug:
                     print(f"Prompt: {requests}")
                     print(f"Judgement: {judgements}")
@@ -371,14 +363,28 @@ def main():
         # Run model weights with vllm
         ############################
 
+        # Prepare vllm_model dict for ratings functions
+        # At the top of the VLLM section:
+        if args.chat_template is not None:
+            chat_template = get_conv_template(args.chat_template)
+        else:
+            chat_template = None
+
+        vllm_model_dict = {
+            "model": model,
+            "tokenizer": tokenizer,
+            "sampling_params": sampling_params,
+            "chat_template": chat_template,  # Add this
+        }
+
         def format_judgements(batch, optional_chat_template=None):
             # TODO expand this to include fastchat chat templates if needed
-            mult_turn = True if len(batch["text_chosen"]) > 2 else False
-            prompt = batch["text_chosen"][0]["content"]
-            answer_a = batch["text_chosen"]
+            mult_turn = True if len(batch["texts_chosen"]) > 2 else False
+            prompt = batch["texts_chosen"][0][0]["content"]
+            answer_a = batch["texts_chosen"][0]
             answer_b = batch["texts_rejected"][0]
-            answer_c = batch["text_rejected"][1]
-            answer_d = batch["text_rejected"][2]
+            answer_c = batch["texts_rejected"][1]
+            answer_d = batch["texts_rejected"][2]
 
             shuffle_option = np.random.randint(0, 4)
 
@@ -423,42 +429,180 @@ def main():
             batch["prompt_ids"] = prompt_ids
             return batch
 
-        # format the dataset for the model, with optional fastchat templating
-        if args.chat_template is not None:
-            chat_template = get_conv_template(args.chat_template)
+        def format_ratings(batch, is_ties=False):
+            """Format batch for ratings-based evaluation"""
+            mult_turn = True if len(batch["texts_chosen"][0]) > 2 else False
+            prompt = batch["texts_chosen"][0][0]["content"]  # Get the user question
+
+            # Combine chosen and rejected answers
+            # texts_chosen is [[messages]], texts_rejected is [messages, messages, messages]
+            all_answers = batch["texts_chosen"] + batch["texts_rejected"]  # Remove the extra [0] indexing
+
+            # Format each answer for rating
+            formatted_answers = []
+            for answer in all_answers:
+                answer_text = answer[1]["content"]  # Get the assistant's response
+                formatted_answers.append(answer_text)
+
+            batch["prompt"] = prompt
+            batch["answers"] = formatted_answers
+            batch["mult_turn"] = mult_turn
+            return batch
+
+        def get_vllm_judgement(batch, is_ties=False):
+            """Get judgement using VLLM model"""
+            if not args.score_w_ratings and not is_ties:
+                # Direct 4-way comparison (existing logic)
+                mult_turn = batch["mult_turn"] if "mult_turn" in batch else (len(batch["texts_chosen"]) > 2)
+                prompt = batch["texts_chosen"][0][0]["content"]
+
+                # Get 4 answers and shuffle
+                answer_a = batch["texts_chosen"]
+                answer_b = batch["texts_rejected"][0]
+                answer_c = batch["texts_rejected"][1]
+                answer_d = batch["texts_rejected"][2]
+
+                shuffle_option = np.random.randint(0, 4)
+                if shuffle_option == 0:
+                    winner_text = "A"
+                    loser_texts = ["B", "C", "D"]
+                elif shuffle_option == 1:
+                    answer_a, answer_b = answer_b, answer_a
+                    winner_text = "B"
+                    loser_texts = ["A", "C", "D"]
+                elif shuffle_option == 2:
+                    answer_a, answer_c = answer_c, answer_a
+                    winner_text = "C"
+                    loser_texts = ["A", "B", "D"]
+                elif shuffle_option == 3:
+                    answer_a, answer_d = answer_d, answer_a
+                    winner_text = "D"
+                    loser_texts = ["A", "B", "C"]
+
+                # Format prompt for 4-way comparison
+                system_prompt, user_prompt = format_judge_answers(
+                    prompt, answer_a, answer_b, answer_c, answer_d, multi_turn=mult_turn, model_modifier=model_modifier
+                )
+
+                # Generate with VLLM
+                messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+                formatted_prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+                outputs = model.generate([formatted_prompt], sampling_params=sampling_params)
+                judgement = outputs[0].outputs[0].text.strip()
+
+                winner = process_judgement(judgement, model_modifier)
+
+                if winner == winner_text:
+                    return 1
+                elif winner in loser_texts:
+                    return 0
+                else:
+                    return 0.25
+
+            else:
+                # Ratings-based evaluation
+                prompt = batch["prompt"] if "prompt" in batch else batch["texts_chosen"][0][0]["content"]
+                mult_turn = batch["mult_turn"] if "mult_turn" in batch else (len(batch["texts_chosen"]) > 2)
+
+                # Prepare all answers
+                if "answers" in batch:
+                    all_answers_text = batch["answers"]
+                else:
+                    all_answers = [batch["texts_chosen"]] + batch["texts_rejected"]
+                    all_answers_text = [ans[1]["content"] for ans in all_answers]
+
+                # Get ratings for each answer
+                ratings = []
+                for answer_text in all_answers_text:
+                    rating, _ = get_single_rating(
+                        question_text=prompt,
+                        answer_text=answer_text,
+                        model=args.model,
+                        model_modifier=model_modifier,
+                        is_ties=is_ties,
+                        vllm_model=vllm_model_dict,
+                    )
+                    ratings.append(rating)
+
+                if is_ties:
+                    return ratings
+
+                # Find winners (non-ties case)
+                valid_ratings = [r for r in ratings if r != -1]
+                if not valid_ratings:
+                    return 0.25
+
+                max_rating = max(valid_ratings)
+                winners = [i for i, r in enumerate(ratings) if r == max_rating]
+
+                if args.debug:
+                    logger.info(f"Raw judgment: {valid_ratings}")
+
+                # Return score based on whether first answer (chosen) is among winners
+                return (0 in winners) / len(winners)
+
+        # Choose processing method based on scoring approach
+        if args.score_w_ratings:
+            # Process non-ties dataset with ratings
+            logger.info("*** Run inference on non-ties subsets with ratings ***")
+            dataset_formatted = dataset.map(format_ratings, fn_kwargs={"is_ties": False})
+            results = []
+            for i, batch in enumerate(dataset_formatted):
+                if args.debug and i % 10 == 0:
+                    print(f"Processing non-ties {i}/{len(dataset_formatted)}")
+                result = get_vllm_judgement(batch, is_ties=False)
+                results.append(result)
+
         else:
-            chat_template = None
-        dataset_prompts = dataset.map(format_judgements, fn_kwargs={"optional_chat_template": chat_template})
-        # collect texts of dataset in list
-        prompts = dataset_prompts["text"]
-        prompt_ids = dataset_prompts["prompt_ids"]
-        shuffle_position = dataset_prompts["shuffle_position"]
+            # Process non-ties dataset with 4-way comparison
+            logger.info("*** Run inference on non-ties subsets with 4-way comparison ***")
+            if args.chat_template is not None:
+                chat_template = get_conv_template(args.chat_template)
+            else:
+                chat_template = None
+            dataset_prompts = dataset.map(format_judgements, fn_kwargs={"optional_chat_template": chat_template})
 
-        # generate
-        logger.info("*** Run inference ***")
-        if model_modifier == "Atla":
-            logger.info("Using Atla model for inference")
-            outputs = model.generate(prompt_token_ids=prompt_ids, sampling_params=sampling_params)
-        else:
-            outputs = model.generate(prompts, sampling_params=sampling_params)
-        logger.info("*** Inference done ***")
+            # Generate judgements
+            prompts = dataset_prompts["text"]
+            prompt_ids = dataset_prompts["prompt_ids"]
+            shuffle_position = dataset_prompts["shuffle_position"]
 
-        answers = [o.outputs[0].text for o in outputs]
-        winners = [process_judgement(a, model_modifier) for a in answers]
+            logger.info("*** Run inference ***")
+            if model_modifier == "Atla":
+                logger.info("Using Atla model for inference")
+                outputs = model.generate(prompt_token_ids=prompt_ids, sampling_params=sampling_params)
+            else:
+                outputs = model.generate(prompts, sampling_params=sampling_params)
+            logger.info("*** Inference done ***")
 
-        def process_shuffled(win, shuffle_position):
-            options = ["A", "B", "C", "D"]
-            winner_text = options.pop(shuffle_position)
-            loser_texts = options
+            answers = [o.outputs[0].text for o in outputs]
+            winners = [process_judgement(a, model_modifier) for a in answers]
+            if args.debug:
+                logger.info(f"Winners: {winners}")
 
-            if win == winner_text:
-                return 1
-            elif win in loser_texts:
-                return 0
-            else:  # if "error"
-                return 0.25  # effectively a tie
+            def process_shuffled(win, shuffle_position):
+                options = ["A", "B", "C", "D"]
+                winner_text = options.pop(shuffle_position)
+                loser_texts = options
 
-        results = [process_shuffled(w, s) for w, s in zip(winners, shuffle_position)]
+                if win == winner_text:
+                    return 1
+                elif win in loser_texts:
+                    return 0
+                else:  # if "error"
+                    return 0.25  # effectively a tie
+
+            results = [process_shuffled(w, s) for w, s in zip(winners, shuffle_position)]
+
+        # Process ties dataset with ratings (mandatory)
+        logger.info("*** Run inference on Ties subset with ratings ***")
+        ties_dataset_formatted = ties_dataset.map(format_ratings, fn_kwargs={"is_ties": True})
+        results_ties = []
+        for i, batch in enumerate(ties_dataset_formatted):
+            if args.debug and i % 10 == 0:
+                print(f"Processing ties {i}/{len(ties_dataset_formatted)}")
+            result = get_vllm_judgement(batch, is_ties=True)
+            results_ties.append(result)
 
     ############################
     # Print & process results

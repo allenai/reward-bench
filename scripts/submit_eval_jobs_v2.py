@@ -126,7 +126,7 @@ def main():
         f" --dataset {args.dataset}"
         f" --batch_size {model_config['batch_size']}"
     )
-    if model_config['tokenizer'] is not None:
+    if model_config["tokenizer"] is not None:
         config["tasks"][0]["arguments"][0] += f" --tokenizer {model_config['tokenizer']}"
     if model_config["chat_template"] is not None:
         config["tasks"][0]["arguments"][0] += f" --chat_template {model_config['chat_template']}"

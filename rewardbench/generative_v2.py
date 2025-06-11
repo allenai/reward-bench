@@ -324,9 +324,14 @@ Notes:
 [Your judgement]"""
 
 
-# Helper function to get a single rating from an LLM
-def _get_single_rating(
-    question_text: str, answer_text: str, model: str, model_modifier: str = None, is_ties: bool = False
+# Function to get a single rating from an LLM
+def get_single_rating(
+    question_text: str,
+    answer_text: str,
+    model: str,
+    model_modifier: str = None,
+    is_ties: bool = False,
+    vllm_model=None,
 ):
     """
     Example response from model:
@@ -372,6 +377,15 @@ def _get_single_rating(
             # TODO: wire up Together.ai to use the same messages API
             raise NotImplementedError("Together.ai rating support is TODO")
 
+        # --- VLLM Models ---
+        elif vllm_model is not None:
+            # Handle VLLM model inference
+            raw_judgment = _get_vllm_rating(
+                user_prompt=user_prompt,
+                system_prompt=system_prompt,
+                vllm_model=vllm_model,
+                model_modifier=model_modifier,
+            )
         else:
             raise ValueError(f"Model {model} not supported for ratings.")
 
@@ -390,13 +404,58 @@ def _get_single_rating(
     return parsed_rating, raw_judgment
 
 
+def _get_vllm_rating(user_prompt: str, system_prompt: str, vllm_model, model_modifier: str = None):
+    """
+    Helper function to get rating from VLLM model.
+    Returns the raw judgment string.
+    """
+    # Extract model, tokenizer, sampling params, and optional chat template from vllm_model dict
+    model = vllm_model["model"]
+    tokenizer = vllm_model["tokenizer"]
+    sampling_params = vllm_model["sampling_params"]
+    optional_chat_template = vllm_model.get("chat_template", None)
+
+    try:
+        # Format messages and apply chat template
+        if optional_chat_template is not None:
+            # Use fastchat template
+            optional_chat_template.set_system_message(system_prompt)
+            optional_chat_template.messages = []
+            optional_chat_template.append_message(optional_chat_template.roles[0], user_prompt)
+            optional_chat_template.append_message(optional_chat_template.roles[1], None)
+            prompt = optional_chat_template.get_prompt()
+        else:
+            # Use standard chat template approach
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": user_prompt})
+
+            prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+
+        # Tokenize without adding special tokens to avoid duplication
+        tokenized_prompt = tokenizer(prompt, add_special_tokens=False, return_length=True)
+        prompt_ids = tokenized_prompt["input_ids"]
+
+        # Generate response using token IDs
+        outputs = model.generate(prompt_token_ids=[prompt_ids], sampling_params=sampling_params)
+        raw_judgment = outputs[0].outputs[0].text.strip()
+
+        return raw_judgment
+
+    except Exception as e:
+        print(f"Error in VLLM rating generation: {e}")
+        return API_ERROR_OUTPUT
+
+
 def run_judge_ratings_multi(
     question: str,
     all_answers: list[list[dict]],
-    model,
+    model: str,
     multi_turn: bool = False,
     model_modifier: str = None,
     is_ties: bool = False,
+    vllm_model=None,
 ):
     """
     Compare an arbitrary list of assistant responses (each itself a list of message dicts),
@@ -442,7 +501,7 @@ def run_judge_ratings_multi(
     judgments = []
     prompts = []
     for q, c in zip(queries, completions):
-        r, raw_j = _get_single_rating(q, c, model, model_modifier, is_ties)
+        r, raw_j = get_single_rating(q, c, model, model_modifier, is_ties, vllm_model)
         ratings.append(r)
         judgments.append(raw_j)
         prompts.append(
