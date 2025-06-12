@@ -35,13 +35,13 @@ The repository includes the following:
 * Common dataset formatting and tests for fair reward model inference.
 * Analysis and visualization tools.
 
-The two primary scripts to generate results (more in `scripts/`):
+The three primary scripts to generate results (more in `scripts/`):
 1. `scripts/run_rm.py`: Run evaluations for reward models.
 2. `scripts/run_dpo.py`: Run evaluations for direct preference optimization (DPO) models (and other models using implicit rewards, such as KTO).
 3. `scripts/run_v2.py`: Run evaluations for RewardBench 2, with special data handling for best-of-4 and Ties data.
 
 ## Quick Usage
-RewardBench let's you quickly evaluate any reward model on any preference set. 
+RewardBench lets you quickly evaluate any reward model on any preference set. 
 It also will detect if a instruction dataset is passed (by checking for not having `chosen`/`rejected`, and having `messages`) -- for these, just a model outputs are logged (not accuracy).
 
 To install for quick usage, install with pip as:
@@ -52,6 +52,12 @@ pip install rewardbench
 ```
 python scripts/run_v2.py --model={yourmodel}
 ```
+
+Generative models can be run on RewardBench 2 either with a rankings-based prompt (comparing 4 responses in one go, the default) or a ratings-based prompt (scoring each response separately then recombining, run with `--score_w_ratings` flag). Note that our Ties subset, new in RewardBench 2, has up to 20+ completions to score per-prompt, so the code enforces that it runs in the ratings setting. For more information, see `scripts/run_generative_v2.py`. To add a custom prompt for your model, feel free to open a PR.
+```
+python scripts/run_generative_v2.py --model={yourmodel}
+```
+
 Or, to run RewardBench instead, run the following:
 ```
 rewardbench --model={yourmodel} --dataset={yourdataset} --batch_size=8

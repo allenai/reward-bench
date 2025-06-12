@@ -126,7 +126,7 @@ prompt_v2_gemini = (
     "Avoid any position biases and ensure that the order in which the responses were presented does not influence your decision. "
     "Do not allow the length of the responses to influence your evaluation. Do not favor certain names of the assistants. "
     "Be as objective as possible. "
-    "Your output should only consist of '[[A]]' if assistant A is better, or '[[B]]' if assistant B is better. Omit any other output.\n"    # This is not in `prompt_v2`
+    "Your output should only consist of '[[A]]' if assistant A is better, or '[[B]]' if assistant B is better. Omit any other output.\n"  # This is not in `prompt_v2`
 )
 
 prompt_multi_v2 = (
