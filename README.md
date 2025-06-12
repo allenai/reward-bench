@@ -52,6 +52,12 @@ pip install rewardbench
 ```
 python scripts/run_v2.py --model={yourmodel}
 ```
+
+Generative models can be run on RewardBench 2 either with a rankings-based prompt (comparing 4 responses in one go, the default) or a ratings-based prompt (scoring each response separately then recombining, run with `--score_w_ratings` flag). Note that our Ties subset, new in RewardBench 2, has up to 20+ completions to score per-prompt, so the code enforces that it runs in the ratings setting. For more information, see `scripts/run_generative_v2.py`. To add a custom prompt for your model, feel free to open a PR.
+```
+python scripts/run_generative_v2.py --model={yourmodel}
+```
+
 Or, to run RewardBench instead, run the following:
 ```
 rewardbench --model={yourmodel} --dataset={yourdataset} --batch_size=8
