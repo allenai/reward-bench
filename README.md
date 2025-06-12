@@ -35,7 +35,7 @@ The repository includes the following:
 * Common dataset formatting and tests for fair reward model inference.
 * Analysis and visualization tools.
 
-The two primary scripts to generate results (more in `scripts/`):
+The three primary scripts to generate results (more in `scripts/`):
 1. `scripts/run_rm.py`: Run evaluations for reward models.
 2. `scripts/run_dpo.py`: Run evaluations for direct preference optimization (DPO) models (and other models using implicit rewards, such as KTO).
 3. `scripts/run_v2.py`: Run evaluations for RewardBench 2, with special data handling for best-of-4 and Ties data.
