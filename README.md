@@ -41,7 +41,7 @@ The three primary scripts to generate results (more in `scripts/`):
 3. `scripts/run_v2.py`: Run evaluations for RewardBench 2, with special data handling for best-of-4 and Ties data.
 
 ## Quick Usage
-RewardBench let's you quickly evaluate any reward model on any preference set. 
+RewardBench lets you quickly evaluate any reward model on any preference set. 
 It also will detect if a instruction dataset is passed (by checking for not having `chosen`/`rejected`, and having `messages`) -- for these, just a model outputs are logged (not accuracy).
 
 To install for quick usage, install with pip as:
