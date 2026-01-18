@@ -1,7 +1,7 @@
 import torch
-from trl import AutoModelForCausalLMWithValueHead
-from transformers.utils import cached_file
 from safetensors import safe_open
+from transformers.utils import cached_file
+from trl import AutoModelForCausalLMWithValueHead
 
 
 class SkyVLPipeline:
@@ -9,9 +9,7 @@ class SkyVLPipeline:
         self.task = task
         self.tokenizer = tokenizer
         self.model = model
-        self.model = AutoModelForCausalLMWithValueHead.from_pretrained(
-            self.model
-        ).eval()
+        self.model = AutoModelForCausalLMWithValueHead.from_pretrained(self.model).eval()
         vhead_file = cached_file(
             path_or_repo_id="Skywork/Skywork-VL-Reward-7B",
             filename="value_head.safetensors",
@@ -23,12 +21,8 @@ class SkyVLPipeline:
         self.model.eval()
 
     def __call__(self, samples, **kwargs):
-        inputs = self.tokenizer(
-            samples, return_tensors="pt", padding=True, truncation=True
-        ).to("cuda")
+        inputs = self.tokenizer(samples, return_tensors="pt", padding=True, truncation=True).to("cuda")
         with torch.no_grad():
             values = self.model(**inputs, return_dict=True, use_cache=False)[-1]
-            score = values.gather(
-                dim=-1, index=(inputs["attention_mask"].sum(dim=-1, keepdim=True) - 1)
-            )
+            score = values.gather(dim=-1, index=(inputs["attention_mask"].sum(dim=-1, keepdim=True) - 1))
             return score

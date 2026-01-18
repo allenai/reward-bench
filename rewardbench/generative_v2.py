@@ -90,6 +90,8 @@ GEMINI_MODEL_LIST = (
     "gemini-1.5-flash-8b-exp-0827",
     "gemini-2.5-pro-preview-05-06",
     "gemini-2.5-flash-preview-04-17",
+    "gemini-3-pro-preview",
+    "gemini-3-flash-preview",
 )
 
 API_MODEL_LIST = OPENAI_MODEL_LIST + ANTHROPIC_MODEL_LIST + TOGETHER_MODEL_LIST + GEMINI_MODEL_LIST
