@@ -35,11 +35,39 @@ When updating these versions:
 - `rewardbench` - Main evaluation CLI (works with base install)
 - `rewardbench-gen` - Generative RM evaluation (requires `[generative]` extra)
 
+## Code Quality Checks
+
+Run these before committing:
+
+```bash
+# Format code (automatically fixes formatting)
+uv run black .
+uv run isort .
+
+# Check formatting only (for CI)
+uv run black --check .
+uv run isort --check-only .
+
+# Lint
+uv run flake8 --max-line-length 120 rewardbench/ scripts/
+```
+
 ## Running Tests
 
 ```bash
+# Run all tests
 uv run pytest
+
+# Run with verbose output
+uv run pytest -v
+
+# Run specific test file
+uv run pytest tests/test_data.py
 ```
+
+### Known Test Issues
+
+Some tests that load datasets from HuggingFace may fail due to format changes upstream. The `allenai/preference-test-sets` dataset has different column formats than expected, causing `test_load_alt_tokenizer` and `test_load_alt_conv` to fail. This is a known upstream issue, not a code bug.
 
 ## Common Issues
 
