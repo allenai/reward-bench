@@ -65,9 +65,6 @@ uv run pytest -v
 uv run pytest tests/test_data.py
 ```
 
-### Known Test Issues
-
-Some tests that load datasets from HuggingFace may fail due to format changes upstream. The `allenai/preference-test-sets` dataset has different column formats than expected, causing `test_load_alt_tokenizer` and `test_load_alt_conv` to fail. This is a known upstream issue, not a code bug.
 
 ## Common Issues
 

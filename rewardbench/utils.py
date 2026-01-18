@@ -25,6 +25,7 @@ import torch
 from datasets import (
     Dataset,
     DatasetDict,
+    Sequence,
     Value,
     concatenate_datasets,
     load_dataset,
@@ -255,7 +256,10 @@ def load_and_process_dataset(
         return example
 
     if is_preference_data:
-        if "prompt" not in dataset.column_names or not isinstance(features["prompt"], list):
+        # Only process if chosen/rejected are message lists (Sequence type), not already strings (Value type)
+        # Datasets like allenai/ultrafeedback_binarized_cleaned have chosen/rejected as lists of message dicts
+        # Datasets like allenai/preference-test-sets have chosen/rejected already as response strings
+        if isinstance(features["chosen"], Sequence):
             dataset = dataset.map(
                 process_preference_data,
                 num_proc=8,
