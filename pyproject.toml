@@ -33,7 +33,7 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.14"
 dependencies = [
     "accelerate",
     "bitsandbytes",
@@ -60,10 +60,11 @@ dev = [
     "pytest",
 ]
 generative = [
-    "vllm==0.13.0",
+    "vllm==0.13.0; platform_machine != 'aarch64'",
+    "vllm>=0.13.0; platform_machine == 'aarch64'",
     "openai",
     "anthropic",
-    "google-generativeai",
+    "google-genai",
     "together",
 ]
 
@@ -85,6 +86,32 @@ dev = [
     "isort>=5.12.0",
     "pytest",
 ]
+
+# DGX Spark (aarch64 + CUDA 13) support
+# PyTorch cu130 wheels for Blackwell GPU
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cu130", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
+]
+torchvision = [
+  { index = "pytorch-cu130", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
+]
+torchaudio = [
+  { index = "pytorch-cu130", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
+]
+vllm = [
+  { index = "vllm-cu130", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[[tool.uv.index]]
+name = "vllm-cu130"
+url = "https://wheels.vllm.ai/nightly/cu130"
+explicit = true
 
 [tool.black]
 line-length = 119
