@@ -41,12 +41,33 @@ The three primary scripts to generate results (more in `scripts/`):
 3. `scripts/run_v2.py`: Run evaluations for RewardBench 2, with special data handling for best-of-4 and Ties data.
 
 ## Quick Usage
-RewardBench lets you quickly evaluate any reward model on any preference set. 
+RewardBench lets you quickly evaluate any reward model on any preference set.
 It also will detect if a instruction dataset is passed (by checking for not having `chosen`/`rejected`, and having `messages`) -- for these, just a model outputs are logged (not accuracy).
 
-To install for quick usage, install with pip as:
+### Installation
+
+**With UV (recommended):**
+```bash
+uv pip install rewardbench
+
+# For generative models (LLM-as-judge, vLLM, API providers)
+uv pip install rewardbench[generative]
 ```
+
+**With pip:**
+```bash
 pip install rewardbench
+
+# For generative models
+pip install rewardbench[generative]
+```
+
+**For development:**
+```bash
+git clone https://github.com/allenai/reward-bench.git
+cd reward-bench
+uv sync                      # base install
+uv sync --extra generative   # with generative support
 ```
 **To run RewardBench 2, you can run the following command, substituting the model you would like to run and adding any additional model-specific parameters, which can be found in the [eval configs](https://github.com/allenai/reward-bench/blob/main/scripts/configs/eval_configs.yaml) in `scripts/configs/eval_configs.yaml`**
 ```
@@ -80,16 +101,12 @@ rewardbench --model=OpenAssistant/reward-model-deberta-v3-large-v2 --dataset=all
 rewardbench --model=Qwen/Qwen1.5-0.5B-Chat --ref_model=Qwen/Qwen1.5-0.5B --dataset=/net/nfs.cirrascale/allennlp/jacobm/herm/data/berkeley-nectar-binarized-preferences-random-rejected.jsonl --load_json
 ```
 
-*Experimental*: Generative RMs can be run from the pip install by running:
-```
-pip install rewardbench[generative]
-```
-And then:
+**Generative RMs** can be run after installing with `[generative]` extra (see Installation above):
 ```
 rewardbench-gen --model={}
 ```
-For more information, see `scripts/run_generative.py`. 
-The extra requirement for local models is VLLM and the requesite API for API models (OpenAI, Anthropic, and Together are supported).
+For more information, see `scripts/run_generative.py`.
+Local models require vLLM. API models support OpenAI, Anthropic, Google Gemini, and Together.
 
 ### Logging
 
