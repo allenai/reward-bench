@@ -30,10 +30,15 @@ from transformers import (
     PretrainedConfig,
     PreTrainedModel,
 )
-from transformers.models.llama.modeling_llama import (
-    _CONFIG_FOR_DOC,
-    LLAMA_INPUTS_DOCSTRING,
-)
+try:
+    from transformers.models.llama.modeling_llama import (
+        _CONFIG_FOR_DOC,
+        LLAMA_INPUTS_DOCSTRING,
+    )
+except ImportError:
+    # _CONFIG_FOR_DOC was removed in transformers >= 4.56
+    _CONFIG_FOR_DOC = "LlamaConfig"
+    LLAMA_INPUTS_DOCSTRING = ""
 from transformers.utils.doc import (
     add_start_docstrings_to_model_forward,
     replace_return_docstrings,

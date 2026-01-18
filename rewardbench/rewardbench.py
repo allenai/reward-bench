@@ -23,8 +23,9 @@ from dataclasses import dataclass
 from pprint import pformat
 from typing import Dict, List, Literal, Optional, Union
 
+from importlib.metadata import distributions
+
 import numpy as np
-import pkg_resources
 import torch
 import transformers
 import wandb
@@ -151,7 +152,7 @@ def push_results_to_hub(args, results, accuracy=None):
     run_command = " ".join(["python"] + sys.argv)
 
     # Get package versions as a dictionary
-    package_versions = {package.key: package.version for package in pkg_resources.working_set}
+    package_versions = {dist.metadata["Name"]: dist.version for dist in distributions()}
 
     # If accuracy is provided, create a string adding it to the results
     if accuracy is not None:
