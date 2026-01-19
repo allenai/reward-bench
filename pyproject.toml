@@ -38,7 +38,6 @@ dependencies = [
     "accelerate",
     "bitsandbytes",
     "datasets",
-    "fschat",
     "huggingface_hub",
     "hf_transfer",
     "pandas",
@@ -48,7 +47,6 @@ dependencies = [
     "torch",
     "tiktoken",
     "transformers==4.57.6",
-    "trl>=0.8.2",
     "wandb",
 ]
 
@@ -66,6 +64,10 @@ generative = [
     "anthropic",
     "google-genai",
     "together",
+]
+v1 = [
+    "fschat",  # unmaintained; required for v1 scripts (run_generative.py, run_rm.py, etc.) and --chat_template flag
+    "trl>=0.8.2",  # needed for DPO scripts and value-head models
 ]
 
 [project.scripts]

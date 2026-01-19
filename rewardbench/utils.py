@@ -17,7 +17,7 @@ import json
 import logging
 import os
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -31,9 +31,15 @@ from datasets import (
     load_dataset,
     load_from_disk,
 )
-from fastchat.conversation import Conversation
 from huggingface_hub import HfApi
 from transformers import PreTrainedTokenizer
+
+# fschat is optional - only needed for v1 scripts and --chat_template flag
+# We use TYPE_CHECKING to import Conversation only for static type checkers (mypy, etc.)
+# At runtime, we use string annotations like "Conversation | None" to avoid NameError
+# when fschat is not installed. This is called a "forward reference".
+if TYPE_CHECKING:
+    from fastchat.conversation import Conversation
 
 from rewardbench.models import REWARD_MODEL_CONFIG
 
@@ -169,7 +175,7 @@ def load_and_process_dataset(
     dataset_name: str,
     split: str = "train",
     json: bool = False,
-    conv: Conversation = None,
+    conv: "Conversation | None" = None,
     tokenizer: PreTrainedTokenizer = None,
     logger: logging.Logger = None,
     prioritize_instructions: bool = False,
@@ -302,7 +308,7 @@ def load_and_process_dataset(
 def load_eval_dataset(
     core_set: bool = True,
     custom_dialogue_formatting: bool = False,
-    conv: Conversation = None,
+    conv: "Conversation | None" = None,
     tokenizer: PreTrainedTokenizer = None,
     logger: logging.Logger = None,
     keep_columns: List[str] = ["text_chosen", "text_rejected", "id"],
@@ -429,7 +435,7 @@ def load_eval_dataset_multi(
     core_set: bool = True,
     dataset: str = None,  # alternate dataset
     custom_dialogue_formatting: bool = False,
-    conv: Conversation = None,
+    conv: "Conversation | None" = None,
     tokenizer: PreTrainedTokenizer = None,
     logger: logging.Logger = None,
     keep_columns: List[str] = ["texts_chosen", "texts_rejected", "id"],
@@ -588,7 +594,7 @@ def reroll_and_score_dataset(dataset, total_completions, cols_to_combine=["text"
 def load_bon_dataset_v2(
     dataset: str,
     custom_dialogue_formatting: bool = False,
-    conv: Conversation = None,
+    conv: "Conversation | None" = None,
     tokenizer: PreTrainedTokenizer = None,
     logger: logging.Logger = None,
     keep_columns: List[str] = ["text_chosen", "text_rejected", "text", "id"],
@@ -693,7 +699,7 @@ def load_bon_dataset_v2(
 def load_bon_dataset(
     best_of: int = 16,
     custom_dialogue_formatting: bool = False,
-    conv: Conversation = None,
+    conv: "Conversation | None" = None,
     tokenizer: PreTrainedTokenizer = None,
     logger: logging.Logger = None,
     remove_columns: List[str] = None,
@@ -899,7 +905,7 @@ def prepare_dialogue_from_tokenizer(
 
 def prepare_dialogue(
     example: Dict[str, Any],
-    dialogue_template: Conversation,
+    dialogue_template: "Conversation",
     ift: bool = False,
 ) -> Dict[str, Any]:
     """Format example to single- or multi-turn dialogue."""

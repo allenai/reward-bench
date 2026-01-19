@@ -29,8 +29,13 @@ from functools import partial
 
 import numpy as np
 from datasets import concatenate_datasets
-from fastchat.conversation import get_conv_template
 from transformers import AutoTokenizer
+
+# fschat is optional - only needed if --chat_template is specified
+try:
+    from fastchat.conversation import get_conv_template
+except ImportError:
+    get_conv_template = None
 from vllm import LLM, SamplingParams
 
 from rewardbench import load_eval_dataset_multi, process_single_model, save_to_hub
@@ -69,6 +74,12 @@ def get_args():
     )
     parser.add_argument("--dataset", type=str, default="allenai/reward-bench-2", help="path to huggingface dataset")
     parser.add_argument("--chat_template", type=str, default=None, help="fastchat chat template (optional)")
+    parser.add_argument(
+        "--no_system_prompt",
+        action="store_true",
+        default=False,
+        help="merge system prompt into user message (for models like Gemma that don't support system role)",
+    )
     parser.add_argument(
         "--trust_remote_code", action="store_true", default=False, help="directly load model instead of pipeline"
     )
@@ -185,7 +196,7 @@ def main():
     dataset = load_eval_dataset_multi(
         core_set=not args.pref_sets,
         dataset=args.dataset,
-        conv=get_conv_template("raw"),  # not used in this script (handled later)
+        conv=get_conv_template("raw") if get_conv_template else None,  # not used in this script (handled later)
         custom_dialogue_formatting=True,  # handle formatting later
         tokenizer=None,
         logger=logger,
@@ -366,6 +377,12 @@ def main():
         # Prepare vllm_model dict for ratings functions
         # At the top of the VLLM section:
         if args.chat_template is not None:
+            if get_conv_template is None:
+                raise ImportError(
+                    "--chat_template requires fschat, which is unmaintained. "
+                    "Consider using the model's built-in tokenizer chat template instead (omit --chat_template). "
+                    "If you need legacy templates, install with: pip install rewardbench[v1]"
+                )
             chat_template = get_conv_template(args.chat_template)
         else:
             chat_template = None
@@ -410,13 +427,15 @@ def main():
                 optional_chat_template.append_message(optional_chat_template.roles[1], None)
                 prompt = optional_chat_template.get_prompt()
             else:
-                messages = [
-                    {
-                        "role": "system",
-                        "content": system_prompt,
-                    },
-                    {"role": "user", "content": user_prompt},
-                ]
+                # Build messages based on whether system prompts are supported
+                if args.no_system_prompt:
+                    # Merge system prompt into user message for models that don't support system role
+                    messages = [{"role": "user", "content": f"{system_prompt}\n\n{user_prompt}"}]
+                else:
+                    messages = [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ]
                 prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
                 # chat template already include special tokens
                 # when vllm runs model.generate on prompts, the tokenizer is applied to the prompts
@@ -485,7 +504,10 @@ def main():
                 )
 
                 # Generate with VLLM
-                messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+                if args.no_system_prompt:
+                    messages = [{"role": "user", "content": f"{system_prompt}\n\n{user_prompt}"}]
+                else:
+                    messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
                 formatted_prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
                 outputs = model.generate([formatted_prompt], sampling_params=sampling_params)
                 judgement = outputs[0].outputs[0].text.strip()
@@ -557,6 +579,12 @@ def main():
             # Process non-ties dataset with 4-way comparison
             logger.info("*** Run inference on non-ties subsets with 4-way comparison ***")
             if args.chat_template is not None:
+                if get_conv_template is None:
+                    raise ImportError(
+                        "--chat_template requires fschat, which is unmaintained. "
+                        "Consider using the model's built-in tokenizer chat template instead (omit --chat_template). "
+                        "If you need legacy templates, install with: pip install rewardbench[v1]"
+                    )
                 chat_template = get_conv_template(args.chat_template)
             else:
                 chat_template = None

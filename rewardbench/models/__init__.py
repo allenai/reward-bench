@@ -37,8 +37,13 @@ from .pairrm import DebertaV2PairRM, PairRMPipeline
 from .pipeline import RewardBenchPipeline
 from .qrm import LlamaForRewardModelWithGating3, LlamaForRewardModelWithGating31
 from .shp import SHPPipeline
-from .skyvl import SkyVLPipeline
 from .slicpairpm import SlicPairPMPipeline
+
+# SkyVLPipeline requires trl which is in [v1] extra
+try:
+    from .skyvl import SkyVLPipeline
+except ImportError:
+    SkyVLPipeline = None
 from .starling import (
     LlamaForSequenceClassification,
     StarlingPipeline,

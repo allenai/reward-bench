@@ -16,19 +16,27 @@
 # pip install openai>=1.0
 # pip install anthropic>=0.21.3
 # pip install together>=1.1.3
-# pip install google-generativeai>=0.6.4
+# pip install google-genai
 
 import os
 import re
 import time as time
 
 import anthropic
-import google.generativeai as genai
 import openai
-from fastchat.conversation import get_conv_template
-from google.generativeai.types import HarmBlockThreshold, HarmCategory
+from google import genai
+from google.genai import types as genai_types
 from openai import OpenAI
 from together import Together
+
+
+def build_openai_messages(system_prompt: str, user_prompt: str) -> list[dict]:
+    """Build OpenAI-style messages list. All major APIs (OpenAI, Anthropic, Together) use this format."""
+    return [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+
 
 ANTHROPIC_MODEL_LIST = (
     "claude-1",
@@ -88,6 +96,8 @@ GEMINI_MODEL_LIST = (
     "gemini-1.5-flash-exp-0827",
     "gemini-1.5-flash-8b",
     "gemini-1.5-flash-8b-exp-0827",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
     "gemini-2.5-pro-preview-05-06",
     "gemini-2.5-flash-preview-04-17",
     "gemini-3-pro-preview",
@@ -191,37 +201,16 @@ def run_judge_four(question, answer_a, answer_b, answer_c, answer_d, model, mult
             judgments.append(judgment)
         return winners, user_prompt, judgments
 
+    messages = build_openai_messages(system_prompt, user_prompt)
+
     if model in OPENAI_MODEL_LIST:
-        template = "chatgpt"
-        conv = get_conv_template(template)
-
-        conv.append_message(conv.roles[0], user_prompt)
-        conv.append_message(conv.roles[1], None)
-        conv.set_system_message(system_prompt)
-
-        judgment = chat_completion_openai(model, conv, temperature=0, max_tokens=2048)
+        judgment = chat_completion_openai(model, messages, temperature=0, max_tokens=2048)
     elif model in ANTHROPIC_MODEL_LIST:
-        template = "claude"
-        conv = get_conv_template(template)
-
-        conv.set_system_message(system_prompt)
-        conv.append_message(conv.roles[0], user_prompt)
-        conv.append_message(conv.roles[1], None)
-        conv.messages = conv.to_openai_api_messages()
-
-        judgment = chat_completion_anthropic(model, conv, temperature=0, max_tokens=1024)
+        judgment = chat_completion_anthropic(model, messages, temperature=0, max_tokens=1024)
     elif model in GEMINI_MODEL_LIST:
-        text = user_prompt
-        judgment = chat_completion_gemini(model, text, temperature=0, max_tokens=4096)
+        judgment = chat_completion_gemini(model, user_prompt, temperature=0, max_tokens=4096)
     elif model in TOGETHER_MODEL_LIST:
-        template = "chatgpt"  # template doesn't matter, it just uses raw messages later
-        conv = get_conv_template(template)
-
-        conv.append_message(conv.roles[0], user_prompt)
-        conv.append_message(conv.roles[1], None)
-        conv.set_system_message(system_prompt)
-        judgment = chat_completion_together(model, conv, temperature=0, max_tokens=2048)
-
+        judgment = chat_completion_together(model, messages, temperature=0, max_tokens=2048)
     else:
         raise ValueError(f"Model {model} not supported")
 
@@ -435,12 +424,8 @@ def _get_vllm_rating(user_prompt: str, system_prompt: str, vllm_model, model_mod
 
             prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
-        # Tokenize without adding special tokens to avoid duplication
-        tokenized_prompt = tokenizer(prompt, add_special_tokens=False, return_length=True)
-        prompt_ids = tokenized_prompt["input_ids"]
-
-        # Generate response using token IDs
-        outputs = model.generate(prompt_token_ids=[prompt_ids], sampling_params=sampling_params)
+        # Generate response using text prompt
+        outputs = model.generate([prompt], sampling_params=sampling_params)
         raw_judgment = outputs[0].outputs[0].text.strip()
 
         return raw_judgment
@@ -528,16 +513,16 @@ def run_judge_ratings_multi(
 
 # also uses ArenaHard code
 # noqa https://github.com/lm-sys/arena-hard/blob/51c04e5a6449e920c01d4159f56a051216af6bd9/utils.py#L166
-def chat_completion_anthropic(model, conv, temperature, max_tokens, api_dict=None):
+def chat_completion_anthropic(model, messages, temperature, max_tokens, api_dict=None):
     if api_dict is not None and "api_key" in api_dict:
         api_key = api_dict["api_key"]
     else:
         api_key = os.environ["ANTHROPIC_API_KEY"]
 
     sys_msg = ""
-    if conv.messages[0]["role"] == "system":
-        sys_msg = conv.messages[0]["content"]
-        conv.messages = conv.messages[1:]
+    if messages[0]["role"] == "system":
+        sys_msg = messages[0]["content"]
+        messages = messages[1:]
 
     output = API_ERROR_OUTPUT
     for _ in range(API_MAX_RETRY):
@@ -545,7 +530,7 @@ def chat_completion_anthropic(model, conv, temperature, max_tokens, api_dict=Non
             c = anthropic.Anthropic(api_key=api_key)
             response = c.messages.create(
                 model=model,
-                messages=conv.messages,
+                messages=messages,
                 stop_sequences=[anthropic.HUMAN_PROMPT],
                 max_tokens=max_tokens,
                 temperature=temperature,
@@ -560,26 +545,37 @@ def chat_completion_anthropic(model, conv, temperature, max_tokens, api_dict=Non
 
 
 def chat_completion_gemini(model, conv, temperature, max_tokens, api_dict=None):
-    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-    api_model = genai.GenerativeModel(model)
+    # google-genai client picks up GEMINI_API_KEY from environment automatically
+    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
     for _ in range(API_MAX_RETRY):
         try:
-            response = api_model.generate_content(
-                conv,
-                generation_config=genai.types.GenerationConfig(
-                    # Only one candidate for now.
+            response = client.models.generate_content(
+                model=model,
+                contents=conv,
+                config=genai_types.GenerateContentConfig(
                     candidate_count=1,
                     max_output_tokens=max_tokens,
                     temperature=temperature,
+                    safety_settings=[
+                        genai_types.SafetySetting(
+                            category="HARM_CATEGORY_HATE_SPEECH",
+                            threshold="BLOCK_NONE",
+                        ),
+                        genai_types.SafetySetting(
+                            category="HARM_CATEGORY_HARASSMENT",
+                            threshold="BLOCK_NONE",
+                        ),
+                        genai_types.SafetySetting(
+                            category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                            threshold="BLOCK_NONE",
+                        ),
+                        genai_types.SafetySetting(
+                            category="HARM_CATEGORY_DANGEROUS_CONTENT",
+                            threshold="BLOCK_NONE",
+                        ),
+                    ],
                 ),
-                request_options={"timeout": 1000},  # eliminate Failed to connect to Gemini API: 504 Deadline Exceeded
-                safety_settings={
-                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-                },
             )
 
             # gemini refuses some rewardbench prompts
@@ -610,12 +606,11 @@ def chat_completion_gemini(model, conv, temperature, max_tokens, api_dict=None):
         return "error"
 
 
-def chat_completion_together(model, conv, temperature, max_tokens, api_dict=None):
+def chat_completion_together(model, messages, temperature, max_tokens, api_dict=None):
     client = Together(api_key=os.environ["TOGETHER_API_KEY"])
     output = API_ERROR_OUTPUT
     for _ in range(API_MAX_RETRY):
         try:
-            messages = conv.to_openai_api_messages()
             response = client.chat.completions.create(
                 model=model, messages=messages, n=1, temperature=temperature, max_tokens=max_tokens
             )
@@ -628,12 +623,11 @@ def chat_completion_together(model, conv, temperature, max_tokens, api_dict=None
     return output
 
 
-def chat_completion_openai(model, conv, temperature, max_tokens, api_dict=None):
+def chat_completion_openai(model, messages, temperature, max_tokens, api_dict=None):
     client = OpenAI()
     output = API_ERROR_OUTPUT
     for _ in range(API_MAX_RETRY):
         try:
-            messages = conv.to_openai_api_messages()
             # remove system prompt for o1 models
             if "o1-" in model:
                 messages = messages[1:]
