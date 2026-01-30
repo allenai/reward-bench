@@ -64,10 +64,10 @@ COPY README.md README.md
 RUN uv pip install --system -e .[generative,v1]
 RUN chmod +x scripts/*
 
-# flash-attn for faster inference
-# NOTE: Building from source because vllm 0.13.0 requires torch 2.9, but
-# flash-attn prebuilt wheels only exist up to torch 2.8. This step is slow.
-RUN uv pip install --system flash-attn --no-build-isolation
+# NOTE: flash-attn is NOT installed because:
+# 1. vllm 0.13.0 requires torch 2.9, but flash-attn prebuilt wheels only exist up to torch 2.8
+# 2. Building from source requires too much memory and is very slow
+# vllm has its own optimized attention kernels, so this is fine for inference.
 
 # for better-pairRM
 RUN uv pip install --system jinja2
