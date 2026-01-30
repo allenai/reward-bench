@@ -67,8 +67,7 @@ RUN chmod +x scripts/*
 # flash-attn for faster inference
 # NOTE: Building from source because vllm 0.13.0 requires torch 2.9, but
 # flash-attn prebuilt wheels only exist up to torch 2.8. This step is slow (~30min).
-# MAX_JOBS limits parallelism to avoid OOM during compilation.
-RUN MAX_JOBS=4 uv pip install --system flash-attn --no-build-isolation
+RUN uv pip install --system flash-attn --no-build-isolation
 
 # for better-pairRM
 RUN uv pip install --system jinja2
