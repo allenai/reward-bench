@@ -16,7 +16,7 @@
 # pip install openai>=1.0
 # pip install anthropic>=0.21.3
 # pip install together>=1.1.3
-# pip install google-genai
+# pip install google-generativeai>=0.6.4
 
 import json
 import os
@@ -24,10 +24,10 @@ import re
 import time as time
 
 import anthropic
+import google.generativeai as genai
 import openai
 from fastchat.conversation import get_conv_template
-from google import genai
-from google.genai import types as genai_types
+from google.generativeai.types import HarmBlockThreshold, HarmCategory
 from openai import OpenAI
 from together import Together
 
@@ -791,36 +791,26 @@ def chat_completion_anthropic(model, conv, temperature, max_tokens, api_dict=Non
 
 
 def chat_completion_gemini(model, conv, temperature, max_tokens, api_dict=None):
-    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+    api_model = genai.GenerativeModel(model)
 
     for _ in range(API_MAX_RETRY):
         try:
-            response = client.models.generate_content(
-                model=model,
-                contents=conv,
-                config=genai_types.GenerateContentConfig(
+            response = api_model.generate_content(
+                conv,
+                generation_config=genai.types.GenerationConfig(
+                    # Only one candidate for now.
                     candidate_count=1,
                     max_output_tokens=max_tokens,
                     temperature=temperature,
-                    safety_settings=[
-                        genai_types.SafetySetting(
-                            category="HARM_CATEGORY_HATE_SPEECH",
-                            threshold="BLOCK_NONE",
-                        ),
-                        genai_types.SafetySetting(
-                            category="HARM_CATEGORY_HARASSMENT",
-                            threshold="BLOCK_NONE",
-                        ),
-                        genai_types.SafetySetting(
-                            category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                            threshold="BLOCK_NONE",
-                        ),
-                        genai_types.SafetySetting(
-                            category="HARM_CATEGORY_DANGEROUS_CONTENT",
-                            threshold="BLOCK_NONE",
-                        ),
-                    ],
                 ),
+                request_options={"timeout": 1000},  # eliminate Failed to connect to Gemini API: 504 Deadline Exceeded
+                safety_settings={
+                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                },
             )
 
             # gemini refuses some rewardbench prompts
