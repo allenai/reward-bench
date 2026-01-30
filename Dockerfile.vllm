@@ -56,9 +56,7 @@ COPY pyproject.toml uv.lock ./
 # Install dependencies with vllm (vllm pins torch 2.9)
 RUN uv sync --frozen --no-install-project --extra generative --extra v1
 
-# flash-attn from source (slow ~30min, but cached unless deps change)
-# NOTE: vllm 0.13.0 requires torch 2.9, but flash-attn prebuilt wheels only go up to torch 2.8
-RUN uv pip install --system flash-attn --no-build-isolation
+# vLLM bundles its own flash-attn, no need to install separately
 RUN uv pip install --system jinja2
 
 # Now copy source code
