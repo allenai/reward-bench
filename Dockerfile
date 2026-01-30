@@ -50,38 +50,26 @@ RUN apt-get -y install git-lfs
 WORKDIR /stage/
 ENV HF_HUB_ENABLE_HF_TRANSFER=1
 
-RUN pip install --upgrade pip setuptools wheel
-# designed for cuda 12.1
-RUN pip3 install torch torchvision torchaudio
-# If you need to use cuda 11.8, use this and the below vllm code for installing with cuda 11.8
-# RUN pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cu118
-# Install vLLM with CUDA 11.8.
-# RUN export VLLM_VERSION=0.6.1.post1
-# RUN export PYTHON_VERSION=310
-# RUN pip install https://github.com/vllm-project/vllm/releases/download/v${VLLM_VERSION}/vllm-${VLLM_VERSION}+cu118-cp${PYTHON_VERSION}-cp${PYTHON_VERSION}-manylinux1_x86_64.whl --extra-index-url https://download.pytorch.org/whl/cu118
+# Install uv for fast, reliable package management
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
+
+# Install PyTorch (designed for cuda 12.1)
+RUN uv pip install --system torch torchvision torchaudio
 
 COPY rewardbench rewardbench
 COPY scripts scripts
-COPY setup.py setup.py
+COPY pyproject.toml pyproject.toml
 COPY Makefile Makefile
 COPY README.md README.md
-RUN pip install -e .[generative]
+RUN uv pip install --system -e .[generative,v1]
 RUN chmod +x scripts/*
 
-# this is just very slow
-RUN pip install flash-attn==2.6.3 --no-build-isolation
-
-# for olmo-instruct v1, weird install requirements
-# RUN pip install ai2-olmo 
+# flash-attn for faster inference (slow build)
+RUN uv pip install --system flash-attn==2.6.3 --no-build-isolation
 
 # for better-pairRM
-RUN pip install jinja2 
-
-# generative installs
-RUN pip install anthropic
-RUN pip install openai
-RUN pip install together
-RUN pip install google-generativeai
+RUN uv pip install --system jinja2
 
 # for interactive session
 RUN chmod -R 777 /stage/
