@@ -60,7 +60,13 @@ COPY pyproject.toml uv.lock ./
 # Install dependencies only (cached layer unless deps change)
 RUN uv sync --frozen --no-install-project --extra generative --extra v1
 
-# Now copy source code (invalidates only later layers)
+# flash-attn + jinja2 BEFORE source copy (cached unless deps change)
+# NOTE: Building from source because vllm 0.13.0 requires torch 2.9, but
+# flash-attn prebuilt wheels only exist up to torch 2.8. This step is slow (~30min).
+RUN uv pip install flash-attn --no-build-isolation
+RUN uv pip install jinja2
+
+# Now copy source code (invalidates only later layers, but flash-attn cached)
 COPY rewardbench rewardbench
 COPY scripts scripts
 COPY Makefile Makefile
@@ -69,14 +75,6 @@ COPY README.md README.md
 # Install the project (non-editable for deployment)
 RUN uv sync --frozen --no-editable --extra generative --extra v1
 RUN chmod +x scripts/*
-
-# flash-attn for faster inference (must be AFTER torch is finalized)
-# NOTE: Building from source because vllm 0.13.0 requires torch 2.9, but
-# flash-attn prebuilt wheels only exist up to torch 2.8. This step is slow (~30min).
-RUN uv pip install flash-attn --no-build-isolation
-
-# for better-pairRM
-RUN uv pip install jinja2
 
 # for interactive session
 RUN chmod -R 777 /stage/
