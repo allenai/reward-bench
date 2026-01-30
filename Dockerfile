@@ -57,13 +57,16 @@ ENV PATH="/root/.local/bin:$PATH"
 # Copy dependency manifests first (better layer caching)
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies only (cached layer unless deps change)
-RUN uv sync --frozen --no-install-project --extra generative --extra v1
+# Pin torch<=2.8 FIRST so we can use prebuilt flash-attn wheels
+# (vllm extra not installed here - use Dockerfile.vllm for that)
+RUN uv pip install "torch>=2.1,<=2.8" torchvision torchaudio
 
-# flash-attn + jinja2 BEFORE source copy (cached unless deps change)
-# NOTE: Building from source because vllm 0.13.0 requires torch 2.9, but
-# flash-attn prebuilt wheels only exist up to torch 2.8. This step is slow (~30min).
-RUN uv pip install flash-attn --no-build-isolation
+# Install dependencies (api + v1 extras, NO vllm)
+RUN uv sync --frozen --no-install-project --extra api --extra v1
+
+# flash-attn prebuilt wheel (fast!) + jinja2 BEFORE source copy
+# This layer is cached unless deps change
+RUN uv pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.4/flash_attn-2.7.4+cu12torch2.8cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
 RUN uv pip install jinja2
 
 # Now copy source code (invalidates only later layers, but flash-attn cached)
@@ -73,7 +76,7 @@ COPY Makefile Makefile
 COPY README.md README.md
 
 # Install the project (non-editable for deployment)
-RUN uv sync --frozen --no-editable --extra generative --extra v1
+RUN uv sync --frozen --no-editable --extra api --extra v1
 RUN chmod +x scripts/*
 
 # for interactive session

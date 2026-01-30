@@ -19,6 +19,7 @@ on:
       - 'rewardbench/**'
       - 'scripts/**'
       - 'Dockerfile'
+      - 'Dockerfile.vllm'
       - 'pyproject.toml'
     branches: [main]
   workflow_dispatch:  # This allows us to manually trigger a build through the GitHub UI.
@@ -73,3 +74,49 @@ jobs:
           image: rewardbench  # this is the tag of the image we just built in the previous step
           beaker: rewardbench_auto  # this is the name of the image on Beaker
           latest: true  # this flag says we should also push this as the 'latest' version to GHCR
+
+  # vLLM image - includes local LLM inference support (longer build due to flash-attn compilation)
+  build-vllm:
+    name: rewardbench-vllm
+    runs-on: ubuntu-latest
+    timeout-minutes: 90  # longer timeout for flash-attn build from source
+    if: (github.event_name != 'workflow_run') || (github.event.workflow_run.conclusion == 'success')
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup environment
+        uses: ./.github/actions/setup
+        with:
+          beaker_token: ${{ secrets.BEAKER_TOKEN }}
+
+      - name: Verify Beaker install
+        run: |
+          beaker account whoami
+
+      - name: Delete huge unnecessary tools folder
+        run: rm -rf /opt/hostedtoolcache /usr/share/dotnet "$AGENT_TOOLSDIRECTORY"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build vLLM image with layer caching
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.vllm
+          load: true
+          tags: rewardbench-vllm
+          platforms: linux/amd64
+          cache-from: type=gha,scope=vllm
+          cache-to: type=gha,mode=max,scope=vllm
+
+      - name: Check image
+        run: |
+          docker run --rm rewardbench-vllm
+
+      - name: Push image
+        uses: ./.github/actions/push
+        with:
+          image: rewardbench-vllm
+          beaker: rewardbench_vllm_auto
+          latest: true

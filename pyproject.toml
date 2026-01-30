@@ -59,13 +59,21 @@ dev = [
     "isort>=5.12.0",
     "pytest",
 ]
-generative = [
-    "vllm==0.13.0; sys_platform == 'linux'",
+# API-based LLM judges (fast install, no GPU required)
+api = [
     "openai",
     "anthropic",
     "google-genai",
     "google-generativeai",
     "together",
+]
+# Local LLM inference via vLLM (requires Linux + CUDA, pins torch version)
+vllm = [
+    "vllm==0.13.0; sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+# Full generative setup (API + vLLM) - backwards compatible alias
+generative = [
+    "rewardbench[api,vllm]",
 ]
 v1 = [
     "fschat",  # unmaintained; required for v1 scripts (run_generative.py, run_rm.py, etc.) and --chat_template flag
