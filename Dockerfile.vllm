@@ -1,6 +1,5 @@
 # vLLM image for local LLM inference
-# This image includes vllm which requires torch 2.9+ and builds flash-attn from source
-# Build time: ~45 minutes (flash-attn compilation)
+# This image includes vllm (which bundles its own flash-attn)
 # Use the base Dockerfile for faster builds if you only need API-based judges
 
 FROM --platform=linux/amd64 nvidia/cuda:12.1.0-cudnn8-devel-ubuntu20.04
