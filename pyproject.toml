@@ -63,6 +63,7 @@ generative = [
     "openai",
     "anthropic",
     "google-genai",
+    "google-generativeai",
     "together",
 ]
 v1 = [
