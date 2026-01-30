@@ -54,19 +54,19 @@ ENV HF_HUB_ENABLE_HF_TRANSFER=1
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:$PATH"
 
-# Install PyTorch (designed for cuda 12.1)
-RUN uv pip install --system torch torchvision torchaudio
-
 COPY rewardbench rewardbench
 COPY scripts scripts
 COPY pyproject.toml pyproject.toml
 COPY Makefile Makefile
 COPY README.md README.md
+
+# Install all dependencies (torch <=2.8 is pinned in pyproject.toml)
 RUN uv pip install --system -e .[generative,v1]
 RUN chmod +x scripts/*
 
-# flash-attn for faster inference (slow build)
-RUN uv pip install --system flash-attn==2.6.3 --no-build-isolation
+# flash-attn prebuilt wheel (much faster than building from source)
+# Wheel matches: Python 3.10, CUDA 12, torch 2.8, linux x86_64
+RUN uv pip install --system https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.8cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
 
 # for better-pairRM
 RUN uv pip install --system jinja2
