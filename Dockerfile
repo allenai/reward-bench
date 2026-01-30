@@ -64,9 +64,10 @@ COPY README.md README.md
 RUN uv pip install --system -e .[generative,v1]
 RUN chmod +x scripts/*
 
-# flash-attn prebuilt wheel (much faster than building from source)
-# Wheel matches: Python 3.10, CUDA 12, torch 2.8, linux x86_64
-RUN uv pip install --system https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.8cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
+# flash-attn for faster inference
+# NOTE: Building from source because vllm 0.13.0 requires torch 2.9, but
+# flash-attn prebuilt wheels only exist up to torch 2.8. This step is slow.
+RUN uv pip install --system flash-attn --no-build-isolation
 
 # for better-pairRM
 RUN uv pip install --system jinja2

@@ -44,7 +44,7 @@ dependencies = [
     "sentencepiece",
     "tabulate",
     "tokenizers",
-    "torch>=2.1,<=2.8",
+    "torch",
     "torchvision",
     "torchaudio",
     "tiktoken",
