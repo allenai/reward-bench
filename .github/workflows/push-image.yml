@@ -52,15 +52,13 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build image with layer caching
+      - name: Build image
         uses: docker/build-push-action@v6
         with:
           context: .
           load: true
           tags: rewardbench
           platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
               
 
       - name: Check image
@@ -99,7 +97,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build vLLM image with layer caching
+      - name: Build vLLM image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -107,8 +105,6 @@ jobs:
           load: true
           tags: rewardbench-vllm
           platforms: linux/amd64
-          cache-from: type=gha,scope=vllm
-          cache-to: type=gha,mode=max,scope=vllm
 
       - name: Check image
         run: |
