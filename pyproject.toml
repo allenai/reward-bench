@@ -60,8 +60,8 @@ dev = [
     "pytest",
 ]
 generative = [
-    "vllm==0.13.0; platform_machine != 'aarch64'",
-    "vllm>=0.13.0; platform_machine == 'aarch64'",
+    "vllm==0.13.0; sys_platform == 'linux' and platform_machine != 'aarch64'",
+    "vllm>=0.13.0; sys_platform == 'linux' and platform_machine == 'aarch64'",
     "openai",
     "anthropic",
     "google-genai",
