@@ -63,12 +63,12 @@ generative = [
     "openai",
     "anthropic",
     "google-genai",
-    "google-generativeai",
     "together",
 ]
 v1 = [
     "fschat",  # unmaintained; required for v1 scripts (run_generative.py, run_rm.py, etc.) and --chat_template flag
     "trl>=0.8.2",  # needed for DPO scripts and value-head models
+    "google-generativeai",  # old Gemini SDK, only needed for legacy code
 ]
 
 [project.scripts]
