@@ -2,12 +2,10 @@
 FROM --platform=linux/amd64 nvidia/cuda:12.1.0-cudnn8-devel-ubuntu20.04 
 #nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04
 
-RUN apt update && apt install -y openjdk-8-jre-headless
-
 ARG DEBIAN_FRONTEND="noninteractive"
 ENV TZ="America/Los_Angeles"
 
-# Install base tools.
+# Install base tools
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
@@ -19,7 +17,6 @@ RUN apt-get update && apt-get install -y \
     unzip \
     vim \
     wget \
-    parallel \
     iputils-ping \
     tmux
 
@@ -43,9 +40,6 @@ ENV LD_LIBRARY_PATH=/usr/local/cuda/lib:/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 
 # Ensure users can modify their container environment.
 RUN echo '%users ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
-
-RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
-RUN apt-get -y install git-lfs
 
 WORKDIR /stage/
 ENV HF_HUB_ENABLE_HF_TRANSFER=1
