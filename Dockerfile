@@ -59,15 +59,15 @@ COPY pyproject.toml uv.lock ./
 
 # Pin torch<=2.8 FIRST so we can use prebuilt flash-attn wheels
 # (vllm extra not installed here - use Dockerfile.vllm for that)
-RUN uv pip install "torch>=2.1,<=2.8" torchvision torchaudio
+RUN uv pip install --system "torch>=2.1,<=2.8" torchvision torchaudio
 
 # Install dependencies (api + v1 extras, NO vllm)
 RUN uv sync --frozen --no-install-project --extra api --extra v1
 
 # flash-attn prebuilt wheel (fast!) + jinja2 BEFORE source copy
 # This layer is cached unless deps change
-RUN uv pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.4/flash_attn-2.7.4+cu12torch2.8cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
-RUN uv pip install jinja2
+RUN uv pip install --system https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.4/flash_attn-2.7.4+cu12torch2.8cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
+RUN uv pip install --system jinja2
 
 # Now copy source code (invalidates only later layers, but flash-attn cached)
 COPY rewardbench rewardbench
