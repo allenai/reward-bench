@@ -20,11 +20,11 @@ import os
 import sys
 import time
 from dataclasses import dataclass
+from importlib.metadata import distributions
 from pprint import pformat
 from typing import Dict, List, Literal, Optional, Union
 
 import numpy as np
-import pkg_resources
 import torch
 import transformers
 import wandb
@@ -151,7 +151,7 @@ def push_results_to_hub(args, results, accuracy=None):
     run_command = " ".join(["python"] + sys.argv)
 
     # Get package versions as a dictionary
-    package_versions = {package.key: package.version for package in pkg_resources.working_set}
+    package_versions = {dist.metadata["Name"]: dist.version for dist in distributions()}
 
     # If accuracy is provided, create a string adding it to the results
     if accuracy is not None:
@@ -160,8 +160,7 @@ def push_results_to_hub(args, results, accuracy=None):
         accuracy_str = ""
 
     # Create and push a repo card
-    rm_card = RepoCard(
-        content=f"""\
+    rm_card = RepoCard(content=f"""\
 # {args.hf_name}: RewardBench CLI Eval. Outputs
 
 See https://github.com/allenai/reward-bench for more details
@@ -183,8 +182,7 @@ args: {pformat(vars(args))}
 ```
 {pformat(package_versions)}
 ```
-"""
-    )
+""")
     rm_card.push_to_hub(
         full_repo_id,
         repo_type="dataset",

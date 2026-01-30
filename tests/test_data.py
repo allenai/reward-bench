@@ -13,9 +13,18 @@
 # limitations under the License.
 import unittest
 
+import pytest
 from datasets import load_dataset
-from fastchat.conversation import get_conv_template
 from transformers import AutoTokenizer
+
+# fschat is optional (in [v1] extra)
+try:
+    from fastchat.conversation import get_conv_template
+
+    HAS_FSCHAT = True
+except ImportError:
+    HAS_FSCHAT = False
+    get_conv_template = None
 
 from rewardbench import (
     load_eval_dataset,
@@ -27,7 +36,7 @@ from rewardbench import (
 class PrepareDialoguesTest(unittest.TestCase):
     def setUp(self):
         self.tokenizer = AutoTokenizer.from_pretrained("allenai/rlhf-test-tokenizer")
-        self.conv = get_conv_template("tulu")
+        self.conv = get_conv_template("tulu") if HAS_FSCHAT else None
 
     def test_prepare_dialogue_from_tokenizer(self):
         example = {}
@@ -89,6 +98,7 @@ class PrepareDialoguesTest(unittest.TestCase):
         desired_text = "<|user|>\nWho are you?<|endoftext|>\n<|assistant|>\nI am a bot.<|endoftext|>\n"
         assert prepared["text"] == desired_text
 
+    @pytest.mark.skipif(not HAS_FSCHAT, reason="fschat not installed")
     def test_prepare_dialogue_single_turn(self):
         example = {}
         example["prompt"] = "What are different drawers I should have for clothes?"
@@ -102,6 +112,7 @@ class PrepareDialoguesTest(unittest.TestCase):
         assert prepared["text_chosen"] == desired_chosen
         assert prepared["text_rejected"] == desired_rejected
 
+    @pytest.mark.skipif(not HAS_FSCHAT, reason="fschat not installed")
     def test_prepare_dialogue_multi_turn(self):
         example = {}
         example["prompt"] = [
@@ -128,6 +139,7 @@ class PrepareDialoguesTest(unittest.TestCase):
         assert prepared["text_chosen"] == desired_chosen
         assert prepared["text_rejected"] == desired_rejected
 
+    @pytest.mark.skipif(not HAS_FSCHAT, reason="fschat not installed")
     def test_prepare_dialogue_ift(self):
         example = {}
         example["prompt"] = "What are different drawers I should have for clothes?"
@@ -137,6 +149,7 @@ class PrepareDialoguesTest(unittest.TestCase):
         desired_text = "<|user|>\nWhat are different drawers I should have for clothes?\n<|assistant|>\nUtensils!\n"
         assert prepared["text"] == desired_text
 
+    @pytest.mark.skipif(not HAS_FSCHAT, reason="fschat not installed")
     def test_prepare_dialogue_messages_ift(self):
         example = {}
         example["messages"] = [
@@ -172,8 +185,9 @@ class DatasetTest(unittest.TestCase):
 class LoadEvalDatasetTest(unittest.TestCase):
     def setUp(self):
         self.tokenizer = AutoTokenizer.from_pretrained("HuggingFaceH4/zephyr-7b-beta")
-        self.conv = get_conv_template("tulu")
+        self.conv = get_conv_template("tulu") if HAS_FSCHAT else None
 
+    @pytest.mark.skipif(not HAS_FSCHAT, reason="fschat not installed")
     def test_load_core_set_with_conv(self):
         dataset, _ = load_eval_dataset(
             core_set=True,
@@ -195,6 +209,7 @@ class LoadEvalDatasetTest(unittest.TestCase):
             "Dialogue formatting error",
         )
 
+    @pytest.mark.skipif(not HAS_FSCHAT, reason="fschat not installed")
     def test_load_pref_sets_with_conv(self):
         dataset, _ = load_eval_dataset(
             core_set=False,

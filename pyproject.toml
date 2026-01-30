@@ -1,0 +1,124 @@
+# Copyright 2023 AllenAI. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rewardbench"
+version = "0.1.5"
+description = "Tools for evaluating reward models"
+readme = "README.md"
+license = "Apache-2.0"
+authors = [
+    { name = "Nathan Lambert", email = "nathanl@allenai.org" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "accelerate",
+    "bitsandbytes",
+    "datasets",
+    "huggingface_hub",
+    "hf_transfer",
+    "pandas",
+    "sentencepiece",
+    "tabulate",
+    "tokenizers",
+    "torch",
+    "tiktoken",
+    "transformers==4.57.6",
+    "wandb",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "flake8>=6.0",
+    "isort>=5.12.0",
+    "pytest",
+]
+generative = [
+    "vllm==0.13.0; platform_machine != 'aarch64'",
+    "vllm>=0.13.0; platform_machine == 'aarch64'",
+    "openai",
+    "anthropic",
+    "google-genai",
+    "together",
+]
+v1 = [
+    "fschat",  # unmaintained; required for v1 scripts (run_generative.py, run_rm.py, etc.) and --chat_template flag
+    "trl>=0.8.2",  # needed for DPO scripts and value-head models
+]
+
+[project.scripts]
+rewardbench = "rewardbench.rewardbench:main"
+rewardbench-gen = "scripts.run_generative:main"
+
+[project.urls]
+Homepage = "https://github.com/allenai/rewardbench"
+Repository = "https://github.com/allenai/rewardbench"
+
+[tool.hatch.build.targets.wheel]
+packages = ["rewardbench", "scripts"]
+
+[dependency-groups]
+dev = [
+    "black",
+    "flake8>=6.0",
+    "isort>=5.12.0",
+    "pytest",
+]
+
+# DGX Spark (aarch64 + CUDA 13) support
+# PyTorch cu130 wheels for Blackwell GPU
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cu130", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
+]
+torchvision = [
+  { index = "pytorch-cu130", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
+]
+torchaudio = [
+  { index = "pytorch-cu130", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
+]
+vllm = [
+  { index = "vllm-cu130", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[[tool.uv.index]]
+name = "vllm-cu130"
+url = "https://wheels.vllm.ai/nightly/cu130"
+explicit = true
+
+[tool.black]
+line-length = 119
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 119

@@ -20,8 +20,8 @@ from transformers import (
     AutoTokenizer,
     LlamaTokenizer,
     MixtralForCausalLM,
-    T5ForConditionalGeneration,
     Qwen2_5_VLForConditionalGeneration,
+    T5ForConditionalGeneration,
 )
 
 from .armorm import ArmoRMPipeline
@@ -38,12 +38,17 @@ from .pipeline import RewardBenchPipeline
 from .qrm import LlamaForRewardModelWithGating3, LlamaForRewardModelWithGating31
 from .shp import SHPPipeline
 from .slicpairpm import SlicPairPMPipeline
+
+# SkyVLPipeline requires trl which is in [v1] extra
+try:
+    from .skyvl import SkyVLPipeline
+except ImportError:
+    SkyVLPipeline = None
 from .starling import (
     LlamaForSequenceClassification,
     StarlingPipeline,
     build_starling_rm,
 )
-from .skyvl import SkyVLPipeline
 from .worldpm import WorldPMPipeline
 from .ziya import ZiyaPipeline
 

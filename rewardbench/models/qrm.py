@@ -6,8 +6,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint
 from transformers import LlamaModel, LlamaPreTrainedModel
-from transformers.models.llama.modeling_llama import LLAMA_INPUTS_DOCSTRING
 from transformers.utils import ModelOutput, add_start_docstrings_to_model_forward
+
+try:
+    from transformers.models.llama.modeling_llama import LLAMA_INPUTS_DOCSTRING
+except ImportError:
+    # LLAMA_INPUTS_DOCSTRING was removed in transformers >= 4.56
+    LLAMA_INPUTS_DOCSTRING = ""
 
 
 class GatingNetwork(nn.Module):

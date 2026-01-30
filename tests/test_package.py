@@ -15,8 +15,17 @@
 # tests to make sure the code in the package is working as expected
 import unittest
 
-from fastchat.conversation import get_conv_template
+import pytest
 from transformers import AutoTokenizer
+
+# fschat is optional (in [v1] extra)
+try:
+    from fastchat.conversation import get_conv_template
+
+    HAS_FSCHAT = True
+except ImportError:
+    HAS_FSCHAT = False
+    get_conv_template = None
 
 from rewardbench import load_and_process_dataset
 
@@ -28,24 +37,27 @@ class LoadAnyDataTest(unittest.TestCase):
 
     def setUp(self):
         self.tokenizer = AutoTokenizer.from_pretrained("allenai/rlhf-test-tokenizer")
-        self.conv = get_conv_template("tulu")
+        self.conv = get_conv_template("tulu") if HAS_FSCHAT else None
 
     def test_load_standard_tokenizer(self):
         load_and_process_dataset(
             "allenai/ultrafeedback_binarized_cleaned", split="test_prefs", tokenizer=self.tokenizer
         )
 
+    @pytest.mark.skipif(not HAS_FSCHAT, reason="fschat not installed")
     def test_load_standard_conv(self):
         load_and_process_dataset("allenai/ultrafeedback_binarized_cleaned", split="test_prefs", conv=self.conv)
 
     def test_load_alt_tokenizer(self):
         load_and_process_dataset("allenai/preference-test-sets", split="shp", tokenizer=self.tokenizer)
 
+    @pytest.mark.skipif(not HAS_FSCHAT, reason="fschat not installed")
     def test_load_alt_conv(self):
         load_and_process_dataset("allenai/preference-test-sets", split="shp", conv=self.conv)
 
     def test_load_sft_tokenizer(self):
         load_and_process_dataset("HuggingFaceH4/no_robots", split="test", tokenizer=self.tokenizer)
 
+    @pytest.mark.skipif(not HAS_FSCHAT, reason="fschat not installed")
     def test_load_sft_conv(self):
         load_and_process_dataset("HuggingFaceH4/no_robots", split="test", conv=self.conv)
