@@ -19,17 +19,10 @@ on:
       - 'rewardbench/**'
       - 'scripts/**'
       - 'Dockerfile'
-      - 'setup.py'
+      - 'Dockerfile.vllm'
+      - 'pyproject.toml'
     branches: [main]
-#   pull_request: # note, comment this out for running on every push
-#     # Also run on PRs that update the files in the image's directory (other than README).
-#     branches: [main]
-#     paths:
-#       - 'rewardbench/**'
-#       - 'scripts/**'
-#       - 'Dockerfile'
-#       - 'setup.py'  
-#   workflow_dispatch:  # This allows us to manually trigger a build through the GitHub UI.
+  workflow_dispatch:  # This allows us to manually trigger a build through the GitHub UI.
 
 env:
   DOCKER_BUILDKIT: "1"
@@ -55,11 +48,17 @@ jobs:
       # big images fail, trying this
       - name: Delete huge unnecessary tools folder
         run: rm -rf /opt/hostedtoolcache /usr/share/dotnet "$AGENT_TOOLSDIRECTORY"
-  
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build image
-        run: |
-          docker build \
-              -t rewardbench . --platform linux/amd64
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: rewardbench
+          platforms: linux/amd64
               
 
       - name: Check image
@@ -73,3 +72,47 @@ jobs:
           image: rewardbench  # this is the tag of the image we just built in the previous step
           beaker: rewardbench_auto  # this is the name of the image on Beaker
           latest: true  # this flag says we should also push this as the 'latest' version to GHCR
+
+  # vLLM image - includes local LLM inference support (longer build due to flash-attn compilation)
+  build-vllm:
+    name: rewardbench-vllm
+    runs-on: ubuntu-latest
+    timeout-minutes: 90  # longer timeout for flash-attn build from source
+    if: (github.event_name != 'workflow_run') || (github.event.workflow_run.conclusion == 'success')
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup environment
+        uses: ./.github/actions/setup
+        with:
+          beaker_token: ${{ secrets.BEAKER_TOKEN }}
+
+      - name: Verify Beaker install
+        run: |
+          beaker account whoami
+
+      - name: Delete huge unnecessary tools folder
+        run: rm -rf /opt/hostedtoolcache /usr/share/dotnet "$AGENT_TOOLSDIRECTORY"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build vLLM image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.vllm
+          load: true
+          tags: rewardbench-vllm
+          platforms: linux/amd64
+
+      - name: Check image
+        run: |
+          docker run --rm rewardbench-vllm
+
+      - name: Push image
+        uses: ./.github/actions/push
+        with:
+          image: rewardbench-vllm
+          beaker: rewardbench_vllm_auto
+          latest: true

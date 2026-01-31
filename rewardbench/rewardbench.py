@@ -160,7 +160,8 @@ def push_results_to_hub(args, results, accuracy=None):
         accuracy_str = ""
 
     # Create and push a repo card
-    rm_card = RepoCard(content=f"""\
+    rm_card = RepoCard(
+        content=f"""\
 # {args.hf_name}: RewardBench CLI Eval. Outputs
 
 See https://github.com/allenai/reward-bench for more details
@@ -182,7 +183,8 @@ args: {pformat(vars(args))}
 ```
 {pformat(package_versions)}
 ```
-""")
+"""
+    )
     rm_card.push_to_hub(
         full_repo_id,
         repo_type="dataset",
