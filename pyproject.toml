@@ -48,7 +48,7 @@ dependencies = [
     "torchvision",
     "torchaudio",
     "tiktoken",
-    "transformers==4.57.6",
+    "transformers",
     "wandb",
 ]
 
@@ -114,6 +114,7 @@ torchaudio = [
 vllm = [
   { index = "vllm-cu130", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
 ]
+transformers = { git = "https://github.com/jacob-morrison/transformers", rev = "1840b2df12" }
 
 [[tool.uv.index]]
 name = "pytorch-cu130"
