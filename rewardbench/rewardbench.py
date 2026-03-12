@@ -203,7 +203,7 @@ def main():
     rewardbench(*parser.parse_args_into_dataclasses())
 
 
-# Secondary function structure needed to accomodate HuggingFace Args with CLI binding
+# Secondary function structure needed to accommodate HuggingFace Args with CLI binding
 def rewardbench(args: Args):
     torch_dtype = None
     if args.wandb_run is not None:
