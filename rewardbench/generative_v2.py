@@ -172,14 +172,9 @@ def format_judge_answers(question, answer_a, answer_b, answer_c, answer_d, multi
 
 
 def process_judgement(judgment, model_modifier):
-    if "[[A]]" in judgment:
-        return "A"
-    elif "[[B]]" in judgment:
-        return "B"
-    elif "[[C]]" in judgment:
-        return "C"
-    elif "[[D]]" in judgment:
-        return "D"
+    pairwise_matches = re.findall(r"\[\[([ABCD])\]\]", judgment.upper())
+    if pairwise_matches:
+        return pairwise_matches[-1]
     else:
         return "error"
 

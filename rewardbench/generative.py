@@ -490,10 +490,9 @@ def process_judgement(judgment, model_modifier):
                 result = match.group(1).strip()
                 return result if result else "error"
     else:
-        if "[[A]]" in judgment:
-            return "A"
-        elif "[[B]]" in judgment:
-            return "B"
+        pairwise_matches = re.findall(r"\[\[([AB])\]\]", judgment.upper())
+        if pairwise_matches:
+            return pairwise_matches[-1]
         else:
             return "error"
 
