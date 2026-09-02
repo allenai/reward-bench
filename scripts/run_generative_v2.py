@@ -39,6 +39,7 @@ except ImportError:
 from vllm import LLM, SamplingParams
 
 from rewardbench import load_eval_dataset_multi, process_single_model, save_to_hub
+from rewardbench.random_utils import generate_shuffle_positions
 from rewardbench.generative_v2 import (
     ANTHROPIC_MODEL_LIST,
     API_MODEL_LIST,
@@ -98,6 +99,9 @@ def get_args():
     )
     parser.add_argument(
         "--num_threads", type=int, default=10, help="number of threads to use for parallel processing of examples"
+    )
+    parser.add_argument(
+        "--seed", type=int, default=0, help="seed for deterministic answer-position shuffling"
     )
     parser.add_argument(
         "--disable_beaker_save", action="store_true", help="disable saving the main results in a file for AI2 Beaker"
@@ -221,6 +225,11 @@ def main():
         ties_ids = ties_ids[:10]  # add ties ids to ties_ids
         nonties_ids = nonties_ids[:10]  # add ties ids to ids
 
+    # Materialize the answer position before threaded/API processing. This
+    # avoids relying on global RNG state, whose draw order can vary between
+    # runs when examples are processed in parallel.
+    dataset = dataset.add_column("shuffle_position", generate_shuffle_positions(len(dataset), args.seed))
+
     # output_path = f"final_results_{args.model}.jsonl"
     # if os.path.exists(output_path):
     #     os.remove(output_path)
@@ -248,7 +257,7 @@ def main():
                 answer_c = batch["texts_rejected"][1]
                 answer_d = batch["texts_rejected"][2]
 
-                shuffle_option = np.random.randint(0, 4)
+                shuffle_option = batch["shuffle_position"]
 
                 if shuffle_option == 0:
                     # Original order
@@ -403,7 +412,7 @@ def main():
             answer_c = batch["texts_rejected"][1]
             answer_d = batch["texts_rejected"][2]
 
-            shuffle_option = np.random.randint(0, 4)
+            shuffle_option = batch["shuffle_position"]
 
             # shuffle correct answer into random position, option 0 is original order
             if shuffle_option == 1:
@@ -481,7 +490,7 @@ def main():
                 answer_c = batch["texts_rejected"][1]
                 answer_d = batch["texts_rejected"][2]
 
-                shuffle_option = np.random.randint(0, 4)
+                shuffle_option = batch["shuffle_position"]
                 if shuffle_option == 0:
                     winner_text = "A"
                     loser_texts = ["B", "C", "D"]
@@ -631,6 +640,10 @@ def main():
                 print(f"Processing ties {i}/{len(ties_dataset_formatted)}")
             result = get_vllm_judgement(batch, is_ties=True)
             results_ties.append(result)
+
+    # The shuffle position is an inference-time implementation detail and is
+    # not part of the saved evaluation schema.
+    dataset = dataset.remove_columns("shuffle_position")
 
     ############################
     # Print & process results
