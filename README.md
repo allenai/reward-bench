@@ -272,6 +272,13 @@ scores_per_section = calculate_scores_per_section(EXAMPLE_COUNTS, SUBSET_MAPPING
 print(scores_per_section)
 ```
 
+Leaderboard scores are point estimates: a small difference does not by itself establish a statistically significant lead.
+Selecting the largest advantage across many subsets increases the risk of highlighting a chance result. When comparing
+models evaluated on the same examples, use a paired comparison that respects the scoring rule, aggregation, and groups
+of responses sharing a prompt. Specify the family of model and subset comparisons being tested, and account for multiple
+comparisons (for example, with Holm or Bonferroni correction). Report sample sizes and uncertainty alongside the scores,
+especially for small subsets.
+
 ## Repository structure
 
 ```
