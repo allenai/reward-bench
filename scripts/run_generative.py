@@ -130,6 +130,7 @@ def main():
     # if model isn't API, load via vllm
     if not is_api_models:
         from vllm import LLM, SamplingParams
+        from vllm.inputs import TokensPrompt
 
         # if multi gpu, set multiproc method to spawn
         if args.num_gpus > 1:
@@ -290,7 +291,6 @@ def main():
         ############################
 
         def format_judgements(batch, optional_chat_template=None):
-            prompt_ids = []  # Prevent crash if it's unused
             # TODO expand this to include fastchat chat templates if needed
             mult_turn = True if len(batch["text_chosen"]) > 2 else False
             prompt = batch["text_chosen"][0]["content"]
@@ -321,12 +321,9 @@ def main():
                     {"role": "user", "content": user_prompt},
                 ]
                 prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-                # chat template already include special tokens
-                # when vllm runs model.generate on prompts, the tokenizer is applied to the prompts
-                # defaulting to add_special_tokens=True - this will end up duplicating the special tokens
-                # so we need to tokenize without adding special tokens
-                tokenized_prompt = tokenizer(prompt, add_special_tokens=False, return_length=True)
-                prompt_ids = tokenized_prompt["input_ids"]
+            # Preserve the selected template's special tokens without adding duplicates.
+            tokenized_prompt = tokenizer(prompt, add_special_tokens=False, return_length=True)
+            prompt_ids = tokenized_prompt["input_ids"]
             batch["text"] = prompt
             batch["is_shuffled"] = is_shuffled
             batch["prompt_ids"] = prompt_ids
@@ -347,7 +344,9 @@ def main():
         logger.info("*** Run inference ***")
         if model_modifier == "Atla":
             logger.info("Using Atla model for inference")
-            outputs = model.generate(prompt_token_ids=prompt_ids, sampling_params=sampling_params)
+            outputs = model.generate(
+                prompts=[TokensPrompt(prompt_token_ids=ids) for ids in prompt_ids], sampling_params=sampling_params
+            )
         else:
             outputs = model.generate(prompts, sampling_params=sampling_params)
         logger.info("*** Inference done ***")

@@ -37,6 +37,7 @@ try:
 except ImportError:
     get_conv_template = None
 from vllm import LLM, SamplingParams
+from vllm.inputs import TokensPrompt
 
 from rewardbench import load_eval_dataset_multi, process_single_model, save_to_hub
 from rewardbench.generative_v2 import (
@@ -437,12 +438,9 @@ def main():
                         {"role": "user", "content": user_prompt},
                     ]
                 prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-                # chat template already include special tokens
-                # when vllm runs model.generate on prompts, the tokenizer is applied to the prompts
-                # defaulting to add_special_tokens=True - this will end up duplicating the special tokens
-                # so we need to tokenize without adding special tokens
-                tokenized_prompt = tokenizer(prompt, add_special_tokens=False, return_length=True)
-                prompt_ids = tokenized_prompt["input_ids"]
+            # Preserve the selected template's special tokens without adding duplicates.
+            tokenized_prompt = tokenizer(prompt, add_special_tokens=False, return_length=True)
+            prompt_ids = tokenized_prompt["input_ids"]
             batch["text"] = prompt
             batch["shuffle_position"] = shuffle_option
             batch["prompt_ids"] = prompt_ids
@@ -598,7 +596,9 @@ def main():
             logger.info("*** Run inference ***")
             if model_modifier == "Atla":
                 logger.info("Using Atla model for inference")
-                outputs = model.generate(prompt_token_ids=prompt_ids, sampling_params=sampling_params)
+                outputs = model.generate(
+                    prompts=[TokensPrompt(prompt_token_ids=ids) for ids in prompt_ids], sampling_params=sampling_params
+                )
             else:
                 outputs = model.generate(prompts, sampling_params=sampling_params)
             logger.info("*** Inference done ***")
