@@ -664,6 +664,8 @@ def main():
     results_grouped["model"] = model_name
     results_grouped["model_type"] = model_type
     results_grouped["chat_template"] = args.chat_template
+    # This flag describes non-Ties scoring; Ties always uses ratings.
+    results_grouped["score_w_ratings"] = args.score_w_ratings
 
     # print per subset and log into results_grouped file
     present_subsets = np.unique(out_dataset["subset"])
@@ -704,6 +706,7 @@ def main():
     scores_dict = out_dataset.to_dict()
     scores_dict["model"] = model_name
     scores_dict["model_type"] = model_type
+    scores_dict["score_w_ratings"] = args.score_w_ratings
 
     sub_path_scores = "eval-set-scores/"
     scores_url = save_to_hub(

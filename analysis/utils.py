@@ -72,6 +72,8 @@ def load_results(
     def _cleanup(df: pd.DataFrame) -> pd.DataFrame:
         # remove chat_template comlumn
         df = df.drop(columns=["chat_template"])
+        # Evaluation protocol is metadata, not a score to average or plot.
+        df = df.drop(columns=["score_w_ratings"], errors="ignore")
 
         # sort columns alphabetically
         df = df.reindex(sorted(df.columns), axis=1)
