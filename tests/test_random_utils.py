@@ -1,7 +1,6 @@
 import importlib.util
-from pathlib import Path
 import unittest
-
+from pathlib import Path
 
 # Import this dependency-free module directly so the focused test does not
 # require the optional model stack imported by rewardbench.__init__.

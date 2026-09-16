@@ -39,7 +39,6 @@ except ImportError:
 from vllm import LLM, SamplingParams
 
 from rewardbench import load_eval_dataset_multi, process_single_model, save_to_hub
-from rewardbench.random_utils import generate_shuffle_positions
 from rewardbench.generative_v2 import (
     ANTHROPIC_MODEL_LIST,
     API_MODEL_LIST,
@@ -51,6 +50,7 @@ from rewardbench.generative_v2 import (
     run_judge_four,
     run_judge_ratings_multi,
 )
+from rewardbench.random_utils import generate_shuffle_positions
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -100,9 +100,7 @@ def get_args():
     parser.add_argument(
         "--num_threads", type=int, default=10, help="number of threads to use for parallel processing of examples"
     )
-    parser.add_argument(
-        "--seed", type=int, default=0, help="seed for deterministic answer-position shuffling"
-    )
+    parser.add_argument("--seed", type=int, default=0, help="seed for deterministic answer-position shuffling")
     parser.add_argument(
         "--disable_beaker_save", action="store_true", help="disable saving the main results in a file for AI2 Beaker"
     )
