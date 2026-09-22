@@ -22,13 +22,6 @@ import os
 import re
 import time as time
 
-import anthropic
-import openai
-from google import genai
-from google.genai import types as genai_types
-from openai import OpenAI
-from together import Together
-
 
 def build_openai_messages(system_prompt: str, user_prompt: str) -> list[dict]:
     """Build OpenAI-style messages list. All major APIs (OpenAI, Anthropic, Together) use this format."""
@@ -233,12 +226,18 @@ def chat_completion(
     """
     # TODO: move client to a global variable nicely
     if model in OPENAI_MODEL_LIST:
+        from openai import OpenAI
+
         _client = OpenAI()
     elif model in GEMINI_MODEL_LIST:
+        from openai import OpenAI
+
         _client = OpenAI(
             api_key=os.environ["GEMINI_API_KEY"], base_url="https://generativelanguage.googleapis.com/v1beta/openai"
         )
     elif model in ANTHROPIC_MODEL_LIST:
+        import anthropic
+
         _client = anthropic.Anthropic()
 
     for attempt in range(1, retries + 1):
@@ -514,6 +513,8 @@ def run_judge_ratings_multi(
 # also uses ArenaHard code
 # noqa https://github.com/lm-sys/arena-hard/blob/51c04e5a6449e920c01d4159f56a051216af6bd9/utils.py#L166
 def chat_completion_anthropic(model, messages, temperature, max_tokens, api_dict=None):
+    import anthropic
+
     if api_dict is not None and "api_key" in api_dict:
         api_key = api_dict["api_key"]
     else:
@@ -545,6 +546,9 @@ def chat_completion_anthropic(model, messages, temperature, max_tokens, api_dict
 
 
 def chat_completion_gemini(model, conv, temperature, max_tokens, api_dict=None):
+    from google import genai
+    from google.genai import types as genai_types
+
     # google-genai client picks up GEMINI_API_KEY from environment automatically
     client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
@@ -607,6 +611,8 @@ def chat_completion_gemini(model, conv, temperature, max_tokens, api_dict=None):
 
 
 def chat_completion_together(model, messages, temperature, max_tokens, api_dict=None):
+    from together import Together
+
     client = Together(api_key=os.environ["TOGETHER_API_KEY"])
     output = API_ERROR_OUTPUT
     for _ in range(API_MAX_RETRY):
@@ -624,6 +630,9 @@ def chat_completion_together(model, messages, temperature, max_tokens, api_dict=
 
 
 def chat_completion_openai(model, messages, temperature, max_tokens, api_dict=None):
+    import openai
+    from openai import OpenAI
+
     client = OpenAI()
     output = API_ERROR_OUTPUT
     for _ in range(API_MAX_RETRY):
