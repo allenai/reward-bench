@@ -84,7 +84,6 @@ class LDLRewardModel27B(Gemma2PreTrainedModel):
             temperature=config_dict.get("temperature", 1.0),
             softmax=config_dict.get("softmax", False),
         )
-        self.post_init()
 
     def forward(
         self,

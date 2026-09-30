@@ -27,11 +27,11 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
+from fastchat.conversation import get_conv_template
 from transformers import AutoTokenizer
 
 from rewardbench import load_eval_dataset, save_to_hub
 from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
-from rewardbench.conversation import get_conv_template
 from rewardbench.generative import (
     ANTHROPIC_MODEL_LIST,
     API_MODEL_LIST,
@@ -347,9 +347,7 @@ def main():
         logger.info("*** Run inference ***")
         if model_modifier == "Atla":
             logger.info("Using Atla model for inference")
-            outputs = model.generate(
-                [{"prompt_token_ids": ids} for ids in prompt_ids], sampling_params=sampling_params
-            )
+            outputs = model.generate(prompt_token_ids=prompt_ids, sampling_params=sampling_params)
         else:
             outputs = model.generate(prompts, sampling_params=sampling_params)
         logger.info("*** Inference done ***")

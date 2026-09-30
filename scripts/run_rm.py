@@ -22,6 +22,7 @@ import torch
 import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
+from fastchat.conversation import get_conv_template
 from tqdm import tqdm
 from transformers import AutoTokenizer, pipeline
 
@@ -33,7 +34,6 @@ from rewardbench import (
     torch_dtype_mapping,
 )
 from rewardbench.constants import EXAMPLE_COUNTS, SUBSET_MAPPING
-from rewardbench.conversation import get_conv_template
 from rewardbench.utils import calculate_scores_per_section
 
 # Enable TensorFloat32 (TF32) tensor cores on Ampere GPUs for matrix multiplications (faster than FP32)
@@ -206,7 +206,7 @@ def main():
     }
     if quantized:
         model_kwargs = {
-            "quantization_config": transformers.BitsAndBytesConfig(load_in_8bit=True),
+            "load_in_8bit": True,
             "device_map": {"": current_device},
             "torch_dtype": torch_dtype if torch.cuda.is_available() else None,
         }

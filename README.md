@@ -84,8 +84,7 @@ Or, to run RewardBench instead, run the following:
 rewardbench --model={yourmodel} --dataset={yourdataset} --batch_size=8
 ```
 For a DPO model, pass --ref_model={} and the script will automatically route there.
-Automatically uses Tokenizers chat templates, and also supports the built-in legacy text templates with `--chat_template`.
-These preserve FastChat 0.2.36 template names and formatting without installing FastChat or its serving dependencies.
+Automatically uses Tokenizers chat templates, but can also use fastchat conv templates.
 
 To run the core Reward Bench evaluation set, run:
 ```
@@ -297,19 +296,19 @@ This section is designed for AI2 usage, but may help others evaluating models wi
 
 Two Docker images are available:
 
-| Image | Dockerfile | Use Case |
-|-------|------------|----------|
-| `rewardbench` | `Dockerfile` | Reward models, API-based LLM judges |
-| `rewardbench-vllm` | `Dockerfile.vllm` | Local LLM inference via vLLM |
+| Image | Dockerfile | Use Case | Build Time |
+|-------|------------|----------|------------|
+| `rewardbench` | `Dockerfile` | Reward models, API-based LLM judges | ~5-10 min |
+| `rewardbench-vllm` | `Dockerfile.vllm` | Local LLM inference via vLLM | ~45 min |
 
-Both images use CUDA 13 and the patched PyTorch versions in `uv.lock`. The base image builds FlashAttention against that environment; the vLLM image uses vLLM's bundled attention kernels. CUDA 13 requires a compatible host NVIDIA driver.
+The base image uses torch ≤2.8 with prebuilt flash-attn wheels. The vllm image uses torch 2.9 (required by vllm) and builds flash-attn from source.
 
 To build locally:
 ```bash
-# Base image (builds FlashAttention)
+# Base image (fast)
 docker build -t rewardbench . --platform linux/amd64
 
-# vLLM image (includes local LLM inference)
+# vLLM image (slow, includes local LLM inference)
 docker build -f Dockerfile.vllm -t rewardbench-vllm . --platform linux/amd64
 ```
 

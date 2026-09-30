@@ -49,7 +49,6 @@ class LlamaRewardModel(PreTrainedModel):
         super().__init__(config)
         self.model = LlamaModel(config)
         self.regression_head = nn.Linear(self.config.hidden_size, 1, bias=False)
-        self.post_init()
 
     def forward(  # args are the same as LlamaForCausalLM
         self,

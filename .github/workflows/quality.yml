@@ -21,9 +21,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
       - name: Setup Python environment
         run: uv python install 3.10
-      - name: Check dependency lock
-        run: uv lock --check
       - name: Install dependencies
-        run: uv sync --python 3.10 --frozen --extra dev
+        run: uv sync --extra dev
       - name: Code quality
         run: make quality
