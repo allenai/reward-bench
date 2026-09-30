@@ -77,8 +77,12 @@ def generate_whisker_plot(df, output_path, ncol=None, name=None, height=10, widt
     df = df[~df["model"].str.contains("random")]
     df = df.rename(columns=SUBSET_NAME_TO_PAPER_READY)
 
-    # Exclude 'model' and 'average' from the subsets
-    subsets = [col for col in df.columns if col not in ["model", "average", "model_type", "xstest", "anthropic"]]
+    # Exclude run metadata and aggregate scores from the subsets.
+    subsets = [
+        col
+        for col in df.columns
+        if col not in ["model", "average", "model_type", "score_w_ratings", "xstest", "anthropic"]
+    ]
     n_subsets = len(subsets)
 
     # Calculate the number of rows and columns for the subplot grid
