@@ -57,6 +57,7 @@ class GPTNeoXRewardModel(GPTNeoXPreTrainedModel):
         self.gpt_neox = GPTNeoXModel(config)
         self.out_proj = nn.Linear(config.hidden_size, 1)
         self.pooling = config.pooling
+        self.post_init()
 
     def forward(
         self,

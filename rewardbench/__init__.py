@@ -14,13 +14,7 @@
 
 __version__ = "0.1.5"
 
-# chattemplates registers legacy chat templates with fastchat
-# Only import if fschat is installed (via [v1] extra)
-import importlib.util
-
-if importlib.util.find_spec("fastchat") is not None:
-    from .chattemplates import *  # noqa
-
+from .chattemplates import *  # noqa
 from .dpo import DPOInference
 from .models import DPO_MODEL_CONFIG, REWARD_MODEL_CONFIG
 from .utils import (

@@ -69,6 +69,7 @@ class GRewardModel(PreTrainedModel):
         model = AutoModelForCausalLM.from_config(config)
         self.model = model.model
         self.v_head = ValueHead(self.model.config)
+        self.post_init()
 
     def forward(
         self,

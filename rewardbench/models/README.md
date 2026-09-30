@@ -1,7 +1,7 @@
 # Custom Model Code for RewardBench
 
 Many reward models released since ChatGPT require various levels of custom code to run them.
-For chat templates, we support both Huggingface Tokenizers and LMSYS FastChat (see `rewardbench/chattemplates.py`).
+For chat templates, we support both Huggingface Tokenizers and built-in legacy text templates adapted from LMSYS FastChat (see `rewardbench/conversation.py`).
 
 Contributing your model lets others compare your results to their reward models more directly (for example on datasets outside of the benchmark) when compared to submitting a `json` of results directly. 
 It also enables us to verify results.

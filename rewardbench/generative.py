@@ -16,7 +16,7 @@
 # pip install openai>=1.0
 # pip install anthropic>=0.21.3
 # pip install together>=1.1.3
-# pip install google-generativeai>=0.6.4
+# pip install google-genai
 
 import json
 import os
@@ -24,12 +24,11 @@ import re
 import time as time
 
 import anthropic
-import google.generativeai as genai
 import openai
-from fastchat.conversation import get_conv_template
-from google.generativeai.types import HarmBlockThreshold, HarmCategory
 from openai import OpenAI
 from together import Together
+
+from rewardbench.conversation import get_conv_template
 
 # normalize OpenAI exception names for compatibility with different SDK versions
 APIError = getattr(openai, "APIError", Exception)
@@ -791,54 +790,39 @@ def chat_completion_anthropic(model, conv, temperature, max_tokens, api_dict=Non
 
 
 def chat_completion_gemini(model, conv, temperature, max_tokens, api_dict=None):
-    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-    api_model = genai.GenerativeModel(model)
+    from google import genai
+    from google.genai import types as genai_types
 
-    for _ in range(API_MAX_RETRY):
-        try:
-            response = api_model.generate_content(
-                conv,
-                generation_config=genai.types.GenerationConfig(
-                    # Only one candidate for now.
-                    candidate_count=1,
-                    max_output_tokens=max_tokens,
-                    temperature=temperature,
-                ),
-                request_options={"timeout": 1000},  # eliminate Failed to connect to Gemini API: 504 Deadline Exceeded
-                safety_settings={
-                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-                },
-            )
-
-            # gemini refuses some rewardbench prompts
-            if response.prompt_feedback == "block_reason: OTHER":
-                print("Weird safety block, continuing!")
-                output = "error"
-                break
+    with genai.Client(
+        api_key=os.environ["GEMINI_API_KEY"],
+        http_options=genai_types.HttpOptions(timeout=1_000_000),
+    ) as client:
+        for _ in range(API_MAX_RETRY):
             try:
-                output = response.text
-            except ValueError:
-                print("Erroneous response, not API error")
-                # If the response doesn't contain text, check if the prompt was blocked.
-                print(f"Prompt feedback {response.prompt_feedback}")
-                # Also check the finish reason to see if the response was blocked.
-                print(f"Finish reason {response.candidates[0].finish_reason}")  # 5 is "unknown reason"
-                # If the finish reason was SAFETY, the safety ratings have more details.
-                print(f"Safety ratings {response.candidates[0].safety_ratings}")
-            else:
-                break
-        except Exception as e:
-            print(f"Failed to connect to Gemini API: {e}")
-            time.sleep(API_RETRY_SLEEP)
-
-    # sometimes output is not defined and it is unclear to me
-    try:
-        return output
-    except UnboundLocalError:
-        return "error"
+                response = client.models.generate_content(
+                    model=model,
+                    contents=conv,
+                    config=genai_types.GenerateContentConfig(
+                        candidate_count=1,
+                        max_output_tokens=max_tokens,
+                        temperature=temperature,
+                        safety_settings=[
+                            genai_types.SafetySetting(category=category, threshold="BLOCK_NONE")
+                            for category in (
+                                "HARM_CATEGORY_HATE_SPEECH",
+                                "HARM_CATEGORY_HARASSMENT",
+                                "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                                "HARM_CATEGORY_DANGEROUS_CONTENT",
+                            )
+                        ],
+                    ),
+                )
+                # The new SDK returns None when a response is blocked or empty.
+                return response.text or "error"
+            except Exception as e:
+                print(f"Failed to connect to Gemini API: {e}")
+                time.sleep(API_RETRY_SLEEP)
+    return "error"
 
 
 def chat_completion_together(model, conv, temperature, max_tokens, api_dict=None):

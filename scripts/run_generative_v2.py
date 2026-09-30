@@ -30,15 +30,10 @@ from functools import partial
 import numpy as np
 from datasets import concatenate_datasets
 from transformers import AutoTokenizer
-
-# fschat is optional - only needed if --chat_template is specified
-try:
-    from fastchat.conversation import get_conv_template
-except ImportError:
-    get_conv_template = None
 from vllm import LLM, SamplingParams
 
 from rewardbench import load_eval_dataset_multi, process_single_model, save_to_hub
+from rewardbench.conversation import get_conv_template
 from rewardbench.generative_v2 import (
     ANTHROPIC_MODEL_LIST,
     API_MODEL_LIST,
@@ -384,12 +379,6 @@ def main():
         # Prepare vllm_model dict for ratings functions
         # At the top of the VLLM section:
         if args.chat_template is not None:
-            if get_conv_template is None:
-                raise ImportError(
-                    "--chat_template requires fschat, which is unmaintained. "
-                    "Consider using the model's built-in tokenizer chat template instead (omit --chat_template). "
-                    "If you need legacy templates, install with: pip install rewardbench[v1]"
-                )
             chat_template = get_conv_template(args.chat_template)
         else:
             chat_template = None
@@ -586,12 +575,6 @@ def main():
             # Process non-ties dataset with 4-way comparison
             logger.info("*** Run inference on non-ties subsets with 4-way comparison ***")
             if args.chat_template is not None:
-                if get_conv_template is None:
-                    raise ImportError(
-                        "--chat_template requires fschat, which is unmaintained. "
-                        "Consider using the model's built-in tokenizer chat template instead (omit --chat_template). "
-                        "If you need legacy templates, install with: pip install rewardbench[v1]"
-                    )
                 chat_template = get_conv_template(args.chat_template)
             else:
                 chat_template = None
@@ -605,7 +588,9 @@ def main():
             logger.info("*** Run inference ***")
             if model_modifier == "Atla":
                 logger.info("Using Atla model for inference")
-                outputs = model.generate(prompt_token_ids=prompt_ids, sampling_params=sampling_params)
+                outputs = model.generate(
+                    [{"prompt_token_ids": ids} for ids in prompt_ids], sampling_params=sampling_params
+                )
             else:
                 outputs = model.generate(prompts, sampling_params=sampling_params)
             logger.info("*** Inference done ***")

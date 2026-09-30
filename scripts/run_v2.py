@@ -28,12 +28,6 @@ from datasets import Dataset
 from tqdm import tqdm
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-# fschat is optional - only needed if --chat_template is specified
-try:
-    from fastchat.conversation import get_conv_template
-except ImportError:
-    get_conv_template = None
-
 from rewardbench import (
     REWARD_MODEL_CONFIG,
     check_tokenizer_chat_template,
@@ -42,6 +36,7 @@ from rewardbench import (
     reroll_and_score_dataset,
     save_to_hub,
 )
+from rewardbench.conversation import get_conv_template
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -140,12 +135,6 @@ def main():
     # load chat template
     chat_template = args.chat_template
     if chat_template is not None:
-        if get_conv_template is None:
-            raise ImportError(
-                "--chat_template requires fschat, which is unmaintained. "
-                "Consider using the model's built-in tokenizer chat template instead (omit --chat_template). "
-                "If you need legacy templates, install with: pip install rewardbench[v1]"
-            )
         conv = get_conv_template(chat_template)
     else:
         conv = None  # will use tokenizer's chat template
@@ -243,7 +232,7 @@ def main():
 
     if quantized:
         model_kwargs = {
-            "load_in_8bit": True,
+            "quantization_config": transformers.BitsAndBytesConfig(load_in_8bit=True),
             "device_map": {"": current_device},
             "torch_dtype": torch_dtype if torch.cuda.is_available() else None,
         }

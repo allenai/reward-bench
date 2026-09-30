@@ -2,7 +2,7 @@
 # This image includes vllm (which bundles its own flash-attn)
 # Use the base Dockerfile for faster builds if you only need API-based judges
 
-FROM --platform=linux/amd64 nvidia/cuda:12.1.0-cudnn8-devel-ubuntu20.04
+FROM --platform=linux/amd64 nvidia/cuda:13.0.2-cudnn-devel-ubuntu24.04
 
 ARG DEBIAN_FRONTEND="noninteractive"
 ENV TZ="America/Los_Angeles"
@@ -37,7 +37,7 @@ ENV LD_LIBRARY_PATH=/usr/local/cuda/lib:/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 RUN echo '%users ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 WORKDIR /stage/
-ENV HF_HUB_ENABLE_HF_TRANSFER=1
+ENV PATH="/stage/.venv/bin:$PATH"
 
 # Install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -46,11 +46,10 @@ ENV PATH="/root/.local/bin:$PATH"
 # Copy dependency manifests first (better layer caching)
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies with vllm (vllm pins torch 2.9)
+# Install the locked dependencies with vLLM and its matching PyTorch version
 RUN uv sync --frozen --no-install-project --extra generative --extra v1
 
-# vLLM bundles its own flash-attn, no need to install separately
-RUN uv pip install --system jinja2
+# vLLM supplies its own attention kernels; Jinja2 is in the locked environment.
 
 # Now copy source code
 COPY rewardbench rewardbench

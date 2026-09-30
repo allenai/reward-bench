@@ -24,7 +24,6 @@ import torch
 import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
-from fastchat.conversation import get_conv_template
 from tqdm import tqdm
 from transformers import AutoTokenizer, pipeline
 
@@ -34,6 +33,7 @@ from rewardbench import (
     load_bon_dataset,
     save_to_hub,
 )
+from rewardbench.conversation import get_conv_template
 
 # get token from HF_TOKEN env variable, but if it doesn't exist pass none
 HF_TOKEN = os.getenv("HF_TOKEN", None)
@@ -154,7 +154,7 @@ def main():
     }
     if quantized:
         model_kwargs = {
-            "load_in_8bit": True,
+            "quantization_config": transformers.BitsAndBytesConfig(load_in_8bit=True),
             "device_map": {"": current_device},
             "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
         }

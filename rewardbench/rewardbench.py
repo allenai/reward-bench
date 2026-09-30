@@ -160,8 +160,7 @@ def push_results_to_hub(args, results, accuracy=None):
         accuracy_str = ""
 
     # Create and push a repo card
-    rm_card = RepoCard(
-        content=f"""\
+    rm_card = RepoCard(content=f"""\
 # {args.hf_name}: RewardBench CLI Eval. Outputs
 
 See https://github.com/allenai/reward-bench for more details
@@ -183,8 +182,7 @@ args: {pformat(vars(args))}
 ```
 {pformat(package_versions)}
 ```
-"""
-    )
+""")
     rm_card.push_to_hub(
         full_repo_id,
         repo_type="dataset",
@@ -246,7 +244,7 @@ def rewardbench(args: Args):
         MODEL_CONFIGS = REWARD_MODEL_CONFIG
 
     if args.chat_template:
-        from fastchat.conversation import get_conv_template
+        from rewardbench.conversation import get_conv_template
 
         conv = get_conv_template(args.chat_template)
     else:
@@ -360,7 +358,7 @@ def rewardbench(args: Args):
             tokenizer.pad_token_id = tokenizer.eos_token_id
 
         model_kwargs = {
-            "load_in_8bit": True,
+            "quantization_config": transformers.BitsAndBytesConfig(load_in_8bit=True),
             "device_map": "auto" if torch.cuda.is_available() else "cpu",
             "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
         }
@@ -423,7 +421,7 @@ def rewardbench(args: Args):
         }
         if quantized:
             model_kwargs = {
-                "load_in_8bit": True,
+                "quantization_config": transformers.BitsAndBytesConfig(load_in_8bit=True),
                 "device_map": {"": current_device},
                 "torch_dtype": torch_dtype if torch.cuda.is_available() else None,
             }

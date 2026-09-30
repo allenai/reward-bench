@@ -1,6 +1,5 @@
 # Use public Nvidia images (rather than Beaker), for reproducibility
-FROM --platform=linux/amd64 nvidia/cuda:12.1.0-cudnn8-devel-ubuntu20.04 
-#nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04
+FROM --platform=linux/amd64 nvidia/cuda:13.0.2-cudnn-devel-ubuntu24.04
 
 ARG DEBIAN_FRONTEND="noninteractive"
 ENV TZ="America/Los_Angeles"
@@ -42,7 +41,7 @@ ENV LD_LIBRARY_PATH=/usr/local/cuda/lib:/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 RUN echo '%users ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 WORKDIR /stage/
-ENV HF_HUB_ENABLE_HF_TRANSFER=1
+ENV PATH="/stage/.venv/bin:$PATH"
 
 # Install uv for fast, reliable package management
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -52,16 +51,12 @@ ENV PATH="/root/.local/bin:$PATH"
 COPY pyproject.toml uv.lock ./
 
 # Install dependencies (api + v1 extras, NO vllm)
-# Note: uv sync uses lockfile which has torch 2.9, we'll downgrade after
 RUN uv sync --frozen --no-install-project --extra api --extra v1
 
-# Downgrade torch to 2.8 so we can use prebuilt flash-attn wheels
-# (vllm extra not installed here - use Dockerfile.vllm for that)
-RUN uv pip install --system "torch>=2.1,<=2.8" torchvision torchaudio
-
-# flash-attn prebuilt wheel (fast!) + jinja2 BEFORE source copy
-RUN uv pip install --system https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.8cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
-RUN uv pip install --system jinja2
+# Build FlashAttention against the locked, patched PyTorch/CUDA versions.
+# Installing into the same environment avoids reintroducing an older system torch.
+RUN uv pip install --python /stage/.venv/bin/python ninja packaging wheel einops \
+    && uv pip install --python /stage/.venv/bin/python --no-deps --no-build-isolation "flash-attn==2.8.3.post1"
 
 # Now copy source code (invalidates only later layers, but flash-attn cached)
 COPY rewardbench rewardbench
@@ -70,7 +65,7 @@ COPY Makefile Makefile
 COPY README.md README.md
 
 # Install the project (non-editable for deployment)
-RUN uv sync --frozen --no-editable --extra api --extra v1
+RUN uv sync --frozen --inexact --no-editable --extra api --extra v1
 RUN chmod +x scripts/*
 
 # for interactive session

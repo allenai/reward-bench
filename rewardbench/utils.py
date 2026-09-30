@@ -34,12 +34,9 @@ from datasets import (
 from huggingface_hub import HfApi
 from transformers import PreTrainedTokenizer
 
-# fschat is optional - only needed for v1 scripts and --chat_template flag
-# We use TYPE_CHECKING to import Conversation only for static type checkers (mypy, etc.)
-# At runtime, we use string annotations like "Conversation | None" to avoid NameError
-# when fschat is not installed. This is called a "forward reference".
+# Conversation is only needed here for static type checking.
 if TYPE_CHECKING:
-    from fastchat.conversation import Conversation
+    from rewardbench.conversation import Conversation
 
 from rewardbench.models import REWARD_MODEL_CONFIG
 
