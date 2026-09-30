@@ -12,7 +12,19 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  # Automatic Beaker publishing is retired. Manual builds require a valid BEAKER_TOKEN.
+  # Automatic builds are disabled: the Beaker token is invalid and these images
+  # are no longer used internally. To re-enable, restore a valid BEAKER_TOKEN
+  # repository secret and uncomment the push trigger below.
+  # push:
+  #   # Run this workflow anytime a push updates one of the files in the image's directory
+  #   # (other than the README), and anytime there's a new release tag for this image.
+  #   paths:
+  #     - 'rewardbench/**'
+  #     - 'scripts/**'
+  #     - 'Dockerfile'
+  #     - 'Dockerfile.vllm'
+  #     - 'pyproject.toml'
+  #   branches: [main]
   workflow_dispatch:  # This allows us to manually trigger a build through the GitHub UI.
 
 env:
