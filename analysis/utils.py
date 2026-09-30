@@ -70,8 +70,9 @@ def load_results(
 
     # Cleanup the dataframe for presentation
     def _cleanup(df: pd.DataFrame) -> pd.DataFrame:
-        # remove chat_template comlumn
+        # Keep run metadata out of score-only tables and their averages.
         df = df.drop(columns=["chat_template"])
+        df = df.drop(columns=["score_w_ratings"], errors="ignore")
 
         # sort columns alphabetically
         df = df.reindex(sorted(df.columns), axis=1)
