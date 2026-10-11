@@ -27,7 +27,14 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
-from fastchat.conversation import get_conv_template
+
+# fschat is in the [v1] extra; rewardbench.generative also needs it for API judge conversations
+try:
+    from fastchat.conversation import get_conv_template
+except ImportError as e:
+    raise ImportError(
+        "rewardbench-gen (scripts/run_generative.py) requires fschat: uv sync --extra api --extra v1"
+    ) from e
 from transformers import AutoTokenizer
 
 from rewardbench import load_eval_dataset, save_to_hub

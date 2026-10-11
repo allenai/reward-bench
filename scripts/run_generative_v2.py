@@ -36,7 +36,6 @@ try:
     from fastchat.conversation import get_conv_template
 except ImportError:
     get_conv_template = None
-from vllm import LLM, SamplingParams
 
 from rewardbench import load_eval_dataset_multi, process_single_model, save_to_hub
 from rewardbench.generative_v2 import (
@@ -145,6 +144,8 @@ def main():
 
     # if model isn't API, load via vllm
     if not is_api_models:
+        from vllm import LLM, SamplingParams
+
         # if multi gpu, set multiproc method to spawn
         if args.num_gpus > 1:
             # Set the environment variable
