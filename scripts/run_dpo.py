@@ -24,10 +24,10 @@ from accelerate import Accelerator
 from accelerate.logging import get_logger
 from fastchat.conversation import get_conv_template
 from tqdm import tqdm
-from trl.trainer.utils import DPODataCollatorWithPadding
 
 from rewardbench import (
     DPO_MODEL_CONFIG,
+    DPODataCollatorWithPadding,
     DPOInference,
     load_eval_dataset,
     save_to_hub,
@@ -40,9 +40,9 @@ from rewardbench.utils import calculate_scores_per_section
 HF_TOKEN = os.getenv("HF_TOKEN", None)
 # this is necessary to automatically log in when running this script in docker/batch beaker jobs
 if HF_TOKEN is not None:
-    from huggingface_hub._login import _login
+    from huggingface_hub import login
 
-    _login(token=HF_TOKEN, add_to_git_credential=False)
+    login(token=HF_TOKEN, add_to_git_credential=False)
 
 
 def get_args():
@@ -184,12 +184,12 @@ def main():
         }
     else:
         model_kwargs = {
-            "load_in_8bit": True,
+            "quantization_config": transformers.BitsAndBytesConfig(load_in_8bit=True),
             "device_map": "auto",
             "torch_dtype": torch_dtype if torch.cuda.is_available() else None,
         }
         model_kwargs_ref = {
-            "load_in_8bit": True,
+            "quantization_config": transformers.BitsAndBytesConfig(load_in_8bit=True),
             "device_map": "auto",
             "torch_dtype": torch_dtype if torch.cuda.is_available() else None,
         }

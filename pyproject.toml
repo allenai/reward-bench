@@ -48,7 +48,7 @@ dependencies = [
     "torchvision",
     "torchaudio",
     "tiktoken",
-    "transformers==4.57.6",
+    "transformers==5.17.0",
     "wandb",
 ]
 
@@ -68,18 +68,16 @@ api = [
     "together",
 ]
 # Local LLM inference via vLLM (requires Linux + CUDA, pins torch version)
-# PyPI ships x86_64 and aarch64 wheels; both are built against CUDA 12.x
+# PyPI ships x86_64 and aarch64 wheels; both are built against CUDA 13.0 (as is PyPI torch 2.13)
 vllm = [
-    "vllm==0.13.0; sys_platform == 'linux'",
+    "vllm==0.31.0; sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')",
 ]
 # Full generative setup (API + vLLM) - backwards compatible alias
 generative = [
     "rewardbench[api,vllm]",
 ]
-v1 = [
-    "fschat",  # unmaintained; required for v1 scripts (run_generative.py, run_rm.py, etc.) and --chat_template flag
-    "trl>=0.8.2",  # needed for DPO scripts and value-head models
-]
+# fschat (legacy v1 scripts and the --chat_template flag) is intentionally not an extra: it is unmaintained with
+# unpatched advisories. Install it by hand if needed: `uv pip install fschat` (see CLAUDE.md / README).
 
 [project.scripts]
 rewardbench = "rewardbench.rewardbench:main"
@@ -100,24 +98,14 @@ dev = [
     "pytest",
 ]
 
-# DGX Spark / GB10 (aarch64 + Blackwell) support
-# PyTorch cu129 wheels: Blackwell-capable and CUDA 12.x, matching the PyPI vllm 0.13.0 aarch64 wheel
-# (vllm's compiled kernels link libcudart.so.12, so cu130 torch breaks `import vllm`)
-[tool.uv.sources]
-torch = [
-  { index = "pytorch-cu129", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
+# vllm only ships x86_64/aarch64 Linux wheels; skip resolving exotic Linux arches (e.g. s390x, where
+# vllm's protobuf pin conflicts with google-generativeai)
+[tool.uv]
+environments = [
+    "sys_platform == 'darwin'",
+    "sys_platform == 'win32'",
+    "sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')",
 ]
-torchvision = [
-  { index = "pytorch-cu129", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
-]
-torchaudio = [
-  { index = "pytorch-cu129", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
-]
-
-[[tool.uv.index]]
-name = "pytorch-cu129"
-url = "https://download.pytorch.org/whl/cu129"
-explicit = true
 
 [tool.black]
 line-length = 119

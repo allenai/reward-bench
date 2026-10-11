@@ -311,7 +311,7 @@ def load_reward_pipeline(
     if config["quantized"]:
         model_kwargs.update(
             {
-                "load_in_8bit": True,
+                "quantization_config": transformers.BitsAndBytesConfig(load_in_8bit=True),
                 "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
             }
         )

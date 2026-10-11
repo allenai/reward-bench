@@ -39,9 +39,9 @@ from rewardbench import (
 HF_TOKEN = os.getenv("HF_TOKEN", None)
 # this is necessary to automatically log in when running this script in docker/batch beaker jobs
 if HF_TOKEN is not None:
-    from huggingface_hub._login import _login
+    from huggingface_hub import login
 
-    _login(token=HF_TOKEN, add_to_git_credential=False)
+    login(token=HF_TOKEN, add_to_git_credential=False)
 
 
 def get_args():
@@ -154,7 +154,7 @@ def main():
     }
     if quantized:
         model_kwargs = {
-            "load_in_8bit": True,
+            "quantization_config": transformers.BitsAndBytesConfig(load_in_8bit=True),
             "device_map": {"": current_device},
             "torch_dtype": torch.float16 if torch.cuda.is_available() else None,
         }

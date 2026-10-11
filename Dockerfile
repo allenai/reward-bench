@@ -51,9 +51,9 @@ ENV PATH="/root/.local/bin:$PATH"
 # Copy dependency manifests first (better layer caching)
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies (api + v1 extras, NO vllm)
-# Note: uv sync uses lockfile which has torch 2.9, we'll downgrade after
-RUN uv sync --frozen --no-install-project --extra api --extra v1
+# Install dependencies (api extra, NO vllm)
+# Note: uv sync uses lockfile which has torch 2.13, we'll downgrade after
+RUN uv sync --frozen --no-install-project --extra api
 
 # Downgrade torch to 2.8 so we can use prebuilt flash-attn wheels
 # (vllm extra not installed here - use Dockerfile.vllm for that)
@@ -70,7 +70,10 @@ COPY Makefile Makefile
 COPY README.md README.md
 
 # Install the project (non-editable for deployment)
-RUN uv sync --frozen --no-editable --extra api --extra v1
+RUN uv sync --frozen --no-editable --extra api
+# fschat (legacy v1 scripts, --chat_template) is unmaintained so it's not in the lockfile; install it after the
+# final `uv sync`, which would otherwise remove it
+RUN uv pip install fschat
 RUN chmod +x scripts/*
 
 # for interactive session

@@ -47,9 +47,9 @@ from rewardbench import (
 HF_TOKEN = os.getenv("HF_TOKEN", None)
 # this is necessary to automatically log in when running this script in docker/batch beaker jobs
 if HF_TOKEN is not None:
-    from huggingface_hub._login import _login
+    from huggingface_hub import login
 
-    _login(token=HF_TOKEN, add_to_git_credential=False)
+    login(token=HF_TOKEN, add_to_git_credential=False)
 
 
 def get_args():
@@ -144,7 +144,7 @@ def main():
             raise ImportError(
                 "--chat_template requires fschat, which is unmaintained. "
                 "Consider using the model's built-in tokenizer chat template instead (omit --chat_template). "
-                "If you need legacy templates, install with: pip install rewardbench[v1]"
+                "If you need legacy templates, install fschat by hand: uv pip install fschat"
             )
         conv = get_conv_template(chat_template)
     else:
@@ -243,7 +243,7 @@ def main():
 
     if quantized:
         model_kwargs = {
-            "load_in_8bit": True,
+            "quantization_config": transformers.BitsAndBytesConfig(load_in_8bit=True),
             "device_map": {"": current_device},
             "torch_dtype": torch_dtype if torch.cuda.is_available() else None,
         }

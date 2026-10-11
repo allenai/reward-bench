@@ -13,11 +13,13 @@
 # limitations under the License.
 
 # Large extents copied from https://github.com/huggingface/trl/blob/main/trl/trainer/dpo_trainer.py
-from typing import Dict, List, Optional, Tuple, Union
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
 from torch import nn
+from torch.nn.utils.rnn import pad_sequence
 
 
 class DPOInference:
@@ -413,3 +415,45 @@ def pad_to_length(tensor: torch.Tensor, length: int, pad_value: Union[int, float
             ],
             dim=dim,
         )
+
+
+# Adapted from trl 0.27 (trl/experimental/utils.py); trl 1.x no longer exports it from trl.trainer.utils
+@dataclass
+class DPODataCollatorWithPadding:
+    """Pads tokenized DPO features (`*_input_ids`, `*_attention_mask`, `*_labels`) to the longest in the batch."""
+
+    pad_token_id: int = 0
+    label_pad_token_id: int = -100
+    is_encoder_decoder: Optional[bool] = False
+
+    def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
+        padded_batch = {}
+        for k in features[0].keys():
+            if k.endswith(("_input_ids", "_attention_mask", "_labels")):
+                if k.endswith("_input_ids") and (not self.is_encoder_decoder or k.startswith("prompt")):
+                    if self.pad_token_id is None:
+                        raise ValueError(
+                            "Padding is enabled, but the tokenizer is not configured with a padding token."
+                            " Explicitly set `tokenizer.pad_token` (e.g. `tokenizer.pad_token = tokenizer.eos_token`)."
+                        )
+                    padding_value = self.pad_token_id
+                elif k.endswith("_attention_mask"):
+                    padding_value = 0
+                else:
+                    # labels, and encoder-decoder chosen/rejected input ids
+                    padding_value = self.label_pad_token_id
+
+                to_pad = [torch.tensor(ex[k], dtype=torch.int64) for ex in features]
+                # decoder-only prompts are left padded, everything else right padded
+                if not self.is_encoder_decoder and k in ("prompt_input_ids", "prompt_attention_mask"):
+                    to_pad = [t.flip(0) for t in to_pad]
+                    padded_batch[k] = pad_sequence(to_pad, batch_first=True, padding_value=padding_value).flip(1)
+                else:
+                    padded_batch[k] = pad_sequence(to_pad, batch_first=True, padding_value=padding_value)
+            elif k.endswith("_logps"):
+                # the cached reference model logprobs
+                padded_batch[k] = torch.tensor([ex[k] for ex in features])
+            else:
+                padded_batch[k] = [ex[k] for ex in features]
+
+        return padded_batch
