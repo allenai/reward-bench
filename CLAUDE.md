@@ -58,7 +58,8 @@ The base image uses prebuilt flash-attn wheels (torch ≤2.8). The vllm image bu
 ## Entry Points
 
 - `rewardbench` - Main evaluation CLI (works with base install)
-- `rewardbench-gen` - Generative RM evaluation (requires `[api]` or `[generative]` extra)
+- `rewardbench-gen` - v1 generative RM evaluation (requires `[api]` + `[v1]` extras; it uses fschat conversation templates)
+- `scripts/run_generative_v2.py` - RewardBench 2 generative RMs (`[api]` for API judges, `[vllm]` for local models)
 
 ## Code Quality Checks
 
@@ -101,6 +102,21 @@ If you see `ModuleNotFoundError: No module named 'anthropic'` or similar, you ne
 uv sync --extra generative
 ```
 
-### vLLM platform issues
+### Running outside Beaker
 
-vLLM has specific platform requirements. On unsupported platforms (like aarch64/ARM), you may need custom wheels. See the main CLAUDE.md in `~/dev/` for DGX Spark-specific instructions.
+The run scripts write `/output/metrics.json` for AI2 Beaker by default. Elsewhere this is skipped with a warning; pass `--disable_beaker_save` to silence it.
+
+### DGX Spark (GB10, aarch64 + Blackwell)
+
+On linux aarch64, torch comes from the PyTorch cu129 index (see `[tool.uv.sources]`), and `vllm==0.13.0` installs from its PyPI aarch64 wheel. Both are built against CUDA 12.x. Do not switch torch to cu130: vllm's kernels link `libcudart.so.12`, so `import vllm` then fails.
+
+- `torch` warns that sm_121 is above its supported max (sm_120); this is harmless.
+- Use `--attn_implementation sdpa` for reward models (no flash-attn wheels on aarch64).
+- Triton's bundled `ptxas` does not know `sm_121a`, so vLLM CUDA graph capture / torch.compile fails. Either point Triton at the system CUDA 13 ptxas or run vLLM in eager mode:
+  ```bash
+  export TRITON_PTXAS_PATH=/usr/local/cuda/bin/ptxas
+  ```
+- If an existing venv previously had cu130 torch, force the torch wheels to swap (the aarch64 torchvision/torchaudio filenames carry no CUDA tag, so uv keeps the stale build):
+  ```bash
+  uv sync --extra generative --reinstall-package torch --reinstall-package torchvision --reinstall-package torchaudio
+  ```

@@ -68,8 +68,9 @@ api = [
     "together",
 ]
 # Local LLM inference via vLLM (requires Linux + CUDA, pins torch version)
+# PyPI ships x86_64 and aarch64 wheels; both are built against CUDA 12.x
 vllm = [
-    "vllm==0.13.0; sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "vllm==0.13.0; sys_platform == 'linux'",
 ]
 # Full generative setup (API + vLLM) - backwards compatible alias
 generative = [
@@ -99,30 +100,23 @@ dev = [
     "pytest",
 ]
 
-# DGX Spark (aarch64 + CUDA 13) support
-# PyTorch cu130 wheels for Blackwell GPU
+# DGX Spark / GB10 (aarch64 + Blackwell) support
+# PyTorch cu129 wheels: Blackwell-capable and CUDA 12.x, matching the PyPI vllm 0.13.0 aarch64 wheel
+# (vllm's compiled kernels link libcudart.so.12, so cu130 torch breaks `import vllm`)
 [tool.uv.sources]
 torch = [
-  { index = "pytorch-cu130", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
+  { index = "pytorch-cu129", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
 ]
 torchvision = [
-  { index = "pytorch-cu130", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
+  { index = "pytorch-cu129", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
 ]
 torchaudio = [
-  { index = "pytorch-cu130", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
-]
-vllm = [
-  { index = "vllm-cu130", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
+  { index = "pytorch-cu129", marker = "platform_system == 'Linux' and platform_machine == 'aarch64'" },
 ]
 
 [[tool.uv.index]]
-name = "pytorch-cu130"
-url = "https://download.pytorch.org/whl/cu130"
-explicit = true
-
-[[tool.uv.index]]
-name = "vllm-cu130"
-url = "https://wheels.vllm.ai/nightly/cu130"
+name = "pytorch-cu129"
+url = "https://download.pytorch.org/whl/cu129"
 explicit = true
 
 [tool.black]
