@@ -50,7 +50,9 @@ class LegacyArmoRMPipeline:
             for candidate_A, candidate_B in zip(candidates_A, candidates_B):
                 pair_scores = []
                 for candidate in [candidate_A, candidate_B]:
-                    input_ids = self.tokenizer.apply_chat_template(candidate, return_tensors="pt").to(device)
+                    input_ids = self.tokenizer.apply_chat_template(
+                        candidate, return_tensors="pt", return_dict=False
+                    ).to(device)
                     output = self.model(input_ids)
                     score = output.score.float().item()
                     pair_scores.append(score)

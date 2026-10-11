@@ -28,12 +28,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
 
-# fschat is in the [v1] extra; rewardbench.generative also needs it for API judge conversations
+# fschat is installed by hand (unmaintained); rewardbench.generative also needs it for API judge conversations
 try:
     from fastchat.conversation import get_conv_template
 except ImportError as e:
     raise ImportError(
-        "rewardbench-gen (scripts/run_generative.py) requires fschat: uv sync --extra api --extra v1"
+        "rewardbench-gen (scripts/run_generative.py) requires fschat: uv sync --extra api && uv pip install fschat"
     ) from e
 from transformers import AutoTokenizer
 
@@ -55,9 +55,9 @@ from rewardbench.utils import calculate_scores_per_section
 HF_TOKEN = os.getenv("HF_TOKEN", None)
 # this is necessary to automatically log in when running this script in docker/batch beaker jobs
 if HF_TOKEN is not None:
-    from huggingface_hub._login import _login
+    from huggingface_hub import login
 
-    _login(token=HF_TOKEN, add_to_git_credential=False)
+    login(token=HF_TOKEN, add_to_git_credential=False)
 
 
 def get_args():

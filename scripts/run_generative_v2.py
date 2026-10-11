@@ -55,9 +55,9 @@ from rewardbench.random_utils import generate_shuffle_positions
 HF_TOKEN = os.getenv("HF_TOKEN", None)
 # this is necessary to automatically log in when running this script in docker/batch beaker jobs
 if HF_TOKEN is not None:
-    from huggingface_hub._login import _login
+    from huggingface_hub import login
 
-    _login(token=HF_TOKEN, add_to_git_credential=False)
+    login(token=HF_TOKEN, add_to_git_credential=False)
 
 
 def get_args():
@@ -389,7 +389,7 @@ def main():
                 raise ImportError(
                     "--chat_template requires fschat, which is unmaintained. "
                     "Consider using the model's built-in tokenizer chat template instead (omit --chat_template). "
-                    "If you need legacy templates, install with: pip install rewardbench[v1]"
+                    "If you need legacy templates, install fschat by hand: uv pip install fschat"
                 )
             chat_template = get_conv_template(args.chat_template)
         else:
@@ -589,7 +589,7 @@ def main():
                     raise ImportError(
                         "--chat_template requires fschat, which is unmaintained. "
                         "Consider using the model's built-in tokenizer chat template instead (omit --chat_template). "
-                        "If you need legacy templates, install with: pip install rewardbench[v1]"
+                        "If you need legacy templates, install fschat by hand: uv pip install fschat"
                     )
                 chat_template = get_conv_template(args.chat_template)
             else:

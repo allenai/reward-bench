@@ -17,7 +17,7 @@ import pytest
 from datasets import load_dataset
 from transformers import AutoTokenizer
 
-# fschat is optional (in [v1] extra)
+# fschat is optional (installed by hand: `uv pip install fschat`)
 try:
     from fastchat.conversation import get_conv_template
 

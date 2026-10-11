@@ -69,6 +69,7 @@ cd reward-bench
 uv sync                      # base install
 uv sync --extra generative   # with generative support
 ```
+The legacy v1 scripts (`rewardbench-gen`, `scripts/run_rm.py`, `run_dpo.py`, `run_bon.py`) and the `--chat_template` flag need [FastChat](https://github.com/lm-sys/FastChat), which is unmaintained and therefore not a declared dependency. Install it by hand with `uv pip install fschat` (a later plain `uv sync` removes it; use `uv sync --inexact`).
 **To run RewardBench 2, you can run the following command, substituting the model you would like to run and adding any additional model-specific parameters, which can be found in the [eval configs](https://github.com/allenai/reward-bench/blob/main/scripts/configs/eval_configs.yaml) in `scripts/configs/eval_configs.yaml`**
 ```
 python scripts/run_v2.py --model={yourmodel}
@@ -301,7 +302,7 @@ Two Docker images are available:
 | `rewardbench` | `Dockerfile` | Reward models, API-based LLM judges | ~5-10 min |
 | `rewardbench-vllm` | `Dockerfile.vllm` | Local LLM inference via vLLM | ~45 min |
 
-The base image uses torch ≤2.8 with prebuilt flash-attn wheels. The vllm image uses torch 2.9 (required by vllm) and builds flash-attn from source.
+The base image uses torch ≤2.8 with prebuilt flash-attn wheels. The vllm image uses torch 2.13 (required by vllm; CUDA 13.0 wheels, so the host needs NVIDIA driver >= 580) and vllm's bundled attention kernels.
 
 To build locally:
 ```bash

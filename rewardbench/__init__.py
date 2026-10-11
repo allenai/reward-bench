@@ -15,13 +15,13 @@
 __version__ = "0.1.5"
 
 # chattemplates registers legacy chat templates with fastchat
-# Only import if fschat is installed (via [v1] extra)
+# Only import if fschat is installed (by hand: `uv pip install fschat`)
 import importlib.util
 
 if importlib.util.find_spec("fastchat") is not None:
     from .chattemplates import *  # noqa
 
-from .dpo import DPOInference
+from .dpo import DPODataCollatorWithPadding, DPOInference
 from .models import DPO_MODEL_CONFIG, REWARD_MODEL_CONFIG
 from .utils import (
     check_tokenizer_chat_template,
@@ -40,6 +40,7 @@ from .utils import (
 
 __all__ = [
     check_tokenizer_chat_template,
+    DPODataCollatorWithPadding,
     DPOInference,
     DPO_MODEL_CONFIG,
     load_bon_dataset,
