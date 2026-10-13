@@ -778,7 +778,8 @@ def chat_completion_anthropic(model, conv, temperature, max_tokens, api_dict=Non
                 model=model,
                 messages=conv.messages,
                 max_tokens=max_tokens,
-                temperature=temperature,
+                # anthropic 1.x dropped sampling kwargs from the SDK; the API still takes them for these models
+                extra_body={"temperature": temperature},
                 system=sys_msg,
             )
             # With thinking on, the first content block is a thinking block, not the answer
