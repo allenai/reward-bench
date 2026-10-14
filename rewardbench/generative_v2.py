@@ -258,8 +258,11 @@ def chat_completion(
 
             if model in ANTHROPIC_MODEL_LIST:
                 # Anthropic API
-                resp = _client.messages.create(**params)
-                response = resp.content[0].text
+                # anthropic 1.x dropped sampling kwargs from the SDK; the API still takes them for these models
+                anthropic_params = {k: v for k, v in params.items() if k != "temperature"}
+                resp = _client.messages.create(**anthropic_params, extra_body={"temperature": temperature})
+                # With thinking on, the first content block is a thinking block, not the answer
+                response = next((block.text for block in resp.content if block.type == "text"), API_ERROR_OUTPUT)
             elif model in OPENAI_MODEL_LIST or model in GEMINI_MODEL_LIST:
                 # OpenAI API
                 resp = _client.chat.completions.create(**params)
@@ -532,12 +535,13 @@ def chat_completion_anthropic(model, messages, temperature, max_tokens, api_dict
             response = c.messages.create(
                 model=model,
                 messages=messages,
-                stop_sequences=[anthropic.HUMAN_PROMPT],
                 max_tokens=max_tokens,
-                temperature=temperature,
+                # anthropic 1.x dropped sampling kwargs from the SDK; the API still takes them for these models
+                extra_body={"temperature": temperature},
                 system=sys_msg,
             )
-            output = response.content[0].text
+            # With thinking on, the first content block is a thinking block, not the answer
+            output = next((block.text for block in response.content if block.type == "text"), API_ERROR_OUTPUT)
             break
         except anthropic.APIError as e:
             print(type(e), e)

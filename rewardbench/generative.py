@@ -777,12 +777,13 @@ def chat_completion_anthropic(model, conv, temperature, max_tokens, api_dict=Non
             response = c.messages.create(
                 model=model,
                 messages=conv.messages,
-                stop_sequences=[anthropic.HUMAN_PROMPT],
                 max_tokens=max_tokens,
-                temperature=temperature,
+                # anthropic 1.x dropped sampling kwargs from the SDK; the API still takes them for these models
+                extra_body={"temperature": temperature},
                 system=sys_msg,
             )
-            output = response.content[0].text
+            # With thinking on, the first content block is a thinking block, not the answer
+            output = next((block.text for block in response.content if block.type == "text"), API_ERROR_OUTPUT)
             break
         except anthropic.APIError as e:
             print(type(e), e)

@@ -62,7 +62,7 @@ dev = [
 # API-based LLM judges (fast install, no GPU required)
 api = [
     "openai",
-    "anthropic",
+    "anthropic<2",
     "google-genai",
     "google-generativeai",
     "together",
