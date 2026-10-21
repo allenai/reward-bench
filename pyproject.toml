@@ -53,6 +53,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+peft = [
+    "peft>=0.21.2",
+]
 dev = [
     "black",
     "flake8>=6.0",

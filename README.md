@@ -159,6 +159,26 @@ For training, we recommend using [`open-instruct`](https://github.com/allenai/op
 For now, in order to contribute your model to the leaderboard, open an issue with the model name on HuggingFace (you can still evaluate local models with RewardBench, see below).
 If custom code is needed, please open a PR that enables it in our inference stack (see [`rewardbench/models`](https://github.com/allenai/reward-bench/tree/main/rewardbench/models) for more information).
 
+### PEFT reward adapters
+
+Sequence-classification adapters can use the optional `peft` extra (`pip install ".[peft]"`)
+and [`build_peft_reward_model`](rewardbench/models/peft_adapter.py) as their registered
+`model_builder`. This loads the immutable base revision from the adapter configuration,
+then loads the requested adapter revision through PEFT, including a saved classification
+head. The adapter revision passed with `--revision` is not substituted for the base revision.
+Other models retain their existing loaders and do not require PEFT.
+
+For the experimental ATE adapter, which reports a regression rather than an improvement
+over its base, a pinned RewardBench 2 evaluation is:
+
+```bash
+python scripts/run_v2.py \
+  --model Hualin3/ate-reward-qwen3-8b-grpo-20261020 \
+  --revision b951a1d0528d37600ba1d4f4f68bd310ebf73fbf \
+  --batch_size 4 --torch_dtype bfloat16 --attn_implementation sdpa \
+  --max_length 8192 --do_not_save --disable_beaker_save
+```
+
 # Evaluating Models
 
 For reference configs, see `scripts/configs/eval_configs.yaml`.
