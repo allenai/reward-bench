@@ -34,6 +34,7 @@ from .ldlreward import LDLPipeline, LDLRewardModel27B
 from .openassistant import *  # noqa
 from .openbmb import LlamaRewardModel, OpenBMBPipeline
 from .pairrm import DebertaV2PairRM, PairRMPipeline
+from .peft_adapter import build_peft_reward_model
 from .pipeline import RewardBenchPipeline
 from .qrm import LlamaForRewardModelWithGating3, LlamaForRewardModelWithGating31
 from .shp import SHPPipeline
@@ -62,6 +63,22 @@ REWARD_MODEL_CONFIG = {
         "quantized": False,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
+    },
+    "Hualin3/ate-reward-qwen3-8b-grpo-20261020": {
+        "model_builder": build_peft_reward_model,
+        "pipeline_builder": RewardBenchPipeline,
+        "quantized": False,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+        "torch_dtype": torch.bfloat16,
+    },
+    "Hualin3/ate-reward-qwen3-8b-supervised-listwise-v4-20261022": {
+        "model_builder": build_peft_reward_model,
+        "pipeline_builder": RewardBenchPipeline,
+        "quantized": False,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+        "torch_dtype": torch.bfloat16,
     },
     "ShikaiChen/LDL-Reward-Gemma-2-27B-v0.1": {
         "model_builder": LDLRewardModel27B.from_pretrained,
