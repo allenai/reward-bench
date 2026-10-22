@@ -179,6 +179,24 @@ python scripts/run_v2.py \
   --max_length 8192 --do_not_save --disable_beaker_save
 ```
 
+The separate supervised-listwise V4 release uses the same explicit PEFT loader.
+Its self-evaluated mean is 80.08613 (base: 78.25898); it does not replace v0.1's
+weights or 78.14646 result. A model-revision-pinned community evaluation command is:
+
+```bash
+python scripts/run_v2.py \
+  --model Hualin3/ate-reward-qwen3-8b-supervised-listwise-v4-20261022 \
+  --revision ce3e4c96851f3b1205a408cf5a2dab772238f8a0 \
+  --batch_size 4 --torch_dtype bfloat16 --attn_implementation sdpa \
+  --max_length 8192 --do_not_save --disable_beaker_save
+```
+
+See the [V4 model card](https://huggingface.co/Hualin3/ate-reward-qwen3-8b-supervised-listwise-v4-20261022/tree/ce3e4c96851f3b1205a408cf5a2dab772238f8a0)
+for the dataset/scorer revisions, training-data terms and exploratory-evaluation limitations.
+These commands require separately allocated compute and do not submit results.
+The [maintainer's leaderboard-maintenance statement](https://github.com/allenai/reward-bench/issues/291#issuecomment-6316742870)
+applies: loader support is not official evaluation, leaderboard inclusion or a rank.
+
 # Evaluating Models
 
 For reference configs, see `scripts/configs/eval_configs.yaml`.

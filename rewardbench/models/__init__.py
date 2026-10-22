@@ -72,6 +72,14 @@ REWARD_MODEL_CONFIG = {
         "model_type": "Seq. Classifier",
         "torch_dtype": torch.bfloat16,
     },
+    "Hualin3/ate-reward-qwen3-8b-supervised-listwise-v4-20261022": {
+        "model_builder": build_peft_reward_model,
+        "pipeline_builder": RewardBenchPipeline,
+        "quantized": False,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+        "torch_dtype": torch.bfloat16,
+    },
     "ShikaiChen/LDL-Reward-Gemma-2-27B-v0.1": {
         "model_builder": LDLRewardModel27B.from_pretrained,
         "pipeline_builder": LDLPipeline,

@@ -77,9 +77,17 @@ def test_peft_loader_rejects_missing_base(monkeypatch):
         build_peft_reward_model("owner/invalid-adapter")
 
 
-def test_ate_registration_does_not_change_default_loader():
-    model = REWARD_MODEL_CONFIG["Hualin3/ate-reward-qwen3-8b-grpo-20261020"]
+@pytest.mark.parametrize(
+    "model_id",
+    [
+        "Hualin3/ate-reward-qwen3-8b-grpo-20261020",
+        "Hualin3/ate-reward-qwen3-8b-supervised-listwise-v4-20261022",
+    ],
+)
+def test_ate_registration_does_not_change_default_loader(model_id):
+    model = REWARD_MODEL_CONFIG[model_id]
     assert model["model_builder"] is build_peft_reward_model
     assert model["quantized"] is False
     assert model["model_type"] == "Seq. Classifier"
+    assert model["torch_dtype"] is torch.bfloat16
     assert REWARD_MODEL_CONFIG["default_v2"]["model_builder"] is not build_peft_reward_model
