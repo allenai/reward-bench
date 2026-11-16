@@ -382,9 +382,10 @@ def get_single_rating(
         else:
             raise ValueError(f"Model {model} not supported for ratings.")
 
-        # parse a trailing integer 1–10
+        # parse a trailing integer 1–10; "8/10" and "8 out of 10" (any case) are read as 8,
+        # decimals such as "7.5" and negatives such as "-3" are left unparsed
         if raw_judgment and raw_judgment != API_ERROR_OUTPUT:
-            m = re.search(r"\b([1-9]|10)\b\s*$", raw_judgment.strip())
+            m = re.search(r"(?<![\w./-])(10|[1-9])(?:\s*(?:/|(?i:out\s+of))\s*10)?\s*$", raw_judgment.strip())
             if m:
                 rating = int(m.group(1))
                 if 1 <= rating <= 10:
