@@ -27,6 +27,7 @@ from transformers import (
 from .armorm import ArmoRMPipeline
 from .beaver import BeaverCostPipeline, BeaverPipeline, LlamaForScore
 from .betterpairrm import BetterPairRMPipeline
+from .decision_rm import DecisionRMPipeline
 from .grm import GRewardModel, GRMPipeline
 from .inform import INFORMForSequenceClassification
 from .internlm import InternLMPipeline
@@ -261,6 +262,14 @@ REWARD_MODEL_CONFIG = {
     "Skywork/Skywork-VL-Reward-7B": {
         "model_builder": Qwen2_5_VLForConditionalGeneration.from_pretrained,
         "pipeline_builder": SkyVLPipeline,
+        "quantized": False,
+        "custom_dialogue": False,
+        "model_type": "Seq. Classifier",
+        "torch_dtype": torch.bfloat16,
+    },
+    "minimodels-ai/decision-1-reward": {
+        "model_builder": AutoModelForSequenceClassification.from_pretrained,
+        "pipeline_builder": DecisionRMPipeline,
         "quantized": False,
         "custom_dialogue": False,
         "model_type": "Seq. Classifier",
