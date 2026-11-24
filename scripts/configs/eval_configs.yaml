@@ -1000,3 +1000,12 @@ HFXM/RAMO-Llama3.1-8B:
   trust_remote_code: False
   dpo: False
   quantized: False
+minimodels-ai/decision-1-reward:
+  model: minimodels-ai/decision-1-reward
+  tokenizer: minimodels-ai/decision-1-reward
+  chat_template: # uses built-in tokenizer chat_template
+  batch_size: 4
+  trust_remote_code: True
+  dpo: False
+  quantized: False
+  torch_dtype: bfloat16

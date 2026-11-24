@@ -106,6 +106,24 @@ def get_args():
     parser.add_argument(
         "--force_local", action="store_true", default=False, help="force local run, even if model is on Together API"
     )
+    parser.add_argument(
+        "--runoff_tau",
+        type=float,
+        default=0.80,
+        help="close-margin Pass-1 threshold for selective Top-2 Swap+CoT runoff (Decision-1 models)",
+    )
+    parser.add_argument(
+        "--runoff_weight",
+        type=float,
+        default=0.65,
+        help="blend weight on pairwise Swap+CoT log-odds during close-margin runoff (Decision-1 models)",
+    )
+    parser.add_argument(
+        "--dual_score_weight",
+        type=float,
+        default=0.0,
+        help="optional Pass-1 5-point rubric score weight (0.0 default Opt 4v2; 0.25 stacked Opt 3b + Opt 4v2)",
+    )
     args = parser.parse_args()
     return args
 
@@ -137,13 +155,26 @@ def main():
         assert len(args.model) % 2 == 1
 
     # define variable if is API or local
+    is_decision_rm = isinstance(args.model, str) and (
+        "decision-1-reward" in args.model or "decision-rm" in args.model.lower()
+    )
     if args.force_local:
         is_api_models = False
     else:
         is_api_models = isinstance(args.model, list) or args.model in API_MODEL_LIST
 
-    # if model isn't API, load via vllm
-    if not is_api_models:
+    # if model isn't API and isn't native PyTorch DecisionRM, load via vllm
+    if is_decision_rm:
+        from rewardbench.models.decision_rm import DecisionRMGenerativeJudge
+
+        decision_judge = DecisionRMGenerativeJudge.from_pretrained(
+            args.model,
+            trust_remote_code=True,
+            tau=args.runoff_tau,
+            w_pair=args.runoff_weight,
+            dual_score_weight=args.dual_score_weight,
+        )
+    elif not is_api_models:
         from vllm import LLM, SamplingParams
 
         # if multi gpu, set multiproc method to spawn
@@ -234,7 +265,9 @@ def main():
     #     os.remove(output_path)
     # logger.info(f"**Outputting scores to {output_path}**")
 
-    if is_api_models:
+    if is_decision_rm:
+        results, results_ties = decision_judge.evaluate_datasets(dataset, ties_dataset, logger=logger)
+    elif is_api_models:
         ############################
         # Run inference via API
         ############################
