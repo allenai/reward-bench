@@ -363,7 +363,7 @@ def main():
             subset_dataset = ties_subset_with_results
 
             # Update the results for the ties subset in the original dataset
-            ties_indices = [i for i, s in enumerate(out_dataset["subset"]) if s == "ties"]
+            ties_indices = [i for i, s in enumerate(out_dataset["subset"]) if s.lower() == "ties"]
             out_dataset_df = out_dataset.to_pandas()
             for i, ties_idx in enumerate(ties_indices):
                 out_dataset_df.at[ties_idx, "results"] = ties_subset_with_results["results"][i]
